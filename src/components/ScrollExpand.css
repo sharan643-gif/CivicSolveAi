@@ -1,0 +1,256 @@
+.scroll-expand {
+  position: relative;
+  width: 100%;
+}
+
+.scroll-expand--scroller {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  overscroll-behavior: contain;
+}
+
+.scroll-expand--scroller::-webkit-scrollbar {
+  display: none;
+}
+
+.scroll-expand__track {
+  position: relative;
+  width: 100%;
+}
+
+.scroll-expand__stage {
+  position: sticky;
+  top: 0;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  --se-title-size: 4rem;
+  z-index: 0;
+}
+
+.scroll-expand--scroller .scroll-expand__stage {
+  height: 100%;
+}
+
+.scroll-expand__frame {
+  position: absolute;
+  inset: 0;
+  clip-path: inset(21% 29% 21% 29% round 24px);
+  will-change: clip-path;
+}
+
+.scroll-expand__media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  will-change: transform;
+  transform-origin: center;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.scroll-expand__scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.1) 45%, rgba(0, 0, 0, 0.35));
+  opacity: 0;
+}
+
+.scroll-expand__overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 6%;
+  opacity: 0;
+  will-change: opacity, transform;
+}
+
+.scroll-expand__overlay-backdrop {
+  position: absolute;
+  inset: 10%;
+  border-radius: 24px;
+  background: rgba(7, 9, 14, 0.45);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  z-index: -1;
+}
+
+.scroll-expand__title {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0 6%;
+  text-align: center;
+  font-size: var(--se-title-size);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+  will-change: opacity, transform;
+}
+
+.scroll-expand__hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 1.25rem;
+  text-align: center;
+  font-size: 0.8125rem;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.55);
+  pointer-events: none;
+  will-change: opacity, transform;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   LIQUID GLASS LIST CARD — scroll-expand overlay
+   ═══════════════════════════════════════════════════════════════════ */
+
+.se-liquid-card {
+  margin-top: 28px;
+  width: 100%;
+  max-width: 440px;
+  border-radius: 28px;
+  background: rgba(14, 19, 32, 0.78);
+  backdrop-filter: blur(40px) saturate(2.2);
+  -webkit-backdrop-filter: blur(40px) saturate(2.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 24px 64px -16px rgba(0, 0, 0, 0.55),
+    0 8px 24px -8px rgba(0, 0, 0, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.04),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.06);
+  padding: 6px 0;
+  animation: seLiquidIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  position: relative;
+  overflow: hidden;
+}
+
+/* shimmer sweep */
+.se-liquid-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.06) 48%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.06) 52%,
+    transparent 70%
+  );
+  animation: seLiquidShine 4s ease-in-out 1.2s infinite;
+  pointer-events: none;
+}
+
+.se-liquid-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 22px;
+  position: relative;
+  animation: seRowIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.se-liquid-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.se-liquid-row__left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.se-liquid-row__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 1.15rem;
+  line-height: 1;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.se-liquid-row__title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
+  letter-spacing: -0.01em;
+}
+
+.se-liquid-row__value {
+  font-size: 0.88rem;
+  font-weight: 700;
+  font-family: var(--font-display);
+  color: rgba(255, 255, 255, 0.95);
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.se-liquid-row__divider {
+  position: absolute;
+  bottom: 0;
+  left: 22px;
+  right: 22px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08) 20%, rgba(255, 255, 255, 0.08) 80%, transparent);
+}
+
+@keyframes seLiquidIn {
+  0% {
+    opacity: 0;
+    transform: translateY(16px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes seRowIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes seLiquidShine {
+  0%, 75%, 100% {
+    left: -100%;
+  }
+  92% {
+    left: 200%;
+  }
+}
