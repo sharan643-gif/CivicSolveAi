@@ -91,6 +91,30 @@ const SilkPlane = forwardRef(function SilkPlane({ uniforms }, ref) {
 });
 SilkPlane.displayName = 'SilkPlane';
 
+import React, { Component } from 'react';
+
+class CanvasErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.warn('[Silk WebGL Background] Canvas rendering error caught:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <div style={{ width: '100%', height: '100%', background: 'radial-gradient(circle at 50% 50%, #22094e 0%, #07090e 100%)' }} />;
+    }
+    return this.props.children;
+  }
+}
+
 const Silk = ({ speed = 5, scale = 1, color = '#7B7481', noiseIntensity = 1.5, rotation = 0 }) => {
   const meshRef = useRef();
 
@@ -116,9 +140,11 @@ const Silk = ({ speed = 5, scale = 1, color = '#7B7481', noiseIntensity = 1.5, r
   }, [speed, scale, noiseIntensity, color, rotation, uniforms]);
 
   return (
-    <Canvas dpr={[1, 2]} frameloop="always">
-      <SilkPlane ref={meshRef} uniforms={uniforms} />
-    </Canvas>
+    <CanvasErrorBoundary>
+      <Canvas dpr={[1, 2]} frameloop="always" gl={{ powerPreference: 'low-power', failIfMajorPerformanceCaveat: false }}>
+        <SilkPlane ref={meshRef} uniforms={uniforms} />
+      </Canvas>
+    </CanvasErrorBoundary>
   );
 };
 
