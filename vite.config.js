@@ -3,6 +3,10 @@ import react from '@vitejs/plugin-react';
 import viteGroqApiPlugin from './server/viteGroqApiPlugin.js';
 
 // https://vite.dev/config/
-export default defineConfig({
-  plugins: [react(), viteGroqApiPlugin()],
-});
+export default defineConfig(({ command }) => ({
+  base: './',
+  plugins: [
+    react(),
+    command === 'serve' ? viteGroqApiPlugin() : null,
+  ].filter(Boolean),
+}));
