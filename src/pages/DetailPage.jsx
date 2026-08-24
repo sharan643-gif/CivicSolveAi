@@ -152,7 +152,7 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
       </div>
 
       {/* Top Section / Header Summary */}
-      <div className="glass-card reveal" style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '20px', borderLeft: `5px solid ${getSeverityColor(challenge.severity)}` }}>
+      <div className="glass-card reveal detail-header-row" style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '20px', borderLeft: `5px solid ${getSeverityColor(challenge.severity)}` }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span className={`badge badge-${challenge.severity}`}>{challenge.severity}</span>
@@ -196,7 +196,7 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
       </div>
 
       {/* Tabs selectors */}
-      <div className="reveal" style={{ display: 'flex', gap: '12px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '2px' }}>
+      <div className="reveal mobile-scroll-tabs" style={{ display: 'flex', gap: '12px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '2px', overflowX: 'auto' }}>
         {[
           { id: 'overview', label: 'Overview & Reports', icon: Shield },
           { id: 'ai', label: 'AI Forensics Engine', icon: Brain },
@@ -215,7 +215,8 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
                 color: isSelected ? 'white' : 'var(--text-secondary)',
                 fontSize: '0.85rem',
                 padding: '10px 16px',
-                borderRadius: '6px 6px 0 0'
+                borderRadius: '6px 6px 0 0',
+                whiteSpace: 'nowrap'
               }}
             >
               <IconComp size={14} />
@@ -227,7 +228,7 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
 
       {/* TAB CONTENT: 1. Overview */}
       {tab === 'overview' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '24px' }} className="responsive-grid">
           <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <h3 style={{ fontSize: '1.2rem', color: 'white' }}>Problem Description</h3>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: '1.6' }}>
@@ -237,7 +238,7 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
             {challenge.evidence && challenge.evidence.length > 0 && (
               <div style={{ marginTop: '20px' }}>
                 <h4 style={{ fontSize: '0.95rem', color: 'white', marginBottom: '10px' }}>Submitted Photographic Evidence</h4>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px' }}>
                   {challenge.evidence.map(ev => (
                     <div key={ev.id} style={{ borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
                       <img src={ev.url} alt={ev.name} style={{ width: '100%', height: '140px', objectFit: 'cover' }} />
@@ -303,9 +304,9 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
                 )}
               </div>
               
-              <div style={{ display: 'flex', gap: '6px' }}>
-                <input type="text" placeholder="Add to the conversation..." className="form-input" style={{ padding: '6px 8px', fontSize: '0.75rem' }} />
-                <button className="btn btn-primary" style={{ padding: '6px 10px', fontSize: '0.75rem' }}>Send</button>
+              <div style={{ display: 'flex', gap: '6px' }} className="discussion-input-row">
+                <input type="text" placeholder="Add to the conversation..." className="form-input" style={{ padding: '6px 8px', fontSize: '0.75rem', flex: 1 }} />
+                <button className="btn btn-primary" style={{ padding: '6px 10px', fontSize: '0.75rem', flexShrink: 0 }}>Send</button>
               </div>
             </div>
           </div>
@@ -314,7 +315,7 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
 
       {/* TAB CONTENT: 2. AI Analysis */}
       {tab === 'ai' && challenge.ai_analysis && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '24px' }} className="responsive-grid">
           
           {/* Forensics card */}
           <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -323,7 +324,7 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
               <h3 style={{ fontSize: '1.1rem', color: 'white' }}>AI-Generated Structural Diagnostics</h3>
             </div>
             
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '16px' }}>
               <div>
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>Identified Subcategory</span>
                 <span style={{ fontSize: '0.9rem', color: 'white', fontWeight: 600 }}>{challenge.ai_analysis.subcategory || 'Urban Engineering'}</span>
@@ -383,7 +384,7 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
         <div>
           {team ? (
             /* Active Team Workspace Dashboard */
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '24px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '24px' }} className="responsive-grid">
               
               {/* Task list and core details */}
               <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>

@@ -52,6 +52,14 @@ export default function CommandMenu({ isOpen, onClose, onSwitchRole, onNavigate,
     { label: 'District Command Center & Heatmap', action: 'command', icon: Map, route: 'command-center', color: '#3b82f6' },
     { label: 'CSR & Project Funding Grants', action: 'funding', icon: BarChart3, route: 'funding', color: '#f59e0b' },
     { label: 'Research Papers & Datasets', action: 'research', icon: Map, route: 'research-hub', color: '#8b5cf6' },
+    { label: 'Your Achievements & Badges', action: 'achievements', icon: Award, route: 'achievements', color: '#f59e0b' },
+    { label: 'Civic Leaderboard Rankings', action: 'leaderboard', icon: BarChart3, route: 'leaderboard', color: '#10b981' },
+    { label: 'Expert Marketplace', action: 'experts', icon: ShieldCheck, route: 'expert-marketplace', color: '#8b5cf6' },
+    { label: 'NGO Matching System', action: 'ngo', icon: ShieldCheck, route: 'ngo-matching', color: '#10b981' },
+    { label: 'Civic Analytics Dashboard', action: 'analytics', icon: BarChart3, route: 'analytics', color: '#3b82f6' },
+    { label: 'AI Intelligence Dashboard', action: 'intelligence', icon: ShieldCheck, route: 'intelligence', color: '#8b5cf6' },
+    { label: 'Innovation Challenges', action: 'challenges', icon: PlusCircle, route: 'civic-challenges', color: '#ef4444' },
+    { label: 'Public Transparency Dashboard', action: 'transparency', icon: BarChart3, route: 'transparency', color: '#06b6d4' },
   ];
 
   const filteredRoles = roleItems.filter(item =>

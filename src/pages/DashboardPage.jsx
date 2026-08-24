@@ -5,7 +5,7 @@ import {
   Globe, Award, Zap, Bell, Activity, TrendingUp, Eye, PlusCircle,
   Clock, Star, MessageSquare, MapPin, Search, Filter, ChevronRight,
   AlertTriangle, DollarSign, Briefcase, FlaskConical, Heart, LogOut,
-  UserCheck, Database, Flag, Target, Lock, Cpu, Users2, FolderKanban
+  UserCheck, Database, Flag, Target, Lock, Cpu, Users2, FolderKanban, Brain, Trophy
 } from 'lucide-react';
 import { db } from '../services/mockData';
 import { getProfiles, getAuditLogs, updateProfileVerification } from '../services/supabaseService';
@@ -181,6 +181,9 @@ const SIDEBAR_CONFIG = {
       { icon: Activity,        label: 'System Health', id: 'health' },
       { icon: Flag,            label: 'Content Moderation', id: 'moderation' },
       { icon: BarChart3,       label: 'Platform Analytics', id: 'analytics' },
+      { icon: Brain,           label: 'AI Intelligence', id: 'intelligence' },
+      { icon: Trophy,          label: 'Leaderboard', id: 'leaderboard' },
+      { icon: Users,           label: 'Expert Marketplace', id: 'experts' },
       { icon: Settings,        label: 'System Settings', id: 'settings' },
     ]
   }
@@ -535,6 +538,16 @@ export default function DashboardPage({ activeRole, currentUser, onNavigate, onL
     if (activeSection === 'overview') {
       return <DashboardOverview currentUser={currentUser} challenges={challenges} sectorConfig={sectorConfig} isMobile={isMobile} />;
     }
+    // Handle new feature sections
+    if (activeSection === 'leaderboard') {
+      return <div className="fade-in"><LeaderboardSection /></div>;
+    }
+    if (activeSection === 'experts') {
+      return <div className="fade-in"><ExpertSection /></div>;
+    }
+    if (activeSection === 'intelligence') {
+      return <div className="fade-in"><IntelligenceSection /></div>;
+    }
     // Find the nav item to get icon & label
     const navItem = sectorConfig.nav.find(n => n.id === activeSection);
     return <PlaceholderSection label={navItem?.label || activeSection} icon={navItem?.icon || LayoutDashboard} color={color} />;
@@ -709,6 +722,81 @@ export default function DashboardPage({ activeRole, currentUser, onNavigate, onL
           {renderSection()}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Leaderboard Section ──────────────────────────────────────────────────────
+function LeaderboardSection() {
+  const LEADERBOARD = [
+    { name: 'Aman Kumar', score: 420, problems: 3, helped: 156, avatar: '👤' },
+    { name: 'Priya Singh', score: 380, problems: 5, helped: 120, avatar: '👩' },
+    { name: 'BIT Mesra', score: 890, projects: 12, students: 45, avatar: '🎓' },
+    { name: 'Dr. Pathak', score: 940, reviews: 28, mentored: 6, avatar: '🕵️' },
+    { name: 'GeoTech Solutions', score: 820, sponsored: 5, invested: 1250000, avatar: '🏢' },
+  ];
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff' }}>🏆 Civic Leaderboard</h3>
+      {LEADERBOARD.map((item, i) => (
+        <div key={i} className="glass-card" style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'default' }}>
+          <span style={{ fontSize: '1.4rem' }}>{item.avatar}</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 700, color: '#fff', fontSize: '0.9rem' }}>{item.name}</div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{item.problems || item.projects || item.reviews || item.sponsored} items</div>
+          </div>
+          <div style={{ fontWeight: 900, color: '#f59e0b', fontSize: '1.1rem' }}>{item.score}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Expert Section ───────────────────────────────────────────────────────────
+function ExpertSection() {
+  const EXPERTS = [
+    { name: 'Dr. Ramesh Pathak', expertise: 'Hydrology & IoT', rating: 4.8, available: true, avatar: '🕵️' },
+    { name: 'Dr. S. K. Bose', expertise: 'Civil Engineering', rating: 4.9, available: true, avatar: '🕵️' },
+    { name: 'Prof. Meera Jha', expertise: 'Environmental Science', rating: 4.7, available: false, avatar: '🕵️' },
+  ];
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff' }}>🕵️ Expert Marketplace</h3>
+      {EXPERTS.map((exp, i) => (
+        <div key={i} className="glass-card" style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'default' }}>
+          <span style={{ fontSize: '1.4rem' }}>{exp.avatar}</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 700, color: '#fff', fontSize: '0.9rem' }}>{exp.name}</div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{exp.expertise} · ⭐ {exp.rating}</div>
+          </div>
+          <span style={{ padding: '3px 8px', borderRadius: '100px', fontSize: '0.65rem', fontWeight: 700, background: exp.available ? 'rgba(16,185,129,0.12)' : 'rgba(245,158,11,0.12)', color: exp.available ? '#10b981' : '#f59e0b' }}>
+            {exp.available ? 'Available' : 'Busy'}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Intelligence Section ─────────────────────────────────────────────────────
+function IntelligenceSection() {
+  const ALERTS = [
+    { title: 'Monsoon flooding escalation in Dumka', severity: 'critical', trend: '+45%' },
+    { title: 'Water contamination in Ranchi Ward 14', severity: 'high', trend: '+32%' },
+    { title: 'School infrastructure damage reports', severity: 'medium', trend: '+28%' },
+  ];
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff' }}>🧠 AI Intelligence Alerts</h3>
+      {ALERTS.map((alert, i) => (
+        <div key={i} className="glass-card" style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '14px', borderLeft: `3px solid ${alert.severity === 'critical' ? '#ef4444' : alert.severity === 'high' ? '#f97316' : '#eab308'}`, cursor: 'default' }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 700, color: '#fff', fontSize: '0.9rem' }}>{alert.title}</div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Trend: {alert.trend} this week</div>
+          </div>
+          <span className={`badge badge-${alert.severity}`}>{alert.severity}</span>
+        </div>
+      ))}
     </div>
   );
 }

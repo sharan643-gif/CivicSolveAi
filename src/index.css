@@ -889,10 +889,72 @@ body select option {
   [style*="grid-template-columns: 1fr 320px"],
   [style*="grid-template-columns: 1fr 340px"],
   [style*="grid-template-columns: 1fr 360px"],
+  [style*="grid-template-columns: 1.2fr 0.8fr"],
   [style*="grid-template-columns: 2fr 1fr"],
   [style*="grid-template-columns: 3fr 1fr"] {
     grid-template-columns: 1fr !important;
   }
+
+  /* Horizontal scrollable tab bar on mobile */
+  .mobile-scroll-tabs {
+    display: flex !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    gap: 4px !important;
+    padding-bottom: 4px !important;
+  }
+  .mobile-scroll-tabs::-webkit-scrollbar {
+    display: none !important;
+  }
+  .mobile-scroll-tabs > button {
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    padding: 8px 12px !important;
+    font-size: 0.78rem !important;
+  }
+
+  /* Detail page header stacks */
+  .detail-header-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+  .detail-header-row > div:last-child {
+    align-items: flex-start !important;
+    width: 100% !important;
+  }
+  .detail-header-row > div:last-child > div:first-child {
+    text-align: left !important;
+  }
+
+  /* Lifecycle timeline fix */
+  .lifecycle-timeline {
+    padding-left: 24px !important;
+  }
+
+  /* Discussion hub input */
+  .discussion-input-row {
+    flex-direction: column !important;
+  }
+  .discussion-input-row input {
+    width: 100% !important;
+  }
+
+  /* Two-column responsive grids */
+  .responsive-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Filter row wrapping */
+  .filter-row-mobile {
+    gap: 4px !important;
+  }
+  .filter-row-mobile > button {
+    padding: 6px 10px !important;
+    font-size: 0.75rem !important;
+  }
+
+
 
   /* Auth sector page mobile layout */
   .auth-sector-page {

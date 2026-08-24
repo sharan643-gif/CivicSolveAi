@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Sparkles, Search, Bell, AlertCircle, LogOut, User, ChevronDown, ArrowLeft, Home, Compass, Lightbulb, ShieldCheck, DollarSign, BookOpen, FileText, LayoutDashboard, Plus } from 'lucide-react';
+import { Sparkles, Search, Bell, AlertCircle, LogOut, User, ChevronDown, ArrowLeft, Home, Compass, Lightbulb, ShieldCheck, DollarSign, BookOpen, FileText, LayoutDashboard, Plus, Trophy, BarChart3, Brain, Heart, Eye, Zap, Award, Map } from 'lucide-react';
 import { supabase } from './services/supabaseClient';
 import { getChallenges, getStats, addChallenge, addAuditLog, getProfileById } from './services/supabaseService';
 import LandingPage from './pages/LandingPage';
@@ -26,6 +26,33 @@ import Silk from './components/Silk';
 import MobileLandingPage from './pages/MobileLandingPage';
 import MobileReportWizard from './pages/MobileReportWizard';
 import MobileAdminConsole from './pages/MobileAdminConsole';
+
+// 30 Advanced Feature Pages
+import AchievementsPage from './pages/AchievementsPage';
+import LeaderboardPage from './pages/LeaderboardPage';
+import ExpertMarketplacePage from './pages/ExpertMarketplacePage';
+import NgoMatchingPage from './pages/NgoMatchingPage';
+import TransparencyDashboardPage from './pages/TransparencyDashboardPage';
+import CivicChallengesPage from './pages/CivicChallengesPage';
+import AnalyticsPage from './pages/AnalyticsPage';
+import IntelligenceDashboardPage from './pages/IntelligenceDashboardPage';
+
+// 40 Advanced Feature Pages
+import AiAnalysisHubPage from './pages/AiAnalysisHubPage';
+import CivicPollsPage from './pages/CivicPollsPage';
+import ProjectManagementPage from './pages/ProjectManagementPage';
+import ActivityCenterPage from './pages/ActivityCenterPage';
+import UserProfilePage from './pages/UserProfilePage';
+import DepartmentScorecardPage from './pages/DepartmentScorecardPage';
+import GeospatialAnalyticsPage from './pages/GeospatialAnalyticsPage';
+import EnterpriseControlCenter from './pages/EnterpriseControlCenter';
+import DigitalTwinPage from './pages/DigitalTwinPage';
+import FieldOperationsPage from './pages/FieldOperationsPage';
+
+// RBAC System
+import { hasPermission, isRouteAllowed, ROLE_NAVIGATION, ROLES, DASHBOARD_CONFIG } from './services/rbacSystem';
+import { AccessDeniedPage, ProtectedRoute, PermissionGuard } from './components/ProtectedRoute';
+import DynamicSidebar from './components/DynamicSidebar';
 
 // ─── Scroll Reveal Hook ─────────────────────────────────────────────
 function useScrollReveal() {
@@ -115,6 +142,26 @@ export default function App() {
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
+
+  // ─── RBAC State ─────────────────────────────────────────────────────────────
+  const [impersonateRole, setImpersonateRole] = useState(null);
+  const effectiveRole = impersonateRole || currentUser?.role || 'guest';
+
+  // Role switching for demo (Super Admin only)
+  const handleRoleSwitch = (newRole) => {
+    if (currentUser?.role === 'super_admin' || currentUser?.role === 'platform_admin') {
+      setImpersonateRole(newRole);
+      addToast('Role Switched', `Now viewing as ${ROLES[newRole]?.label || newRole}`, 'success');
+    }
+  };
+
+  const handleExitImpersonation = () => {
+    setImpersonateRole(null);
+    addToast('Impersonation Ended', 'Returned to original role.', 'success');
+  };
+
+  // RBAC Navigation items based on effective role
+  const rbacNavItems = ROLE_NAVIGATION[effectiveRole] || ROLE_NAVIGATION.citizen;
 
   // ─── Supabase session restoration + data loading ────────────────────────────
   useEffect(() => {
@@ -480,13 +527,89 @@ export default function App() {
           <SolutionMarketplacePage onNavigate={handleNavigate} />
         )}
         {currentRoute === 'command-center' && (
-          currentUser?.sector === 'super_admin' && isMobile ? <MobileAdminConsole /> : <CommandCenterPage />
+          <ProtectedRoute route="command-center" role={effectiveRole} onNavigate={handleNavigate}>
+            {currentUser?.sector === 'super_admin' && isMobile ? <MobileAdminConsole /> : <CommandCenterPage />}
+          </ProtectedRoute>
         )}
         {currentRoute === 'funding' && (
           <FundingPage />
         )}
         {currentRoute === 'research-hub' && (
           <ResearchHubPage />
+        )}
+        {currentRoute === 'achievements' && (
+          <AchievementsPage currentUser={currentUser} />
+        )}
+        {currentRoute === 'leaderboard' && (
+          <LeaderboardPage />
+        )}
+        {currentRoute === 'expert-marketplace' && (
+          <ExpertMarketplacePage />
+        )}
+        {currentRoute === 'ngo-matching' && (
+          <NgoMatchingPage />
+        )}
+        {currentRoute === 'transparency' && (
+          <TransparencyDashboardPage />
+        )}
+        {currentRoute === 'civic-challenges' && (
+          <CivicChallengesPage />
+        )}
+        {currentRoute === 'analytics' && (
+          <AnalyticsPage challenges={challenges} />
+        )}
+        {currentRoute === 'intelligence' && (
+          <ProtectedRoute route="intelligence" role={effectiveRole} onNavigate={handleNavigate}>
+            <IntelligenceDashboardPage />
+          </ProtectedRoute>
+        )}
+        {currentRoute === 'ai-hub' && (
+          <ProtectedRoute route="ai-hub" role={effectiveRole} onNavigate={handleNavigate}>
+            <AiAnalysisHubPage challengeId={activeChallengeId || 'monsoon-road-accessibility'} onNavigate={handleNavigate} />
+          </ProtectedRoute>
+        )}
+        {currentRoute === 'polls' && (
+          <ProtectedRoute route="polls" role={effectiveRole} onNavigate={handleNavigate}>
+            <CivicPollsPage />
+          </ProtectedRoute>
+        )}
+        {currentRoute === 'projects' && (
+          <ProtectedRoute route="projects" role={effectiveRole} onNavigate={handleNavigate}>
+            <ProjectManagementPage onNavigate={handleNavigate} />
+          </ProtectedRoute>
+        )}
+        {currentRoute === 'activity' && (
+          <ProtectedRoute route="activity" role={effectiveRole} onNavigate={handleNavigate}>
+            <ActivityCenterPage />
+          </ProtectedRoute>
+        )}
+        {currentRoute === 'departments' && (
+          <ProtectedRoute route="departments" role={effectiveRole} onNavigate={handleNavigate}>
+            <DepartmentScorecardPage />
+          </ProtectedRoute>
+        )}
+        {currentRoute === 'geospatial' && (
+          <ProtectedRoute route="geospatial" role={effectiveRole} onNavigate={handleNavigate}>
+            <GeospatialAnalyticsPage />
+          </ProtectedRoute>
+        )}
+        {currentRoute === 'profile' && (
+          <UserProfilePage currentUser={currentUser} />
+        )}
+        {currentRoute === 'enterprise' && (
+          <ProtectedRoute route="enterprise" role={effectiveRole} onNavigate={handleNavigate}>
+            <EnterpriseControlCenter />
+          </ProtectedRoute>
+        )}
+        {currentRoute === 'digital-twin' && (
+          <ProtectedRoute route="digital-twin" role={effectiveRole} onNavigate={handleNavigate}>
+            <DigitalTwinPage />
+          </ProtectedRoute>
+        )}
+        {currentRoute === 'field-ops' && (
+          <ProtectedRoute route="field-ops" role={effectiveRole} onNavigate={handleNavigate}>
+            <FieldOperationsPage />
+          </ProtectedRoute>
         )}
         {currentRoute === 'report' && (
           isMobile ? <MobileReportWizard onSubmit={handleCreateChallenge} onBack={() => handleNavigate('landing')} /> : <SubmitPage onSubmit={handleCreateChallenge} challenges={challenges} onNavigate={handleNavigate} />
@@ -532,12 +655,42 @@ export default function App() {
         </footer>
       )}
 
+      {/* Impersonation Banner */}
+      {impersonateRole && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
+          background: 'linear-gradient(135deg, rgba(239,68,68,0.95), rgba(220,38,38,0.95))',
+          backdropFilter: 'blur(12px)', padding: '8px 16px',
+          display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px',
+        }}>
+          <span style={{ fontSize: '0.8rem', color: '#fff', fontWeight: 600 }}>
+            👁️ Impersonating: <strong>{ROLES[impersonateRole]?.label || impersonateRole}</strong>
+          </span>
+          <button onClick={handleExitImpersonation} style={{
+            padding: '4px 12px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.3)',
+            background: 'rgba(255,255,255,0.15)', color: '#fff', cursor: 'pointer',
+            fontSize: '0.75rem', fontWeight: 600,
+          }}>Exit Impersonation</button>
+        </div>
+      )}
+
+      {/* Dynamic Sidebar */}
+      {!isMobile && currentUser && (
+        <DynamicSidebar
+          role={effectiveRole}
+          currentRoute={currentRoute}
+          onNavigate={handleNavigate}
+          isMobile={false}
+        />
+      )}
+
       {/* Mobile Pill Navigation */}
       {isMobile && (
-        <MobilePillNav
-          activeTab={currentRoute}
-          onSelectTab={handleNavigate}
-          currentUser={currentUser}
+        <DynamicSidebar
+          role={effectiveRole}
+          currentRoute={currentRoute}
+          onNavigate={handleNavigate}
+          isMobile={true}
         />
       )}
 
@@ -931,6 +1084,24 @@ const ROUTE_LABELS = {
   'challenge-detail':{ label: 'Challenge',             icon: '📌' },
   'sector-select':   { label: 'Choose Sector',         icon: '🏛️' },
   'sector-login':    { label: 'Sign In',               icon: '🔐' },
+  'achievements':    { label: 'Achievements',          icon: '🏆' },
+  'leaderboard':     { label: 'Leaderboard',           icon: '📈' },
+  'expert-marketplace': { label: 'Expert Marketplace', icon: '🕵️' },
+  'ngo-matching':    { label: 'NGO Matching',          icon: '🤝' },
+  'transparency':    { label: 'Transparency',          icon: '👁️' },
+  'civic-challenges':{ label: 'Innovation Challenges', icon: '⚡' },
+  'analytics':       { label: 'Analytics',             icon: '📊' },
+  'intelligence':    { label: 'AI Intelligence',       icon: '🧠' },
+  'ai-hub':         { label: 'AI Analysis Hub',        icon: '🔬' },
+  'polls':           { label: 'Civic Polls',            icon: '🗳️' },
+  'projects':        { label: 'Project Management',     icon: '📋' },
+  'activity':        { label: 'Activity Center',        icon: '🔔' },
+  'departments':     { label: 'Dept Scorecard',         icon: '🏛️' },
+  'geospatial':      { label: 'Geospatial Analytics',   icon: '🗺️' },
+  'profile':         { label: 'My Profile',             icon: '👤' },
+  'enterprise':      { label: 'Enterprise Control',      icon: '🛡️' },
+  'digital-twin':    { label: 'Digital Twin',           icon: '🏙️' },
+  'field-ops':       { label: 'Field Operations',       icon: '📋' },
 };
 
 function BackButton({ onBack, canGoBack, currentRoute, onNavigate, isMobile }) {
