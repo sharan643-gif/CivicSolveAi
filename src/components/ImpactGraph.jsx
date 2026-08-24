@@ -22,7 +22,7 @@ export default function ImpactGraph() {
   const curr = NODES.find(n => n.id === activeNode) || NODES[0];
 
   return (
-    <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '20px', padding: '28px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div className="glass-l2" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', padding: '4px 10px', borderRadius: '100px', fontSize: '0.75rem', color: '#10b981', marginBottom: '6px' }}>

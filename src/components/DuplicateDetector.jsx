@@ -34,7 +34,7 @@ export default function DuplicateDetector({ queryTitle, onSelectExisting, onMerg
         </span>
       </div>
 
-      <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '10px', padding: '14px', display: 'grid', gridTemplateColumns: '1fr auto', gap: '14px', alignItems: 'center' }}>
+      <div className="glass-l1" style={{ padding: '14px', display: 'grid', gridTemplateColumns: '1fr auto', gap: '14px', alignItems: 'center' }}>
         <div>
           <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#fff' }}>{match.title}</div>
           <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '4px', display: 'flex', gap: '12px', alignItems: 'center' }}>

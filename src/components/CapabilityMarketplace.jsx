@@ -81,7 +81,7 @@ export default function CapabilityMarketplace({ challengeTitle = 'Monsoon Rural 
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '4px', background: 'var(--bg-surface)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+        <div style={{ display: 'flex', gap: '4px', className="glass-l1" style={{ padding: '4px', borderRadius: '10px' }}>
           <button onClick={() => setActiveTab('universities')} style={{ padding: '6px 14px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, background: activeTab === 'universities' ? 'rgba(245,158,11,0.15)' : 'transparent', color: activeTab === 'universities' ? '#f59e0b' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <GraduationCap size={14} /> Universities ({universities.length})
           </button>

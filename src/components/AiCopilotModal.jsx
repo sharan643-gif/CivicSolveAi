@@ -39,7 +39,7 @@ export default function AiCopilotModal({ isOpen, onClose, rawInput, onAccept }) 
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-      <div className="fade-in" style={{ width: '100%', maxWidth: '780px', maxHeight: '90vh', background: 'var(--bg-surface)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '20px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 80px rgba(0,0,0,0.7)' }}>
+      <div className="fade-in" style={{ width: '100%', maxWidth: '780px', maxHeight: '90vh', className="glass-l4" style={{ borderRadius: '20px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 80px rgba(0,0,0,0.7)' }}>
 
         {/* Modal Header */}
         <div style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.2), rgba(59,130,246,0.1))', padding: '20px 28px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

@@ -22,9 +22,9 @@ export default function BottomSheet({ isOpen, onClose, title, children }) {
         onClick={onClose}
         style={{
           position: 'absolute', inset: 0,
-          background: 'rgba(0, 0, 0, 0.65)',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
+          background: 'rgba(0, 0, 0, 0.55)',
+          backdropFilter: 'blur(32px)',
+          WebkitBackdropFilter: 'blur(32px)',
           animation: 'fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
         }}
       />
@@ -34,18 +34,18 @@ export default function BottomSheet({ isOpen, onClose, title, children }) {
         ref={sheetRef}
         style={{
           position: 'relative', zIndex: 10,
-          background: 'rgba(14, 19, 32, 0.92)',
-          backdropFilter: 'blur(40px) saturate(1.2)',
-          WebkitBackdropFilter: 'blur(40px) saturate(1.2)',
-          borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-          borderLeft: '1px solid rgba(255, 255, 255, 0.05)',
-          borderRight: '1px solid rgba(255, 255, 255, 0.05)',
-          borderRadius: '24px 24px 0 0',
+          background: 'rgba(12, 16, 28, 0.92)',
+          backdropFilter: 'blur(48px) saturate(2)',
+          WebkitBackdropFilter: 'blur(48px) saturate(2)',
+          borderTop: '1px solid rgba(255, 255, 255, 0.14)',
+          borderLeft: '1px solid rgba(255, 255, 255, 0.06)',
+          borderRight: '1px solid rgba(255, 255, 255, 0.06)',
+          borderRadius: '28px 28px 0 0',
           padding: '12px 20px max(24px, env(safe-area-inset-bottom))',
           maxHeight: '85vh',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '0 -16px 48px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.06)',
+          boxShadow: '0 -20px 56px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
           animation: 'slideUpSheet 0.4s cubic-bezier(0.22, 1.2, 0.36, 1) forwards',
         }}
       >

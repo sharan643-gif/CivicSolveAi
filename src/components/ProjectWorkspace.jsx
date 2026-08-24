@@ -49,7 +49,7 @@ export default function ProjectWorkspace({ challengeTitle = 'Monsoon Rural Road 
   };
 
   return (
-    <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div className="glass-l2" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {/* Workspace Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '16px' }}>
         <div>
@@ -91,7 +91,7 @@ export default function ProjectWorkspace({ challengeTitle = 'Monsoon Rural Road 
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', minHeight: '200px' }}>
                     {colTasks.map(t => (
-                      <div key={t.id} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '10px', fontSize: '0.78rem' }}>
+                      <div key={t.id} className="glass-l1" style={{ borderRadius: '8px', padding: '10px', fontSize: '0.78rem' }}>
                         <div style={{ color: '#fff', fontWeight: 600, marginBottom: '6px', lineHeight: 1.3 }}>{t.title}</div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.68rem', color: 'var(--text-muted)' }}>
                           <span>👤 {t.assignee.split(' ')[0]}</span>

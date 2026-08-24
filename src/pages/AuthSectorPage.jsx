@@ -184,7 +184,7 @@ export default function AuthSectorPage({ sectorId, onBack, onLogin }) {
 
   return (
     <div className="fade-in auth-sector-page" style={{ display: 'flex', minHeight: '90vh', alignItems: 'center', justifyContent: 'center', padding: '40px 0' }}>
-      <div className="auth-sector-grid" style={{ width: '100%', maxWidth: '900px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0', borderRadius: '20px', overflow: 'hidden', border: '1px solid var(--border-subtle)', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
+      <div className="auth-sector-grid" style={{ width: '100%', maxWidth: '900px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0', borderRadius: '24px', overflow: 'hidden', border: '1px solid var(--glass-border)', boxShadow: '0 24px 80px -16px rgba(0,0,0,0.7)' }}>
 
         {/* Left: Branding Panel */}
         <div className="auth-sector-left" style={{
@@ -230,9 +230,9 @@ export default function AuthSectorPage({ sectorId, onBack, onLogin }) {
         </div>
 
         {/* Right: Form Panel */}
-        <div className="auth-sector-right" style={{ background: 'var(--bg-surface)', padding: '48px 40px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div className="auth-sector-right glass-l2" style={{ padding: '48px 40px', display: 'flex', flexDirection: 'column', gap: '20px', borderRadius: '0' }}>
           {/* Mode toggle */}
-          <div style={{ display: 'flex', gap: '2px', background: 'rgba(255,255,255,0.03)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+          <div className="glass-l1" style={{ display: 'flex', gap: '2px', padding: '4px', borderRadius: '10px' }}>
             {['login', 'register'].map(m => (
               <button key={m} onClick={() => { setMode(m); setStep(1); setError(''); }}
                 style={{ flex: 1, padding: '8px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600, background: mode === m ? 'rgba(59,130,246,0.15)' : 'transparent', color: mode === m ? 'white' : 'var(--text-secondary)', textTransform: 'capitalize' }}>

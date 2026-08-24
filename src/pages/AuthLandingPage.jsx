@@ -32,10 +32,10 @@ export default function AuthLandingPage({ onSelect, onBack }) {
               minHeight: '200px',
               padding: '20px',
               cursor: 'pointer',
-              background: 'rgba(14, 19, 32, 0.72)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              borderRadius: '14px',
-              borderLeft: sec.id === 'super_admin' ? '3px solid var(--danger)' : '1px solid rgba(255, 255, 255, 0.08)',
+              background: 'rgba(14, 19, 32, 0.65)',
+              border: '1px solid rgba(255, 255, 255, 0.10)',
+              borderRadius: '16px',
+              borderLeft: sec.id === 'super_admin' ? '3px solid var(--danger)' : '1px solid rgba(255, 255, 255, 0.10)',
               transition: 'border-color 0.3s ease, transform 0.3s ease',
             }}
             onClick={() => onSelect(sec.id)}

@@ -58,14 +58,14 @@ export default function LandingPage({ onNavigate, stats = {}, featuredChallenges
       {/* Hero Section */}
       <section style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '40px', alignItems: 'center', minHeight: '80vh', padding: '40px 0' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '24px' }}>
-          <div className="reveal" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.18)', borderRadius: '100px', fontSize: '0.8rem', color: '#60a5fa', fontWeight: 500 }}>
+          <div className="reveal glass-l1" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 16px', fontSize: '0.82rem', color: '#60a5fa', fontWeight: 600 }}>
             <Activity size={14} className="glow-blue" />
             <span>SIH 2026 Innovation Platform</span>
           </div>
           
-          <h1 className="reveal" style={{ fontSize: '3.6rem', lineHeight: '1.08', fontFamily: 'var(--font-display)', fontWeight: 800, transitionDelay: '100ms' }}>
+          <h1 className="reveal" style={{ fontSize: '3.6rem', lineHeight: '1.08', fontFamily: 'var(--font-display)', fontWeight: 900, transitionDelay: '100ms' }}>
             Turn real-world <br/>
-            <span style={{ background: 'linear-gradient(135deg, var(--primary), var(--ai-purple))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+            <span className="gradient-text-primary">
               problems
             </span> into <br/>
             real-world solutions.
@@ -89,8 +89,8 @@ export default function LandingPage({ onNavigate, stats = {}, featuredChallenges
           </div>
 
           <div className="reveal" style={{ display: 'flex', gap: '20px', marginTop: '20px', color: 'var(--text-muted)', fontSize: '0.85rem', transitionDelay: '400ms' }}>
-            <div>🔍 Active Duplicate Scanning</div>
-            <div>⚡ 1.5s AI Priority Scoring</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>🔍 Active Duplicate Scanning</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>⚡ 1.5s AI Priority Scoring</div>
           </div>
         </div>
 
@@ -116,14 +116,14 @@ export default function LandingPage({ onNavigate, stats = {}, featuredChallenges
         >
           {/* Overlay text */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', maxWidth: '640px' }}>
-            <h2 style={{ fontSize: 'clamp(1.6rem, 4vw, 2.8rem)', fontWeight: 800, fontFamily: 'var(--font-display)', letterSpacing: '-0.03em', lineHeight: 1.1, color: '#fff', textShadow: '0 2px 20px rgba(0,0,0,0.5)' }}>
+            <h2 style={{ fontSize: 'clamp(1.6rem, 4vw, 2.8rem)', fontWeight: 900, fontFamily: 'var(--font-display)', letterSpacing: '-0.03em', lineHeight: 1.1, color: '#fff', textShadow: '0 2px 20px rgba(0,0,0,0.5)' }}>
               Building Smarter Cities,
               <br />
-              <span style={{ background: 'linear-gradient(135deg, var(--primary), var(--ai-purple))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+              <span className="gradient-text-primary">
                 One Challenge at a Time
               </span>
             </h2>
-            <p style={{ fontSize: '0.95rem', color: 'rgba(255,255,255,0.75)', lineHeight: 1.6, textShadow: '0 1px 8px rgba(0,0,0,0.4)' }}>
+            <p style={{ fontSize: '0.95rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.6, textShadow: '0 1px 8px rgba(0,0,0,0.4)' }}>
               From infrastructure gaps to environmental hazards — real problems solved through collaborative intelligence.
             </p>
           </div>
@@ -158,7 +158,7 @@ export default function LandingPage({ onNavigate, stats = {}, featuredChallenges
 
       {/* Trust & Impact Stats Section */}
       <section className="reveal" style={{ position: 'relative', zIndex: 2, padding: '30px 0 40px' }}>
-        <div className="reveal-stagger" style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap', padding: '0 24px' }}>
+        <div className="reveal-stagger" style={{ display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap', padding: '0 24px' }}>
           {[
             { value: (stats.totalChallenges || 12840).toLocaleString(), label: 'Challenges Reported' },
             { value: (stats.implemented || 4820).toLocaleString(), label: 'Solutions Implemented' },
@@ -166,39 +166,21 @@ export default function LandingPage({ onNavigate, stats = {}, featuredChallenges
             { value: (stats.industryPartners || 182).toString(), label: 'Industry Partners' },
             { value: (stats.peopleImpacted || 1248420).toLocaleString(), label: 'People Impacted' }
           ].map((stat, idx) => (
-            <div key={idx} style={{
+            <div key={idx} className="glass-card" style={{
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               gap: '8px',
-              padding: '24px 32px 20px',
-              borderRadius: '18px',
-              background: 'rgba(255, 255, 255, 0.04)',
-              backdropFilter: 'blur(24px) saturate(1.5)',
-              WebkitBackdropFilter: 'blur(24px) saturate(1.5)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
-              transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease, box-shadow 0.3s ease',
-              cursor: 'default',
+              padding: '24px 28px 20px',
               flex: '1 1 0',
               minWidth: '0',
               maxWidth: '220px',
-            }}
-              onMouseEnter={e => {
-                e.currentTarget.style.transform = 'translateY(-3px) scale(1.03)';
-                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-                e.currentTarget.style.boxShadow = '0 12px 40px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.12)';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-                e.currentTarget.style.boxShadow = '0 4px 24px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.08)';
-              }}
-            >
-              <div style={{ fontSize: '1.8rem', fontWeight: 800, fontFamily: 'var(--font-display)', color: 'white', letterSpacing: '-0.03em', lineHeight: 1 }}>
+              cursor: 'default',
+            }}>
+              <div style={{ fontSize: '1.8rem', fontWeight: 900, fontFamily: 'var(--font-display)', color: 'white', letterSpacing: '-0.03em', lineHeight: 1, position: 'relative' }}>
                 {stat.value}
               </div>
-              <div style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
+              <div style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap', position: 'relative' }}>
                 {stat.label}
               </div>
             </div>
@@ -209,46 +191,28 @@ export default function LandingPage({ onNavigate, stats = {}, featuredChallenges
       {/* How it Works Section */}
       <section style={{ position: 'relative', zIndex: 2, paddingTop: '10px' }}>
         <div className="reveal" style={{ textAlign: 'center', marginBottom: '50px' }}>
-          <h2 style={{ fontSize: '2.2rem', marginBottom: '8px', color: 'white', textShadow: '0 2px 16px rgba(0,0,0,0.6)' }}>Ecosystem Workflow</h2>
-          <p style={{ color: 'rgba(255,255,255,0.8)', maxWidth: '600px', margin: '0 auto', textShadow: '0 1px 8px rgba(0,0,0,0.5)' }}>
+          <h2 style={{ fontSize: '2.2rem', marginBottom: '8px', color: 'white' }}>Ecosystem Workflow</h2>
+          <p style={{ color: 'var(--text-secondary)', maxWidth: '600px', margin: '0 auto' }}>
             A complete collaborative pipeline converting raw community requests into operational systems.
           </p>
         </div>
         
         <div className="reveal-stagger" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '16px' }}>
           {steps.map((step, idx) => (
-            <div key={idx} style={{
+            <div key={idx} className="glass-card" style={{
               display: 'flex',
               flexDirection: 'column',
               padding: '24px 18px 20px',
               minHeight: '200px',
-              borderRadius: '18px',
-              background: 'rgba(255, 255, 255, 0.04)',
-              backdropFilter: 'blur(24px) saturate(1.5)',
-              WebkitBackdropFilter: 'blur(24px) saturate(1.5)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
-              transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease, box-shadow 0.3s ease',
-              cursor: 'default',
               textAlign: 'center',
               alignItems: 'center',
-            }}
-              onMouseEnter={e => {
-                e.currentTarget.style.transform = 'translateY(-4px) scale(1.03)';
-                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.22)';
-                e.currentTarget.style.boxShadow = '0 12px 40px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.14)';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-                e.currentTarget.style.boxShadow = '0 4px 24px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.08)';
-              }}
-            >
-              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--primary)', opacity: 0.7, marginBottom: '12px', fontFamily: 'var(--font-display)', lineHeight: 1 }}>
+              cursor: 'default',
+            }}>
+              <div style={{ fontSize: '1.6rem', fontWeight: 900, color: 'var(--primary)', opacity: 0.7, marginBottom: '12px', fontFamily: 'var(--font-display)', lineHeight: 1, position: 'relative' }}>
                 {step.num}
               </div>
-              <h3 style={{ fontSize: '0.95rem', color: 'white', marginBottom: '8px', fontWeight: 700 }}>{step.title}</h3>
-              <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.75)', lineHeight: 1.45 }}>{step.desc}</p>
+              <h3 style={{ fontSize: '0.95rem', color: 'white', marginBottom: '8px', fontWeight: 700, position: 'relative' }}>{step.title}</h3>
+              <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', lineHeight: 1.45, position: 'relative' }}>{step.desc}</p>
             </div>
           ))}
         </div>
@@ -258,8 +222,8 @@ export default function LandingPage({ onNavigate, stats = {}, featuredChallenges
       <section style={{ position: 'relative', zIndex: 2, paddingTop: '10px' }}>
         <div className="reveal" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '32px' }}>
           <div>
-            <h2 style={{ fontSize: '1.8rem', marginBottom: '4px', color: 'white', textShadow: '0 2px 16px rgba(0,0,0,0.6)' }}>Featured High Priority Challenges</h2>
-            <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)', textShadow: '0 1px 8px rgba(0,0,0,0.5)' }}>Critically rated issues awaiting university match and technical proposals.</p>
+            <h2 style={{ fontSize: '1.8rem', marginBottom: '4px', color: 'white' }}>Featured High Priority Challenges</h2>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Critically rated issues awaiting university match and technical proposals.</p>
           </div>
           <button onClick={() => onNavigate('explore')} className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '8px 16px', borderRadius: '10px' }}>
             View Marketplace
@@ -269,33 +233,14 @@ export default function LandingPage({ onNavigate, stats = {}, featuredChallenges
 
         <div className="reveal-stagger" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
           {featuredChallenges.slice(0, 2).map(challenge => (
-            <div key={challenge.id} style={{
+            <div key={challenge.id} className="glass-card" style={{
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
               minHeight: '260px',
-              padding: '24px',
-              borderRadius: '24px',
-              background: 'rgba(255, 255, 255, 0.04)',
-              backdropFilter: 'blur(24px) saturate(1.5)',
-              WebkitBackdropFilter: 'blur(24px) saturate(1.5)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
-              transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease, box-shadow 0.3s ease',
               cursor: 'default',
-            }}
-              onMouseEnter={e => {
-                e.currentTarget.style.transform = 'translateY(-4px) scale(1.01)';
-                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.22)';
-                e.currentTarget.style.boxShadow = '0 16px 48px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.14)';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-                e.currentTarget.style.boxShadow = '0 4px 24px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.08)';
-              }}
-            >
-              <div>
+            }}>
+              <div style={{ position: 'relative' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                   <span className={`badge badge-${challenge.severity}`}>
                     {challenge.severity}
@@ -305,13 +250,13 @@ export default function LandingPage({ onNavigate, stats = {}, featuredChallenges
                   </span>
                 </div>
                 <h3 style={{ fontSize: '1.2rem', marginBottom: '8px', color: 'white' }}>{challenge.title}</h3>
-                <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.75)', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: '16px', lineHeight: 1.5 }}>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: '16px', lineHeight: 1.5 }}>
                   {challenge.description}
                 </p>
               </div>
 
-              <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '16px', marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', gap: '16px', fontSize: '0.78rem', color: 'rgba(255,255,255,0.7)' }}>
+              <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '16px', marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative' }}>
+                <div style={{ display: 'flex', gap: '16px', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
                   <div>Affected: <strong style={{ color: 'white' }}>{challenge.affected_population}</strong></div>
                   <div>District: <strong style={{ color: 'white' }}>{challenge.district}</strong></div>
                 </div>

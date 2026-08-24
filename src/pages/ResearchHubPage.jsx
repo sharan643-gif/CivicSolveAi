@@ -30,7 +30,7 @@ export default function ResearchHubPage() {
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '6px', background: 'var(--bg-surface)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+        <div className="glass-l1" style={{ display: 'flex', gap: '6px', padding: '4px', borderRadius: '10px' }}>
           <button onClick={() => setActiveTab('papers')} style={{ padding: '6px 14px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, background: activeTab === 'papers' ? 'rgba(139,92,246,0.15)' : 'transparent', color: activeTab === 'papers' ? '#a78bfa' : 'var(--text-secondary)' }}>
             Research Publications ({papers.length})
           </button>

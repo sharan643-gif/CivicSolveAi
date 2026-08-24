@@ -15,7 +15,7 @@ export default function CollaborationAgreement({ challengeTitle = 'Monsoon Rural
   };
 
   return (
-    <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+    <div className="glass-l2" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <FileText size={20} color="#3b82f6" />

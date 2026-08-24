@@ -63,7 +63,7 @@ export default function CommandCenterPage() {
       </div>
 
       {/* State → District → Block → Village Administrative Drilldown */}
-      <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '16px 20px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', alignItems: 'center' }}>
+      <div className="glass-l2" style={{ padding: '16px 20px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', alignItems: 'center' }}>
         <div>
           <label style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px', display: 'block' }}>State</label>
           <select value={stateName} onChange={e => setStateName(e.target.value)} className="form-select" style={{ padding: '8px' }}>
@@ -103,7 +103,7 @@ export default function CommandCenterPage() {
       </div>
 
       {/* Challenge Clusters Section */}
-      <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div className="glass-l2" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <GitMerge size={18} color="#f59e0b" />
@@ -116,7 +116,7 @@ export default function CommandCenterPage() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {clusters.map(cl => (
-            <div key={cl.id} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div key={cl.id} className="glass-l1" style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span style={{ fontSize: '0.72rem', background: 'rgba(245,158,11,0.15)', color: '#f59e0b', padding: '2px 8px', borderRadius: '4px', fontWeight: 700, fontFamily: 'monospace' }}>{cl.id}</span>

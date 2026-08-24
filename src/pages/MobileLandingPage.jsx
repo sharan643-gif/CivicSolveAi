@@ -31,7 +31,7 @@ export default function MobileLandingPage({ onNavigate, stats }) {
       </div>
 
       {/* Ecosystem Journey — Glass Card */}
-      <div className="glass-card reveal" style={{ background: 'var(--bg-surface)', padding: '20px' }}>
+      <div className="glass-l2 reveal" style={{ padding: '20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
           <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(139, 92, 246, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Sparkles size={14} color="#8b5cf6" />
@@ -50,7 +50,7 @@ export default function MobileLandingPage({ onNavigate, stats }) {
             { stage: '5. Gov Field Pilot', desc: 'Department validated scale-up', color: '#3b82f6', icon: '🏛️' },
             { stage: '6. Measured Impact', desc: '1.2M+ citizens impacted', color: '#10b981', icon: '📈' }
           ].map((item, idx) => (
-            <div key={idx} style={{ background: 'var(--bg-elevated)', border: `1px solid ${item.color}25`, borderRadius: '12px', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '12px', transition: 'transform 0.15s ease' }}>
+            <div key={idx} className="glass-l1" style={{ border: `1px solid ${item.color}25`, borderRadius: '12px', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '12px', transition: 'transform 0.15s ease' }}>
               <span style={{ fontSize: '20px' }}>{item.icon}</span>
               <div>
                 <strong style={{ color: '#fff', fontSize: '0.82rem', display: 'block' }}>{item.stage}</strong>

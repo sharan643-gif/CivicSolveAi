@@ -10,7 +10,7 @@ export default function AiControlCenter() {
   const [model, setModel] = useState('google/gemini-2.5-flash');
 
   return (
-    <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div className="glass-l2" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <Cpu size={20} color="#8b5cf6" />

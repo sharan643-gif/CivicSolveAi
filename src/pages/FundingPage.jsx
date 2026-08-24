@@ -34,7 +34,7 @@ export default function FundingPage() {
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '6px', background: 'var(--bg-surface)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+        <div className="glass-l1" style={{ display: 'flex', gap: '6px', padding: '4px', borderRadius: '10px' }}>
           <button onClick={() => setActiveTab('projects')} style={{ padding: '6px 14px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, background: activeTab === 'projects' ? 'rgba(245,158,11,0.15)' : 'transparent', color: activeTab === 'projects' ? '#f59e0b' : 'var(--text-secondary)' }}>
             Active Projects ({fundedProjects.length})
           </button>
@@ -92,8 +92,8 @@ export default function FundingPage() {
 
       {/* Grant Application Workflow View */}
       {activeTab === 'grant-workflow' && (
-        <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '16px', padding: '28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff' }}>National Innovation Grant Pipeline Workflow</h3>
+        <div className="glass-l2" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff', position: 'relative' }}>National Innovation Grant Pipeline Workflow</h3>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '10px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '20px' }}>
             {[
@@ -127,7 +127,7 @@ export default function FundingPage() {
 
       {/* AI Cost Estimator View */}
       {activeTab === 'cost-estimator' && (
-        <div style={{ background: 'var(--bg-surface)', border: '1px solid rgba(139,92,246,0.25)', borderRadius: '16px', padding: '28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div className="glass-l2" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '20px', borderColor: 'rgba(139,92,246,0.25)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Sparkles size={20} color="#8b5cf6" />
             <div>

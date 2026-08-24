@@ -217,7 +217,7 @@ function DashboardOverview({ currentUser, challenges, sectorConfig, isMobile }) 
       {/* Quick Stats - 2-col on mobile, 4-col on desktop */}
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '12px' }}>
         {quickStats.map((stat, i) => (
-          <div key={i} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
+          <div key={i} className="glass-card" style={{ padding: '20px', position: 'relative', overflow: 'hidden', cursor: 'default' }}>
             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: `linear-gradient(90deg, ${stat.color || color}, transparent)` }} />
             <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>{stat.label}</div>
             <div style={{ fontSize: '2rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--font-display)' }}>{stat.value}</div>
@@ -231,7 +231,7 @@ function DashboardOverview({ currentUser, challenges, sectorConfig, isMobile }) 
       {/* Challenges & Activity Grid - stacked on mobile */}
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 320px', gap: '16px' }}>
         {/* Challenges List */}
-        <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '20px' }}>
+        <div className="glass-card" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff' }}>Priority Challenges</h3>
             <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{challenges.length} total</span>
@@ -255,7 +255,7 @@ function DashboardOverview({ currentUser, challenges, sectorConfig, isMobile }) 
         </div>
 
         {/* Activity Feed */}
-        <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '20px' }}>
+        <div className="glass-card" style={{ padding: '20px' }}>
           <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff', marginBottom: '16px' }}>Recent Activity</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {recentActivity.map((item, i) => (
@@ -308,7 +308,7 @@ function SuperAdminOverview({ challenges, isMobile }) {
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: isMobile ? '10px' : '16px' }}>
         {platformStats.map((s, i) => (
-          <div key={i} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
+          <div key={i} className="glass-card" style={{ padding: '20px', position: 'relative', overflow: 'hidden', cursor: 'default' }}>
             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: s.color }} />
             <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>{s.label}</div>
             <div style={{ fontSize: '2rem', fontWeight: 800, color: '#fff' }}>{s.value}</div>
@@ -316,8 +316,8 @@ function SuperAdminOverview({ challenges, isMobile }) {
           </div>
         ))}
       </div>        {/* Users Table */}
-      <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: isMobile ? '14px' : '20px' }}>
-        <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff', marginBottom: '16px' }}>All Registered Users</h3>
+      <div className="glass-card" style={{ padding: isMobile ? '14px' : '20px' }}>
+        <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff', marginBottom: '16px', position: 'relative' }}>All Registered Users</h3>
         <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
           {isMobile ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -394,8 +394,8 @@ function SuperAdminOverview({ challenges, isMobile }) {
           )}
         </div>
       </div>        {/* Audit Logs */}
-      <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: isMobile ? '14px' : '20px' }}>
-        <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff', marginBottom: '16px' }}>Audit Log (Recent)</h3>
+      <div className="glass-card" style={{ padding: isMobile ? '14px' : '20px' }}>
+        <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff', marginBottom: '16px', position: 'relative' }}>Audit Log (Recent)</h3>
         {auditLogs.length === 0 ? (
           <div style={{ color: 'var(--text-muted)', fontSize: '0.82rem', textAlign: 'center', padding: '20px' }}>No audit logs yet. Actions will appear here.</div>
         ) : (
@@ -431,7 +431,7 @@ function SuperAdminOverview({ challenges, isMobile }) {
 // ─── Generic Placeholder Section ─────────────────────────────────────────────
 function PlaceholderSection({ label, icon: Icon, color }) {
   return (
-    <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '16px', padding: '60px 40px', textAlign: 'center' }}>
+    <div className="glass-l2" style={{ padding: '60px 40px', textAlign: 'center' }}>
       <div style={{ width: '64px', height: '64px', background: `${color}15`, border: `1px solid ${color}25`, borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
         <Icon size={28} color={color} />
       </div>
@@ -456,7 +456,7 @@ function getQuickStats(sector, challenges) {
       { label: 'Community Points', value: '420', sub: 'Top 10%', trend: 1, color: '#8b5cf6' }
     ],
     government: [
-      { label: 'Open Challenges', value: challenges.length.toString(), sub: 'Across all depts.', trend: 1 },
+      { label: 'Open Challenges', value: challenges.length.toString(), sub: 'Across all depts.', trend: 1, color: '#3b82f6' },
       { label: 'Pending Validation', value: '8', sub: 'Require review', trend: 0, color: '#f59e0b' },
       { label: 'Approved Solutions', value: '14', sub: 'This quarter', trend: 1, color: '#10b981' },
       { label: 'Active Pilots', value: '5', sub: 'In implementation', trend: 1, color: '#8b5cf6' }
@@ -480,7 +480,7 @@ function getQuickStats(sector, challenges) {
       { label: 'Pilots Running', value: '2', sub: 'In field', trend: 1, color: '#8b5cf6' }
     ],
     expert: [
-      { label: 'Reviews Pending', value: '5', sub: 'Awaiting your input', trend: 0, color: '#f59e0b' },
+      { label: 'Reviews Pending', value: '5', sub: 'Awaiting your input', trend: 0, color: '#f59e0b' }, 
       { label: 'Completed Reviews', value: '28', sub: 'All time', trend: 1, color: '#10b981' },
       { label: 'Teams Mentored', value: '6', sub: 'Active', trend: 1 },
       { label: 'Expertise Rating', value: '4.8★', sub: 'Out of 5', trend: 1, color: '#8b5cf6' }
@@ -564,7 +564,7 @@ export default function DashboardPage({ activeRole, currentUser, onNavigate, onL
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0', minHeight: 'calc(100vh - 60px)', position: 'relative' }}>
         {/* Mobile Top Tab Strip */}
-        <div style={{ overflowX: 'auto', display: 'flex', gap: '4px', padding: '8px 16px', background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-subtle)', scrollbarWidth: 'none' }}>
+        <div className="glass-l1" style={{ overflowX: 'auto', display: 'flex', gap: '4px', padding: '8px 16px', borderBottom: 'none', scrollbarWidth: 'none', borderRadius: '0' }}>
           {sectorConfig.nav.map(item => {
             const Icon = item.icon;
             const isActive = activeSection === item.id;
@@ -608,14 +608,16 @@ export default function DashboardPage({ activeRole, currentUser, onNavigate, onL
       {/* ── Sidebar ─────────────────────────────────────────────────────────── */}
       <aside style={{
         width: sidebarOpen ? '240px' : '60px',
-        background: 'var(--bg-surface)',
-        borderRight: '1px solid var(--border-subtle)',
-        borderRadius: '12px 0 0 12px',
+        background: 'rgba(12, 16, 28, 0.65)',
+        backdropFilter: 'blur(28px) saturate(1.6)',
+        WebkitBackdropFilter: 'blur(28px) saturate(1.6)',
+        borderRight: '1px solid var(--glass-border)',
+        borderRadius: '16px 0 0 16px',
         padding: sidebarOpen ? '20px 0' : '20px 0',
         display: 'flex',
         flexDirection: 'column',
         flexShrink: 0,
-        transition: 'width 0.25s ease',
+        transition: 'width 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
         overflow: 'hidden'
       }}>
         {/* Sector badge at top */}
@@ -627,7 +629,7 @@ export default function DashboardPage({ activeRole, currentUser, onNavigate, onL
                   <span style={{ fontSize: '20px' }}>{sectorConfig.icon}</span>
                   <span style={{ fontSize: '0.78rem', fontWeight: 700, color, lineHeight: 1.2 }}>{sectorConfig.label}</span>
                 </div>
-                <button onClick={() => setSidebarOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '2px' }}>‹</button>
+                <button onClick={() => setSidebarOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '2px', transition: 'transform 0.2s ease' }}>‹</button>
               </div>
             </>
           ) : (

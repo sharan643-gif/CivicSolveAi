@@ -88,7 +88,7 @@ export default function SolutionMarketplacePage({ onNavigate }) {
       </div>
 
       {/* Filter Toolbar */}
-      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center', background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', padding: '12px 16px', borderRadius: '12px' }}>
+      <div className="glass-l2" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center', padding: '12px 16px' }}>
         <div style={{ flex: 1, minWidth: '220px', position: 'relative' }}>
           <Search size={16} style={{ position: 'absolute', left: '12px', top: '10px', color: 'var(--text-muted)' }} />
           <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="form-input" placeholder="Search solutions by keyword, tech, or challenge..." style={{ paddingLeft: '36px' }} />
@@ -147,8 +147,8 @@ export default function SolutionMarketplacePage({ onNavigate }) {
 
       {/* Solution Detail Modal */}
       {selectedSolution && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div className="fade-in" style={{ width: '100%', maxWidth: '700px', background: 'var(--bg-surface)', border: '1px solid var(--border-medium)', borderRadius: '20px', padding: '32px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(32px)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="glass-l4 fade-in" style={{ width: '100%', maxWidth: '700px', padding: '32px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
                 <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 700, textTransform: 'uppercase' }}>{selectedSolution.stage} Solution</span>
@@ -158,7 +158,7 @@ export default function SolutionMarketplacePage({ onNavigate }) {
               <button onClick={() => setSelectedSolution(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '20px', cursor: 'pointer' }}>✕</button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', background: 'var(--bg-elevated)', padding: '16px', borderRadius: '12px', fontSize: '0.82rem' }}>
+            <div className="glass-l1" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', padding: '16px', fontSize: '0.82rem' }}>
               <div><strong>Addressed Challenge:</strong> {selectedSolution.challengeTitle}</div>
               <div><strong>Estimated Budget:</strong> {selectedSolution.estimatedCost}</div>
               <div><strong>Rating:</strong> ★ {selectedSolution.rating} ({selectedSolution.reviews} reviews)</div>

@@ -38,13 +38,13 @@ export default function MobileAdminConsole() {
 
       {/* Stacked Admin Metric Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-        <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '14px', padding: '16px' }}>
+        <div className="glass-card" style={{ padding: '16px', cursor: 'default' }}>
           <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total Users</div>
           <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#fff', margin: '4px 0' }}>{users.length}</div>
           <span style={{ fontSize: '0.68rem', color: '#3b82f6' }}>Across 12 sectors</span>
         </div>
 
-        <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '14px', padding: '16px' }}>
+        <div className="glass-card" style={{ padding: '16px', cursor: 'default' }}>
           <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Pending Reviews</div>
           <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#f59e0b', margin: '4px 0' }}>{pendingUsers.length}</div>
           <span style={{ fontSize: '0.68rem', color: '#f59e0b' }}>Action required</span>
@@ -52,13 +52,13 @@ export default function MobileAdminConsole() {
       </div>
 
       {/* Pending Approvals List */}
-      <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '16px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <div className="glass-l2" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
         <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#fff' }}>Pending User Approvals</h4>
         {pendingUsers.length === 0 ? (
           <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>No pending user approvals.</p>
         ) : (
           pendingUsers.map(u => (
-            <div key={u.id} style={{ background: 'var(--bg-elevated)', borderRadius: '10px', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div key={u.id} className="glass-l1" style={{ borderRadius: '10px', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <strong style={{ color: '#fff', fontSize: '0.82rem', display: 'block' }}>{u.name}</strong>
                 <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{u.role} · {u.sector}</span>
@@ -78,7 +78,7 @@ export default function MobileAdminConsole() {
 
       {/* Expandable Full-Screen Admin Drawer */}
       {drawerOpen && (
-        <div style={{ position: 'fixed', inset: 0, background: 'var(--bg-surface)', zIndex: 1200, padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div className="glass-l4" style={{ position: 'fixed', inset: 0, zIndex: 1200, padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', borderRadius: '0' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--font-display)' }}>Admin Modules</h3>
             <button onClick={() => setDrawerOpen(false)} className="touch-target" style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}>
@@ -88,7 +88,7 @@ export default function MobileAdminConsole() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {['Users Management', 'Roles & RBAC', 'Challenge Clusters', 'AI Engine Settings', 'System Health', 'Audit Logs'].map(m => (
-              <button key={m} onClick={() => setDrawerOpen(false)} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '14px', color: '#fff', fontSize: '0.9rem', fontWeight: 600, display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
+              <button key={m} onClick={() => setDrawerOpen(false)} className="glass-l1" style={{ padding: '14px', color: '#fff', fontSize: '0.9rem', fontWeight: 600, display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
                 {m} <ChevronRight size={16} color="var(--text-muted)" />
               </button>
             ))}

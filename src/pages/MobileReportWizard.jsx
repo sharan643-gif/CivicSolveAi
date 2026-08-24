@@ -118,7 +118,7 @@ export default function MobileReportWizard({ onSubmit, onBack }) {
       {/* STEP 4: Evidence */}
       {step === 4 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ background: 'var(--bg-surface)', border: '2px dashed var(--border-medium)', borderRadius: '16px', padding: '32px 16px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+          <div className="glass-l1" style={{ border: '2px dashed var(--border-medium)', borderRadius: '16px', padding: '32px 16px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
             <Camera size={32} color="var(--primary)" />
             <strong style={{ color: '#fff', fontSize: '0.9rem' }}>Upload Field Photos or Videos</strong>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>GPS metadata will be verified automatically</span>
@@ -134,7 +134,7 @@ export default function MobileReportWizard({ onSubmit, onBack }) {
 
       {/* STEP 5: AI Scanning Animation */}
       {step === 5 && (
-        <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '16px', padding: '32px 20px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+        <div className="glass-l2" style={{ padding: '32px 20px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
           <div style={{ width: '56px', height: '56px', background: 'rgba(139,92,246,0.15)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8b5cf6' }}>
             <Sparkles size={28} className={isScanning ? 'spin' : ''} />
           </div>
@@ -155,7 +155,7 @@ export default function MobileReportWizard({ onSubmit, onBack }) {
       {/* STEP 6: Final Review & Submit */}
       {step === 6 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div className="glass-l2" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <span style={{ fontSize: '0.68rem', color: '#10b981', fontWeight: 700, textTransform: 'uppercase' }}>Ready for Submission</span>
             <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff' }}>{title}</h3>
             <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>{description}</p>

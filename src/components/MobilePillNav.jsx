@@ -9,7 +9,6 @@ export default function MobilePillNav({ activeTab, onSelectTab, currentUser, onO
   const [pillStyle, setPillStyle] = useState({});
   const pillRefs = useRef([]);
   const containerRef = useRef(null);
-  const indicatorRef = useRef(null);
 
   const role = currentUser?.role || 'Citizen';
   const sector = currentUser?.sector || 'citizen';
@@ -96,26 +95,26 @@ export default function MobilePillNav({ activeTab, onSelectTab, currentUser, onO
         ref={containerRef}
         style={{
           position: 'fixed',
-          bottom: 'max(24px, env(safe-area-inset-bottom, 24px))',
+          bottom: 'max(20px, env(safe-area-inset-bottom, 20px))',
           left: '50%',
           transform: 'translateX(-50%)',
           zIndex: 1000,
-          width: 'calc(100% - 32px)',
+          width: 'calc(100% - 28px)',
           maxWidth: '400px',
           height: '64px',
-          background: 'rgba(20, 24, 38, 0.4)',
-          backdropFilter: 'blur(40px) saturate(1.8)',
-          WebkitBackdropFilter: 'blur(40px) saturate(1.8)',
-          border: '1px solid rgba(255, 255, 255, 0.15)',
+          background: 'rgba(16, 20, 34, 0.42)',
+          backdropFilter: 'blur(48px) saturate(2.2)',
+          WebkitBackdropFilter: 'blur(48px) saturate(2.2)',
+          border: '1px solid rgba(255, 255, 255, 0.14)',
           borderRadius: '9999px',
           padding: '0 10px',
           display: 'flex',
           alignItems: 'center',
-          boxShadow: 
-            '0 16px 48px -12px rgba(0, 0, 0, 0.7), ' +
+          boxShadow:
+            '0 20px 56px -16px rgba(0, 0, 0, 0.75), ' +
             '0 8px 24px -8px rgba(0, 0, 0, 0.5), ' +
-            'inset 0 2px 4px rgba(255, 255, 255, 0.1), ' +
-            '0 0 0 1px rgba(255, 255, 255, 0.05)',
+            'inset 0 1px 0 rgba(255, 255, 255, 0.12), ' +
+            '0 0 0 1px rgba(255, 255, 255, 0.04)',
           overflow: 'hidden',
         }}
       >
@@ -129,7 +128,7 @@ export default function MobilePillNav({ activeTab, onSelectTab, currentUser, onO
           borderRadius: 'inherit',
           overflow: 'hidden',
           pointerEvents: 'none',
-          opacity: 0.7,
+          opacity: 0.5,
           zIndex: 0,
         }}>
           <Aurora colorStops={['#5227FF', '#7cff67', '#5227FF']} blend={0.5} amplitude={1.0} speed={0.4} />
@@ -138,20 +137,19 @@ export default function MobilePillNav({ activeTab, onSelectTab, currentUser, onO
         {/* Glass Reflection */}
         <div style={{
           position: 'absolute', top: 0, left: 0, width: '150%', height: '100%',
-          background: 'linear-gradient(100deg, transparent 20%, rgba(255,255,255,0.1) 40%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.1) 60%, transparent 80%)',
-          transform: 'rotate(25deg)', opacity: 0.8, animation: 'moveReflection 6s infinite linear', pointerEvents: 'none', zIndex: 0,
+          background: 'linear-gradient(100deg, transparent 20%, rgba(255,255,255,0.06) 40%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.06) 60%, transparent 80%)',
+          transform: 'rotate(25deg)', opacity: 0.7, animation: 'moveReflection 8s infinite linear', pointerEvents: 'none', zIndex: 0,
         }} />
 
         {/* Inner highlight overlay */}
         <div style={{
           position: 'absolute', inset: 0, borderRadius: 'inherit',
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 40%)',
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.10) 0%, transparent 40%)',
           pointerEvents: 'none', opacity: 0.5,
         }} />
 
         {/* Animated Active Indicator */}
         <div
-          ref={indicatorRef}
           style={{
             position: 'absolute',
             top: '6px',
@@ -159,13 +157,13 @@ export default function MobilePillNav({ activeTab, onSelectTab, currentUser, onO
             left: pillStyle.left || 0,
             width: pillStyle.width || 0,
             opacity: pillStyle.opacity || 0,
-            background: 'rgba(255, 255, 255, 0.12)',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
+            background: 'rgba(255, 255, 255, 0.10)',
+            border: '1px solid rgba(255, 255, 255, 0.18)',
             borderRadius: '9999px',
-            boxShadow: 
-              'inset 0 2px 4px rgba(255,255,255,0.2), ' +
-              '0 4px 12px rgba(59, 130, 246, 0.1)',
-            transition: 'all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
+            boxShadow:
+              'inset 0 1px 3px rgba(255,255,255,0.18), ' +
+              '0 4px 12px rgba(59, 130, 246, 0.08)',
+            transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
             pointerEvents: 'none',
             zIndex: 0,
           }}
@@ -189,13 +187,13 @@ export default function MobilePillNav({ activeTab, onSelectTab, currentUser, onO
                   width: '50px',
                   height: '50px',
                   borderRadius: '50%',
-                  background: 'linear-gradient(135deg, rgba(99,102,241,0.9), rgba(139,92,246,0.9))',
-                  border: '1px solid rgba(255,255,255,0.25)',
+                  background: 'linear-gradient(135deg, rgba(99,102,241,0.92), rgba(139,92,246,0.92))',
+                  border: '1px solid rgba(255,255,255,0.22)',
                   color: '#fff',
                   cursor: 'pointer',
-                  boxShadow: '0 8px 32px rgba(99,102,241,0.5), inset 0 2px 4px rgba(255,255,255,0.2)',
+                  boxShadow: '0 8px 32px rgba(99,102,241,0.5), inset 0 1px 0 rgba(255,255,255,0.2)',
                   transform: isPressed ? 'scale(0.92)' : 'translateY(-2px)',
-                  transition: 'all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                  transition: 'all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)',
                   flexShrink: 0,
                   position: 'relative',
                   zIndex: 2,
@@ -238,9 +236,9 @@ export default function MobilePillNav({ activeTab, onSelectTab, currentUser, onO
                 WebkitTapHighlightColor: 'transparent',
               }}
             >
-              <Icon 
-                size={isActive ? 24 : 20} 
-                color={isActive ? '#ffffff' : 'rgba(255,255,255,0.5)'} 
+              <Icon
+                size={isActive ? 24 : 20}
+                color={isActive ? '#ffffff' : 'rgba(255,255,255,0.45)'}
                 strokeWidth={isActive ? 2.5 : 1.8}
                 style={{
                   transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -249,9 +247,9 @@ export default function MobilePillNav({ activeTab, onSelectTab, currentUser, onO
                 }}
               />
               <span style={{
-                fontSize: '0.65rem',
+                fontSize: '0.62rem',
                 fontWeight: isActive ? 700 : 500,
-                color: isActive ? '#ffffff' : 'rgba(255,255,255,0.5)',
+                color: isActive ? '#ffffff' : 'rgba(255,255,255,0.45)',
                 transition: 'all 0.3s ease',
                 letterSpacing: '0.02em',
                 opacity: isActive ? 1 : 0.8,
@@ -270,8 +268,8 @@ export default function MobilePillNav({ activeTab, onSelectTab, currentUser, onO
             onClick={() => { setIsActionOpen(false); onSelectTab('report'); }}
             className="touch-target"
             style={{
-              background: 'rgba(20, 24, 38, 0.5)',
-              border: '1px solid rgba(255,255,255,0.1)',
+              background: 'rgba(16, 20, 34, 0.5)',
+              border: '1px solid rgba(255,255,255,0.08)',
               borderRadius: '16px',
               padding: '16px',
               textAlign: 'left',
@@ -279,19 +277,19 @@ export default function MobilePillNav({ activeTab, onSelectTab, currentUser, onO
               flexDirection: 'column',
               gap: '8px',
               cursor: 'pointer',
-              transition: 'transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1)',
+              transition: 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
               backdropFilter: 'blur(20px)',
               WebkitBackdropFilter: 'blur(20px)',
             }}
             onTouchStart={e => e.currentTarget.style.transform = 'scale(0.96)'}
             onTouchEnd={e => e.currentTarget.style.transform = 'scale(1)'}
           >
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(6,182,212,0.15)', color: '#06b6d4', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(6,182,212,0.2)' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(6,182,212,0.12)', color: '#06b6d4', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(6,182,212,0.18)' }}>
               <FileText size={18} />
             </div>
             <div>
               <strong style={{ color: '#fff', fontSize: '0.82rem', display: 'block' }}>Report Issue</strong>
-              <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)' }}>AI-guided submission</span>
+              <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.45)' }}>AI-guided submission</span>
             </div>
           </button>
 
@@ -299,8 +297,8 @@ export default function MobilePillNav({ activeTab, onSelectTab, currentUser, onO
             onClick={() => { setIsActionOpen(false); onSelectTab('solutions'); }}
             className="touch-target"
             style={{
-              background: 'rgba(20, 24, 38, 0.5)',
-              border: '1px solid rgba(255,255,255,0.1)',
+              background: 'rgba(16, 20, 34, 0.5)',
+              border: '1px solid rgba(255,255,255,0.08)',
               borderRadius: '16px',
               padding: '16px',
               textAlign: 'left',
@@ -308,19 +306,19 @@ export default function MobilePillNav({ activeTab, onSelectTab, currentUser, onO
               flexDirection: 'column',
               gap: '8px',
               cursor: 'pointer',
-              transition: 'transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1)',
+              transition: 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
               backdropFilter: 'blur(20px)',
               WebkitBackdropFilter: 'blur(20px)',
             }}
             onTouchStart={e => e.currentTarget.style.transform = 'scale(0.96)'}
             onTouchEnd={e => e.currentTarget.style.transform = 'scale(1)'}
           >
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(16,185,129,0.15)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(16,185,129,0.2)' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(16,185,129,0.12)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(16,185,129,0.18)' }}>
               <Sparkles size={18} />
             </div>
             <div>
               <strong style={{ color: '#fff', fontSize: '0.82rem', display: 'block' }}>Submit Solution</strong>
-              <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)' }}>Publish prototype</span>
+              <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.45)' }}>Publish prototype</span>
             </div>
           </button>
 
@@ -328,8 +326,8 @@ export default function MobilePillNav({ activeTab, onSelectTab, currentUser, onO
             onClick={() => { setIsActionOpen(false); onSelectTab('command-center'); }}
             className="touch-target"
             style={{
-              background: 'rgba(20, 24, 38, 0.5)',
-              border: '1px solid rgba(255,255,255,0.1)',
+              background: 'rgba(16, 20, 34, 0.5)',
+              border: '1px solid rgba(255,255,255,0.08)',
               borderRadius: '16px',
               padding: '16px',
               textAlign: 'left',
@@ -337,19 +335,19 @@ export default function MobilePillNav({ activeTab, onSelectTab, currentUser, onO
               flexDirection: 'column',
               gap: '8px',
               cursor: 'pointer',
-              transition: 'transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1)',
+              transition: 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
               backdropFilter: 'blur(20px)',
               WebkitBackdropFilter: 'blur(20px)',
             }}
             onTouchStart={e => e.currentTarget.style.transform = 'scale(0.96)'}
             onTouchEnd={e => e.currentTarget.style.transform = 'scale(1)'}
           >
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(59,130,246,0.15)', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(59,130,246,0.2)' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(59,130,246,0.12)', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(59,130,246,0.18)' }}>
               <ShieldCheck size={18} />
             </div>
             <div>
               <strong style={{ color: '#fff', fontSize: '0.82rem', display: 'block' }}>District Command</strong>
-              <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)' }}>Heatmap & SLAs</span>
+              <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.45)' }}>Heatmap & SLAs</span>
             </div>
           </button>
 
@@ -357,8 +355,8 @@ export default function MobilePillNav({ activeTab, onSelectTab, currentUser, onO
             onClick={() => { setIsActionOpen(false); onSelectTab('funding'); }}
             className="touch-target"
             style={{
-              background: 'rgba(20, 24, 38, 0.5)',
-              border: '1px solid rgba(255,255,255,0.1)',
+              background: 'rgba(16, 20, 34, 0.5)',
+              border: '1px solid rgba(255,255,255,0.08)',
               borderRadius: '16px',
               padding: '16px',
               textAlign: 'left',
@@ -366,19 +364,19 @@ export default function MobilePillNav({ activeTab, onSelectTab, currentUser, onO
               flexDirection: 'column',
               gap: '8px',
               cursor: 'pointer',
-              transition: 'transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1)',
+              transition: 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
               backdropFilter: 'blur(20px)',
               WebkitBackdropFilter: 'blur(20px)',
             }}
             onTouchStart={e => e.currentTarget.style.transform = 'scale(0.96)'}
             onTouchEnd={e => e.currentTarget.style.transform = 'scale(1)'}
           >
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(245,158,11,0.15)', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(245,158,11,0.2)' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(245,158,11,0.12)', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(245,158,11,0.18)' }}>
               <Building size={18} />
             </div>
             <div>
               <strong style={{ color: '#fff', fontSize: '0.82rem', display: 'block' }}>CSR Grants</strong>
-              <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)' }}>Sponsor projects</span>
+              <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.45)' }}>Sponsor projects</span>
             </div>
           </button>
         </div>

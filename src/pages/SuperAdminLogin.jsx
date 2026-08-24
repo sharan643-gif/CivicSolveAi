@@ -90,7 +90,7 @@ export default function SuperAdminLogin({ onLogin }) {
         </div>
 
         {/* System Health Check Card */}
-        <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '20px', marginBottom: '20px' }}>
+        <div className="glass-l2" style={{ padding: '20px', marginBottom: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
             <p style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>System Health</p>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.68rem' }}>
@@ -114,7 +114,7 @@ export default function SuperAdminLogin({ onLogin }) {
 
         {/* STEP 0 - Loading */}
         {step === 0 && (
-          <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '40px', textAlign: 'center' }}>
+          <div className="glass-l2" style={{ padding: '40px', textAlign: 'center' }}>
             <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>Initializing secure environment...</div>
             <div style={{ width: '48px', height: '48px', borderRadius: '50%', border: '3px solid var(--border-subtle)', borderTopColor: '#ef4444', animation: 'spin 0.8s linear infinite', margin: '0 auto' }} />
           </div>
@@ -122,7 +122,7 @@ export default function SuperAdminLogin({ onLogin }) {
 
         {/* STEP 1 - Credentials */}
         {step === 1 && (
-          <div style={{ background: 'var(--bg-surface)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '12px', padding: '28px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          <div className="glass-l2" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '18px', borderColor: 'rgba(239,68,68,0.2)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
               <Lock size={16} color="#ef4444" />
               <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#fff' }}>Authentication Required</h3>

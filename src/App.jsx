@@ -276,7 +276,7 @@ export default function App() {
   // ─── Auth overlay pages ───────────────────────────────────────────────────────
   if (authState === 'sector-select') {
     return (
-      <div style={{ minHeight: '100vh', background: 'var(--bg-main)', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', display: 'flex', flexDirection: 'column' }}>
         <AppHeader
           currentRoute={currentRoute}
           currentUser={null}
@@ -319,7 +319,7 @@ export default function App() {
 
   if (authState === 'sector-login' && selectedSector) {
     return (
-      <div style={{ minHeight: '100vh', background: 'var(--bg-main)', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', display: 'flex', flexDirection: 'column' }}>
         <AppHeader
           currentRoute={currentRoute}
           currentUser={null}
@@ -366,7 +366,7 @@ export default function App() {
 
   if (authState === 'super-admin-login') {
     return (
-      <div style={{ minHeight: '100vh', background: 'var(--bg-main)' }}>
+      <div style={{ minHeight: '100vh', background: 'var(--bg-primary)' }}>
         <SuperAdminLogin onLogin={handleLogin} />
       </div>
     );
@@ -392,48 +392,47 @@ export default function App() {
           noiseIntensity={2.2}
           rotation={0.4}
         />
-        {/* Thin dark veil — keeps text readable without killing the animation */}
+        {/* Dark veil — keeps text readable */}
         <div style={{
           position: 'absolute',
           inset: 0,
-          background: 'rgba(7, 9, 14, 0.44)',
+          background: 'rgba(5, 7, 12, 0.5)',
         }} />
       </div>
 
-      {/* Toast Notifications — Glass capsules */}
+      {/* Toast Notifications — Liquid Glass */}
       <div style={{ position: 'fixed', top: '24px', right: '24px', display: 'flex', flexDirection: 'column', gap: '10px', zIndex: 2000, maxWidth: '360px', width: '90%' }}>
         {toasts.map(t => (
           <div key={t.id} style={{
-            background: 'rgba(14, 19, 32, 0.88)',
-            backdropFilter: 'blur(24px)',
-            WebkitBackdropFilter: 'blur(24px)',
-            border: `1px solid ${t.type === 'success' ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'}`,
-            borderRadius: '14px',
+            background: 'rgba(12, 16, 28, 0.88)',
+            backdropFilter: 'blur(48px) saturate(2)',
+            WebkitBackdropFilter: 'blur(48px) saturate(2)',
+            border: `1px solid ${t.type === 'success' ? 'rgba(16,185,129,0.22)' : 'rgba(239,68,68,0.22)'}`,
+            borderRadius: 'var(--radius-lg)',
             padding: '14px 16px',
-            boxShadow: `0 12px 32px -8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)`,
+            boxShadow: '0 16px 48px -12px rgba(0,0,0,0.6), 0 4px 16px -4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08)',
             display: 'flex', gap: '12px', alignItems: 'flex-start',
-            animation: 'slideUpSheet 0.35s cubic-bezier(0.22, 1.2, 0.36, 1) forwards',
-            position: 'relative',
-            overflow: 'hidden',
+            animation: 'toastEnter 0.4s cubic-bezier(0.22, 1.2, 0.36, 1) forwards',
+            position: 'relative', overflow: 'hidden',
           }}>
             {/* Inner highlight */}
             <div style={{
               position: 'absolute', top: 0, left: 0, right: 0, height: '50%',
-              background: 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 100%)',
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 100%)',
               pointerEvents: 'none', borderRadius: 'inherit',
             }} />
             <div style={{ color: t.type === 'success' ? '#10b981' : '#ef4444', padding: '2px', flexShrink: 0, position: 'relative' }}>
               <AlertCircle size={18} />
             </div>
             <div style={{ position: 'relative' }}>
-              <h4 style={{ fontSize: '0.85rem', color: '#fff', fontWeight: 600 }}>{t.title}</h4>
+              <h4 style={{ fontSize: '0.85rem', color: '#fff', fontWeight: 700 }}>{t.title}</h4>
               <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '3px' }}>{t.message}</p>
             </div>
           </div>
         ))}
       </div>
 
-      {/* App Header (Unified) */}
+      {/* App Header (Liquid Glass) */}
       <div style={{ position: 'relative', zIndex: 100 }}>
       <AppHeader
         currentRoute={currentRoute}
@@ -456,6 +455,7 @@ export default function App() {
         onSelectTab={handleNavigate}
       />
       </div>
+
       {/* Router Main Content */}
       <main className="container" style={{ flexGrow: 1, padding: isMobile ? '16px 16px 90px' : '32px 24px', width: '100%', position: 'relative', zIndex: 1 }}>
 
@@ -509,21 +509,21 @@ export default function App() {
         )}
       </main>
 
-      {/* Footer (Hidden on Mobile) */}
+      {/* Footer (Liquid Glass) — Hidden on Mobile */}
       {!isMobile && (
         <footer style={{
-          borderTop: '1px solid var(--border-subtle)',
-          background: 'rgba(7, 9, 14, 0.75)',
-          backdropFilter: 'blur(24px)',
-          WebkitBackdropFilter: 'blur(24px)',
-          padding: '30px 0',
+          borderTop: '1px solid var(--glass-border)',
+          background: 'rgba(10, 14, 24, 0.6)',
+          backdropFilter: 'blur(32px) saturate(1.5)',
+          WebkitBackdropFilter: 'blur(32px) saturate(1.5)',
+          padding: '28px 0',
           color: 'var(--text-muted)',
           fontSize: '0.8rem',
           position: 'relative',
           zIndex: 1,
         }}>
           <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-            <div>© 2026 CivicSolve AI · National Societal Innovation Operating System</div>
+            <div style={{ color: 'var(--text-secondary)' }}>© 2026 CivicSolve AI · National Societal Innovation Operating System</div>
             <div style={{ display: 'flex', gap: '20px' }}>
               <div>Database: <strong style={{ color: 'var(--primary)' }}>Supabase PostgreSQL</strong></div>
               <div>AI Engine: <strong style={{ color: 'var(--ai-purple)' }}>Groq · groq/compound</strong></div>
@@ -573,18 +573,16 @@ function AppHeader({
     return map[sector] || '#3b82f6';
   };
 
-  const headerHeight = isMobile ? '60px' : (isScrolled ? '56px' : '72px');
-  const headerBlur = isScrolled ? 'blur(40px)' : 'blur(24px)';
-
   return (
     <header style={{
       position: 'sticky',
       top: 0,
       zIndex: 900,
       display: 'flex',
-      justifyContent: 'center',          paddingTop: isMobile ? 'env(safe-area-inset-top, 8px)' : '16px',
+      justifyContent: 'center',
+      paddingTop: isMobile ? 'max(8px, var(--safe-top))' : '16px',
       paddingBottom: isMobile ? '8px' : '16px',
-      transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+      transition: 'all 0.4s var(--ease-out-expo)',
       pointerEvents: 'none',
     }}>
       <nav
@@ -596,16 +594,16 @@ function AppHeader({
           maxWidth: isMobile ? '420px' : '1320px',
           height: isMobile ? '60px' : '72px',
           padding: isMobile ? '0 8px' : '0 12px 0 24px',
-          background: 'rgba(20, 24, 38, 0.5)',
-          backdropFilter: 'blur(40px) saturate(1.8)',
-          WebkitBackdropFilter: 'blur(40px) saturate(1.8)',
+          background: 'rgba(16, 20, 34, 0.45)',
+          backdropFilter: 'blur(48px) saturate(2)',
+          WebkitBackdropFilter: 'blur(48px) saturate(2)',
           border: '1px solid rgba(255, 255, 255, 0.12)',
           borderRadius: '9999px',
-          boxShadow: 
-            '0 12px 48px -8px rgba(0, 0, 0, 0.6), ' +
+          boxShadow:
+            '0 16px 56px -12px rgba(0, 0, 0, 0.7), ' +
             '0 4px 16px -4px rgba(0, 0, 0, 0.4), ' +
             'inset 0 1px 0 rgba(255, 255, 255, 0.1), ' +
-            '0 0 0 1px rgba(59, 130, 246, 0.05)',
+            '0 0 0 1px rgba(59, 130, 246, 0.04)',
           pointerEvents: 'auto',
           overflow: 'visible',
           transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -622,7 +620,8 @@ function AppHeader({
           borderRadius: 'inherit',
           overflow: 'hidden',
           pointerEvents: 'none',
-          opacity: 0.7,
+          opacity: 0.5,
+          zIndex: 0,
         }}>
           <Aurora colorStops={['#5227FF', '#7cff67', '#5227FF']} blend={0.5} amplitude={1.0} speed={0.4} />
         </div>
@@ -630,7 +629,7 @@ function AppHeader({
         {/* Inner top highlight */}
         <div style={{
           position: 'absolute', top: 0, left: 0, right: 0, height: '40%',
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 100%)',
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.10) 0%, transparent 100%)',
           borderRadius: 'inherit',
           pointerEvents: 'none',
           opacity: 0.5,
@@ -641,12 +640,12 @@ function AppHeader({
         <div onClick={() => onNavigate('landing')} style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '8px' : '10px', cursor: 'pointer', marginRight: isMobile ? 'auto' : '24px', flexShrink: 0, zIndex: 2 }}>
           <div style={{
             background: 'linear-gradient(135deg, var(--primary), var(--ai-purple))',
-            width: isMobile ? '36px' : '36px',
-            height: isMobile ? '36px' : '36px',
+            width: '36px',
+            height: '36px',
             borderRadius: '10px',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 16px rgba(59,130,246,0.35)',
-            transition: 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
+            boxShadow: '0 4px 16px rgba(59,130,246,0.4), inset 0 1px 0 rgba(255,255,255,0.2)',
+            transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
           }}>
             <Sparkles size={isMobile ? 16 : 18} color="white" />
           </div>
@@ -684,7 +683,7 @@ function AppHeader({
                       border: '1px solid rgba(255,255,255,0.2)',
                       color: '#fff',
                       cursor: 'pointer',
-                      boxShadow: '0 8px 32px rgba(99,102,241,0.4), inset 0 2px 4px rgba(255,255,255,0.2)',
+                      boxShadow: '0 8px 32px rgba(99,102,241,0.45), inset 0 1px 0 rgba(255,255,255,0.2)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -694,11 +693,11 @@ function AppHeader({
                     }}
                     onMouseEnter={e => {
                       e.currentTarget.style.transform = 'scale(1.1) translateY(-2px)';
-                      e.currentTarget.style.boxShadow = '0 12px 40px rgba(99,102,241,0.6), inset 0 2px 6px rgba(255,255,255,0.3)';
+                      e.currentTarget.style.boxShadow = '0 12px 40px rgba(99,102,241,0.6), inset 0 1px 0 rgba(255,255,255,0.3)';
                     }}
                     onMouseLeave={e => {
                       e.currentTarget.style.transform = 'scale(1) translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 8px 32px rgba(99,102,241,0.4), inset 0 2px 4px rgba(255,255,255,0.2)';
+                      e.currentTarget.style.boxShadow = '0 8px 32px rgba(99,102,241,0.45), inset 0 1px 0 rgba(255,255,255,0.2)';
                     }}
                   >
                     <Plus size={20} strokeWidth={2.5} />
@@ -719,11 +718,11 @@ function AppHeader({
                     padding: '10px 16px',
                     borderRadius: '9999px',
                     border: 'none',
-                    background: 'transparent',
+                    background: isActive ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
                     cursor: 'pointer',
-                    color: isActive ? '#ffffff' : 'rgba(255,255,255,0.6)',
+                    color: isActive ? '#ffffff' : 'rgba(255,255,255,0.55)',
                     fontSize: '0.85rem',
-                    fontWeight: isActive ? 600 : 500,
+                    fontWeight: isActive ? 700 : 500,
                     fontFamily: 'var(--font-body)',
                     whiteSpace: 'nowrap',
                     transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -733,12 +732,14 @@ function AppHeader({
                   onMouseEnter={e => {
                     if (!isActive) {
                       e.currentTarget.style.color = '#ffffff';
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
                       e.currentTarget.style.transform = 'scale(1.03) translateY(-1px)';
                     }
                   }}
                   onMouseLeave={e => {
                     if (!isActive) {
-                      e.currentTarget.style.color = 'rgba(255,255,255,0.6)';
+                      e.currentTarget.style.color = 'rgba(255,255,255,0.55)';
+                      e.currentTarget.style.background = 'transparent';
                       e.currentTarget.style.transform = 'scale(1) translateY(0)';
                     }
                   }}
@@ -820,28 +821,16 @@ function AppHeader({
                   fontSize: '0.58rem', fontWeight: 800,
                   width: '15px', height: '15px', borderRadius: '50%',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  border: '2px solid var(--bg-main)',
+                  border: '2px solid var(--bg-primary)',
                 }}>{activeUnreadCount}</span>
               )}
             </button>
             {isNotifOpen && (
-              <div className="slide-down" data-dropdown style={{
+              <div className="slide-down glass-l4" data-dropdown style={{
                 position: 'absolute', top: '42px', right: 0, width: '300px',
-                background: 'rgba(14, 19, 32, 0.92)',
-                backdropFilter: 'blur(40px) saturate(1.2)',
-                WebkitBackdropFilter: 'blur(40px) saturate(1.2)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                borderRadius: '14px',
-                boxShadow: '0 16px 48px -12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.06)',
                 padding: '8px', zIndex: 1000,
-                overflow: 'hidden',
               }}>
-                <div style={{
-                  position: 'absolute', top: 0, left: 0, right: 0, height: '40%',
-                  background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%)',
-                  pointerEvents: 'none', borderRadius: 'inherit',
-                }} />
-                <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', padding: '8px 10px', borderBottom: '1px solid var(--border-subtle)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Notifications</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', padding: '8px 10px', borderBottom: '1px solid var(--border-subtle)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>Notifications</div>
                 {notifications.map(n => (
                   <div key={n.id} onClick={() => { setNotifications(notifications.map(x => x.id === n.id ? { ...x, read: true } : x)); setIsNotifOpen(false); }}
                     style={{ padding: '10px', borderRadius: '10px', cursor: 'pointer', background: n.read ? 'transparent' : 'rgba(59,130,246,0.06)', marginBottom: '4px', transition: 'background 0.15s ease' }}
@@ -851,7 +840,8 @@ function AppHeader({
                   </div>
                 ))}
                 <button onClick={() => { setNotifications([]); setIsNotifOpen(false); }}
-                  style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.7rem', cursor: 'pointer', padding: '8px', borderRadius: '6px', transition: 'color 0.15s ease' }}>
+                  style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.7rem', cursor: 'pointer', padding: '8px', borderRadius: '6px', transition: 'color 0.15s ease' }}
+                >
                   Clear All
                 </button>
               </div>
@@ -860,7 +850,7 @@ function AppHeader({
 
           {/* User Auth state — Glass Pill */}
           {!currentUser ? (
-            <button onClick={onLoginClick} className="btn btn-primary" style={{ padding: isMobile ? '8px 18px' : '10px 22px', fontSize: '0.82rem', borderRadius: '9999px', fontWeight: 600, flexShrink: 0, whiteSpace: 'nowrap' }}>
+            <button onClick={onLoginClick} className="btn btn-primary" style={{ padding: isMobile ? '8px 18px' : '10px 22px', fontSize: '0.82rem', borderRadius: '9999px', fontWeight: 700, flexShrink: 0, whiteSpace: 'nowrap' }}>
               Sign In
             </button>
           ) : (
@@ -888,7 +878,7 @@ function AppHeader({
                 </div>
                 {!isMobile && (
                   <div style={{ textAlign: 'left' }}>
-                    <div style={{ fontSize: '0.76rem', fontWeight: 600, color: 'white', lineHeight: 1.2 }}>{(currentUser.name || currentUser.email).split(' ')[0]}</div>
+                    <div style={{ fontSize: '0.76rem', fontWeight: 700, color: 'white', lineHeight: 1.2 }}>{(currentUser.name || currentUser.email).split(' ')[0]}</div>
                     <div style={{ fontSize: '0.62rem', color: getSectorColor(currentUser.sector), lineHeight: 1.2 }}>{currentUser.role}</div>
                   </div>
                 )}
@@ -896,18 +886,10 @@ function AppHeader({
               </button>
 
               {isUserMenuOpen && (
-                <div className="slide-down" data-dropdown style={{
+                <div className="slide-down glass-l4" data-dropdown style={{
                   position: 'absolute', top: '44px', right: 0, width: '230px',
-                  background: 'rgba(14, 19, 32, 0.92)',
-                  backdropFilter: 'blur(40px) saturate(1.2)',
-                  WebkitBackdropFilter: 'blur(40px) saturate(1.2)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  borderRadius: '14px',
-                  boxShadow: '0 16px 48px -12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.06)',
                   padding: '8px', zIndex: 1000,
-                  overflow: 'hidden',
                 }}>
-                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '40%', background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%)', pointerEvents: 'none', borderRadius: 'inherit' }} />
                   <div style={{ padding: '12px', borderBottom: '1px solid var(--border-subtle)', marginBottom: '6px' }}>
                     <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'white' }}>{currentUser.name || 'User'}</div>
                     <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>{currentUser.email}</div>
@@ -936,7 +918,7 @@ function AppHeader({
   );
 }
 
-// ─── Back Button — Glass Pill ──────────────────────────────────────────────────
+// ─── Back Button — Liquid Glass ──────────────────────────────────────────────────
 const ROUTE_LABELS = {
   'landing':         { label: 'Home',                 icon: '🏠' },
   'explore':         { label: 'Explore Issues',        icon: '🔍' },
@@ -973,9 +955,9 @@ function BackButton({ onBack, canGoBack, currentRoute, onNavigate, isMobile }) {
           padding: isMobile ? '8px 14px' : '9px 18px',
           color: 'var(--text-secondary)',
           fontSize: isMobile ? '0.8rem' : '0.85rem',
-          fontWeight: 500,
+          fontWeight: 600,
           cursor: 'pointer',
-          transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+          transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
           flexShrink: 0,
@@ -1018,7 +1000,7 @@ function BackButton({ onBack, canGoBack, currentRoute, onNavigate, isMobile }) {
         </button>
         <span style={{ opacity: 0.4 }}>/</span>
         <span style={{
-          color: '#fff', fontWeight: 600,
+          color: '#fff', fontWeight: 700,
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
         }}>
           {current.icon} {current.label}
