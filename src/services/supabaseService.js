@@ -76,6 +76,83 @@ export async function addChallenge(challenge) {
   }
 }
 
+// ─── FILE UPLOAD (EVIDENCE) ───────────────────────────────────────────────────
+
+/**
+ * Upload evidence files to Supabase Storage and return an array of URL objects.
+ * Falls back to base64 local encoding if Supabase storage is unavailable.
+ * @param {File[]} files - Array of File objects from <input type="file">
+ * @param {string} challengeId - The challenge ID to namespace the upload path
+ * @returns {Promise<Array<{name: string, url: string, type: string, size: number}>>}
+ */
+export async function uploadEvidenceFiles(files, challengeId) {
+  if (!files || files.length === 0) return [];
+
+  const uploaded = [];
+
+  for (const file of files) {
+    try {
+      const filePath = `${challengeId}/${Date.now()}-${file.name}`;
+
+      // Try Supabase Storage first
+      const { data, error } = await supabase.storage
+        .from('evidence')
+        .upload(filePath, file, {
+          contentType: file.type,
+          upsert: false
+        });
+
+      if (!error && data?.path) {
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from('evidence')
+          .getPublicUrl(data.path);
+
+        uploaded.push({
+          name: file.name,
+          url: urlData?.publicUrl || '',
+          type: file.type,
+          size: file.size
+        });
+        continue;
+      }
+    } catch (storageErr) {
+      console.warn('[supabaseService] Storage upload failed, using fallback:', storageErr.message);
+    }
+
+    // Fallback: convert to base64 data URL for local/mock storage
+    try {
+      const dataUrl = await fileToBase64(file);
+      uploaded.push({
+        name: file.name,
+        url: dataUrl,
+        type: file.type,
+        size: file.size
+      });
+    } catch (b64Err) {
+      console.warn('[supabaseService] Base64 fallback failed:', b64Err.message);
+      // At minimum store metadata even if file content couldn't be read
+      uploaded.push({
+        name: file.name,
+        url: '',
+        type: file.type,
+        size: file.size
+      });
+    }
+  }
+
+  return uploaded;
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 export async function updateChallenge(id, updates) {
   try {
     const { data, error } = await supabase
@@ -94,12 +171,57 @@ export async function updateChallenge(id, updates) {
         return current[idx];
       }
       return null;
-    }
-    return data;
+    }    return data;
   } catch (err) {
     return null;
   }
 }
+
+export async function deleteChallenge(id) {
+  try {
+    const { error } = await supabase
+      .from('challenges')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      // Fallback: remove from local mock data
+      const current = db.getChallenges();
+      const filtered = current.filter(c => c.id !== id);
+      db.saveChallenges(filtered);
+      return true;
+    }
+    return true;
+  } catch (err) {
+    const current = db.getChallenges();
+    const filtered = current.filter(c => c.id !== id);
+    db.saveChallenges(filtered);
+    return true;
+  }
+}
+
+export async function deleteChallengesByTitle(title) {
+  try {
+    const { error } = await supabase
+      .from('challenges')
+      .delete()
+      .ilike('title', title);
+
+    if (error) {
+      const current = db.getChallenges();
+      const filtered = current.filter(c => c.title !== title);
+      db.saveChallenges(filtered);
+      return true;
+    }
+    return true;
+  } catch (err) {
+    const current = db.getChallenges();
+    const filtered = current.filter(c => c.title !== title);
+    db.saveChallenges(filtered);
+    return true;
+  }
+}
+
 
 // ─── PROFILES / USERS ─────────────────────────────────────────────────────────
 

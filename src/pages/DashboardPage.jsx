@@ -195,7 +195,7 @@ function DashboardOverview({ currentUser, challenges, sectorConfig, isMobile }) 
   const role = currentUser?.role || 'Citizen';
 
   const quickStats = getQuickStats(sector, challenges);
-  const recentActivity = getRecentActivity(sector);
+  const recentActivity = getRecentActivity(sector, challenges);
   const priorityChallenges = challenges.slice(0, 4);
 
   return (
@@ -465,10 +465,10 @@ function PlaceholderSection({ label, icon: Icon, color }) {
 function getQuickStats(sector, challenges) {
   const map = {
     citizen:    [
-      { label: 'Problems Reported', value: '3', sub: '1 this month', trend: 1 },
-      { label: 'In Progress', value: '2', sub: 'Being worked on', trend: 1, color: '#f59e0b' },
-      { label: 'Solved', value: '1', sub: 'Implemented', trend: 1, color: '#10b981' },
-      { label: 'Community Points', value: '420', sub: 'Top 10%', trend: 1, color: '#8b5cf6' }
+      { label: 'Problems Reported', value: challenges.filter(c => c.status === 'reported' || c.status === 'under_review').length.toString(), sub: 'Awaiting review', trend: 1 },
+      { label: 'In Progress', value: challenges.filter(c => c.status === 'in_progress' || c.status === 'pilot').length.toString(), sub: 'Being worked on', trend: 1, color: '#f59e0b' },
+      { label: 'Solved', value: challenges.filter(c => c.status === 'implemented' || c.status === 'resolved').length.toString(), sub: 'Completed', trend: 1, color: '#10b981' },
+      { label: 'Total Challenges', value: challenges.length.toString(), sub: 'All time', trend: 1, color: '#8b5cf6' }
     ],
     government: [
       { label: 'Open Challenges', value: challenges.length.toString(), sub: 'Across all depts.', trend: 1, color: '#3b82f6' },
@@ -510,15 +510,244 @@ function getQuickStats(sector, challenges) {
   return map[sector] || map.default;
 }
 
-function getRecentActivity(sector) {
-  const common = [
+function getRecentActivity(sector, challenges) {
+  const challengeActivity = (challenges || []).slice(0, 3).map(c => ({
+    icon: c.status === 'implemented' || c.status === 'resolved' ? '✅' : c.status === 'in_progress' ? '🔄' : '📋',
+    text: `${c.title} — ${c.status?.replace('_', ' ') || 'reported'}`,
+    time: c.created_at ? new Date(c.created_at).toLocaleDateString() : 'Recently',
+    color: c.status === 'implemented' || c.status === 'resolved' ? '#10b981' : c.status === 'in_progress' ? '#f59e0b' : '#3b82f6'
+  }));
+  const fallback = [
     { icon: '🤖', text: 'AI matched 3 new challenges to your profile', time: '2 min ago', color: '#8b5cf6' },
     { icon: '✅', text: 'Government validated: Rural Road Accessibility', time: '1 hour ago', color: '#10b981' },
     { icon: '💬', text: 'New comment on Flood Warning System', time: '3 hours ago', color: '#3b82f6' },
     { icon: '🏆', text: 'Team InnoVators submitted prototype video', time: 'Yesterday', color: '#f59e0b' },
     { icon: '💰', text: 'GeoTech Solutions offered ₹2.5L funding', time: '2 days ago', color: '#ec4899' },
   ];
-  return common;
+  return challengeActivity.length > 0 ? [...challengeActivity, ...fallback.slice(0, 2)] : fallback;
+}
+
+// ─── Citizen: Report a Problem ────────────────────────────────────────────────
+function CitizenReportSection({ onNavigate, isMobile }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={{ background: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: isMobile ? '16px' : '24px', boxShadow: 'var(--shadow-xs)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+          <div style={{ width: '40px', height: '40px', background: 'var(--primary-light)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <PlusCircle size={20} color="var(--primary)" />
+          </div>
+          <div>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)' }}>Report a Societal Challenge</h3>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Describe the issue you're witnessing in your community</p>
+          </div>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '12px' }}>
+            {[
+              { icon: '🛣️', title: 'Infrastructure', desc: 'Roads, bridges, buildings', color: '#f59e0b' },
+              { icon: '💧', title: 'Water & Sanitation', desc: 'Clean water, drainage', color: '#3b82f6' },
+              { icon: '🏥', title: 'Health & Safety', desc: 'Hospitals, emergencies', color: '#ef4444' },
+              { icon: '📚', title: 'Education', desc: 'Schools, resources', color: '#8b5cf6' },
+              { icon: '⚡', title: 'Energy & Power', desc: 'Electricity, solar', color: '#10b981' },
+              { icon: '🌾', title: 'Agriculture', desc: 'Farming, irrigation', color: '#f97316' },
+            ].map(cat => (
+              <div key={cat.title} style={{ padding: '14px', background: 'var(--bg-primary)', border: '1px solid var(--border-subtle)', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s' }} onClick={() => onNavigate('report')}>
+                <div style={{ fontSize: '1.5rem', marginBottom: '6px' }}>{cat.icon}</div>
+                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>{cat.title}</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>{cat.desc}</div>
+              </div>
+            ))}
+          </div>
+          <button onClick={() => onNavigate('report')} className="btn btn-primary" style={{ padding: '14px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '0.9rem', fontWeight: 700 }}>
+            <PlusCircle size={18} /> Report New Challenge
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Citizen: My Submissions ──────────────────────────────────────────────────
+function CitizenMySubmissionsSection({ challenges, onNavigate, currentUser, isMobile }) {
+  const myChallenges = challenges.filter(c =>
+    c.reported_by === currentUser?.id ||
+    c.reported_by === currentUser?.email ||
+    c.created_by === currentUser?.id
+  );
+  // If no ownership data, show all challenges as fallback (user is a citizen seeing all)
+  const displayChallenges = myChallenges.length > 0 ? myChallenges : challenges;
+
+  const getStatusColor = (status) => {
+    const map = { reported: '#f59e0b', under_review: '#3b82f6', in_progress: '#8b5cf6', pilot: '#06b6d4', implemented: '#10b981', resolved: '#10b981' };
+    return map[status] || '#6b7280';
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)' }}>My Submissions</h3>
+        <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{displayChallenges.length} total</span>
+      </div>
+      {displayChallenges.length === 0 ? (
+        <div style={{ background: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '40px', textAlign: 'center' }}>
+          <div style={{ fontSize: '2rem', marginBottom: '12px' }}>📭</div>
+          <h4 style={{ color: 'var(--text-primary)', marginBottom: '8px' }}>No submissions yet</h4>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>Start reporting societal challenges in your area.</p>
+          <button onClick={() => onNavigate('report')} className="btn btn-primary" style={{ padding: '10px 20px' }}>Report First Challenge</button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {displayChallenges.map(c => (
+            <div key={c.id} style={{ background: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '16px', boxShadow: 'var(--shadow-xs)', cursor: 'pointer' }} onClick={() => onNavigate(`challenge/${c.id}`)}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>{c.title}</div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{c.description}</div>
+                </div>
+                <span style={{ padding: '3px 8px', borderRadius: '100px', fontSize: '0.65rem', fontWeight: 700, background: `${getStatusColor(c.status)}15`, color: getStatusColor(c.status), border: `1px solid ${getStatusColor(c.status)}30`, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                  {c.status?.replace('_', ' ') || 'reported'}
+                </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <span>📍 {c.location || c.district}</span>
+                  <span>👥 {c.affected_population?.toLocaleString() || '—'}</span>
+                </div>
+                <span style={{ fontWeight: 700, color: c.priority_score > 70 ? 'var(--danger)' : 'var(--text-secondary)' }}>
+                  Priority: {c.priority_score}/100
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Citizen: Track Progress ──────────────────────────────────────────────────
+function CitizenTrackSection({ challenges, onNavigate, isMobile }) {
+  const statusSteps = ['reported', 'under_review', 'in_progress', 'pilot', 'implemented'];
+  const statusLabels = { reported: 'Reported', under_review: 'Under Review', in_progress: 'In Progress', pilot: 'Pilot', implemented: 'Implemented' };
+  const trackedChallenges = challenges.filter(c => c.status !== 'resolved').slice(0, 8);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)' }}>Track Progress</h3>
+      {trackedChallenges.length === 0 ? (
+        <div style={{ background: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '40px', textAlign: 'center' }}>
+          <div style={{ fontSize: '2rem', marginBottom: '12px' }}>📊</div>
+          <h4 style={{ color: 'var(--text-primary)', marginBottom: '8px' }}>No active challenges to track</h4>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Submitted challenges will appear here for progress tracking.</p>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {trackedChallenges.map(c => {
+            const currentIdx = statusSteps.indexOf(c.status);
+            return (
+              <div key={c.id} style={{ background: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '16px', boxShadow: 'var(--shadow-xs)', cursor: 'pointer' }} onClick={() => onNavigate(`challenge/${c.id}`)}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-primary)' }}>{c.title}</div>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: c.priority_score > 70 ? 'var(--danger)' : 'var(--text-muted)' }}>
+                    {c.priority_score}/100
+                  </span>
+                </div>
+                {/* Progress bar */}
+                <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
+                  {statusSteps.map((step, i) => (
+                    <div key={step} style={{ flex: 1, height: '6px', borderRadius: '3px', background: i <= currentIdx ? 'var(--primary)' : '#e2e8f0' }} />
+                  ))}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+                  {statusSteps.map((step, i) => (
+                    <span key={step} style={{ color: i <= currentIdx ? 'var(--primary)' : 'var(--text-muted)', fontWeight: i === currentIdx ? 700 : 400 }}>
+                      {statusLabels[step]}
+                    </span>
+                  ))}
+                </div>
+                <div style={{ marginTop: '8px', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                  📍 {c.location || c.district} · 👥 {c.affected_population?.toLocaleString() || '—'} affected
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Citizen: Community Feed ──────────────────────────────────────────────────
+function CitizenCommunitySection({ challenges, onNavigate, isMobile }) {
+  const recentChallenges = challenges.slice(0, 10);
+
+  const getCategoryIcon = (cat) => {
+    const map = { 'Infrastructure': '🛣️', 'Water Management': '💧', 'Healthcare': '🏥', 'Education': '📚', 'Energy & Power': '⚡', 'Agriculture': '🌾', 'Environment': '🌿', 'Public Safety': '🛡️', 'Social Welfare': '🤝' };
+    return map[cat] || '📋';
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)' }}>Community Feed</h3>
+      {recentChallenges.length === 0 ? (
+        <div style={{ background: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '40px', textAlign: 'center' }}>
+          <div style={{ fontSize: '2rem', marginBottom: '12px' }}>🌍</div>
+          <h4 style={{ color: 'var(--text-primary)', marginBottom: '8px' }}>No community reports yet</h4>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Be the first to report a challenge in your community.</p>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {recentChallenges.map(c => (
+            <div key={c.id} style={{ background: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '14px 16px', boxShadow: 'var(--shadow-xs)', cursor: 'pointer', display: 'flex', gap: '12px', alignItems: 'flex-start' }} onClick={() => onNavigate(`challenge/${c.id}`)}>
+              <div style={{ width: '36px', height: '36px', background: 'var(--primary-light)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>
+                {getCategoryIcon(c.category)}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '2px' }}>{c.title}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{c.description}</div>
+                <div style={{ display: 'flex', gap: '12px', marginTop: '6px', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                  <span>📍 {c.location || c.district}</span>
+                  <span>👥 {c.affected_population?.toLocaleString() || '—'}</span>
+                  <span style={{ color: c.priority_score > 70 ? 'var(--danger)' : 'var(--text-muted)', fontWeight: 600 }}>Priority: {c.priority_score}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Citizen: Notifications ───────────────────────────────────────────────────
+function CitizenNotificationsSection({ challenges, isMobile }) {
+  const notifications = [
+    { icon: '🤖', text: 'AI has analyzed your recent submission and assigned priority score', time: 'Just now', read: false },
+    { icon: '✅', text: 'Government validated your report: Infrastructure issue', time: '2 hours ago', read: false },
+    { icon: '💬', text: 'New comment on your challenge submission', time: '5 hours ago', read: true },
+    { icon: '🔄', text: 'Your report status changed to: Under Review', time: '1 day ago', read: true },
+    { icon: '🏆', text: 'Community milestone: 100 challenges reported this month', time: '2 days ago', read: true },
+  ];
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)' }}>Notifications</h3>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {notifications.map((n, i) => (
+          <div key={i} style={{ background: n.read ? '#ffffff' : 'var(--primary-light)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '14px 16px', boxShadow: 'var(--shadow-xs)', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+            <div style={{ width: '32px', height: '32px', background: 'var(--primary-light)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', flexShrink: 0 }}>
+              {n.icon}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-primary)', lineHeight: 1.4 }}>{n.text}</div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px' }}>{n.time}</div>
+            </div>
+            {!n.read && <div style={{ width: '8px', height: '8px', background: 'var(--primary)', borderRadius: '50%', flexShrink: 0, marginTop: '4px' }} />}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 // ─── Main Dashboard Page Component ──────────────────────────────────────────
@@ -549,6 +778,24 @@ export default function DashboardPage({ activeRole, currentUser, onNavigate, onL
     }
     if (activeSection === 'overview') {
       return <DashboardOverview currentUser={currentUser} challenges={challenges} sectorConfig={sectorConfig} isMobile={isMobile} />;
+    }
+    // Citizen Portal sections
+    if (sector === 'citizen') {
+      if (activeSection === 'report') {
+        return <CitizenReportSection onNavigate={onNavigate} isMobile={isMobile} />;
+      }
+      if (activeSection === 'my-submissions') {
+        return <CitizenMySubmissionsSection challenges={challenges} onNavigate={onNavigate} currentUser={currentUser} isMobile={isMobile} />;
+      }
+      if (activeSection === 'track') {
+        return <CitizenTrackSection challenges={challenges} onNavigate={onNavigate} isMobile={isMobile} />;
+      }
+      if (activeSection === 'community') {
+        return <CitizenCommunitySection challenges={challenges} onNavigate={onNavigate} isMobile={isMobile} />;
+      }
+      if (activeSection === 'notifications') {
+        return <CitizenNotificationsSection challenges={challenges} isMobile={isMobile} />;
+      }
     }
     // Handle new feature sections
     if (activeSection === 'leaderboard') {

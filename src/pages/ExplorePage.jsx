@@ -20,10 +20,24 @@ export default function ExplorePage({ challenges = [], onNavigate }) {
   const [status, setStatus] = useState('all');
   const [sortBy, setSortBy] = useState('priority');
 
-  const filteredChallenges = challenges.filter(c => {
-    const matchesSearch = c.title.toLowerCase().includes(search.toLowerCase()) || 
-                          c.description.toLowerCase().includes(search.toLowerCase()) ||
-                          c.id.toLowerCase().includes(search.toLowerCase());
+  // Derive severity from priority_score if not set directly
+  const normalizeChallenge = (c) => {
+    let sev = c.severity;
+    if (!sev) {
+      if (c.priority_score >= 80) sev = 'high';
+      else if (c.priority_score >= 60) sev = 'medium';
+      else if (c.priority_score >= 40) sev = 'low';
+      else sev = 'low';
+    }
+    return { ...c, severity: sev, skills_required: c.skills_required || [] };
+  };
+
+  const normalizedChallenges = challenges.map(normalizeChallenge);
+
+  const filteredChallenges = normalizedChallenges.filter(c => {
+    const matchesSearch = (c.title || '').toLowerCase().includes(search.toLowerCase()) || 
+                          (c.description || '').toLowerCase().includes(search.toLowerCase()) ||
+                          (c.id || '').toLowerCase().includes(search.toLowerCase());
     const matchesCategory = category === 'all' || c.category === category;
     const matchesDistrict = district === 'all' || c.district === district;
     const matchesSeverity = severity === 'all' || c.severity === severity;
@@ -197,13 +211,15 @@ export default function ExplorePage({ challenges = [], onNavigate }) {
                     {item.description}
                   </p>
 
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '16px', position: 'relative' }}>
-                    {item.skills_required.map((skill, sIdx) => (
-                      <span key={sIdx} style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', background: 'var(--bg-elevated)', padding: '3px 8px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
-                        {skill}
-                      </span>
-                    ))}
-                  </div>
+                  {(item.skills_required || []).length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '16px', position: 'relative' }}>
+                      {(item.skills_required || []).map((skill, sIdx) => (
+                        <span key={sIdx} style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', background: 'var(--bg-elevated)', padding: '3px 8px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '14px', marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '10px', position: 'relative' }}>
@@ -220,7 +236,7 @@ export default function ExplorePage({ challenges = [], onNavigate }) {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                     <div style={{ display: 'flex', gap: '12px' }}>
                       <div>Supports: <strong style={{ color: 'var(--text-primary)' }}>{item.support_count || 0}</strong></div>
-                      <div>Status: <strong style={{ color: 'var(--primary)', textTransform: 'capitalize' }}>{item.status.replace('_', ' ')}</strong></div>
+                      <div>Status: <strong style={{ color: 'var(--primary)', textTransform: 'capitalize' }}>{(item.status || 'reported').replace('_', ' ')}</strong></div>
                     </div>
                     <button 
                       onClick={() => onNavigate(`challenge/${item.id}`)} 

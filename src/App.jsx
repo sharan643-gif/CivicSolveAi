@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Sparkles, Search, Bell, AlertCircle, LogOut, User, ChevronDown, ArrowLeft, Home, Compass, Lightbulb, ShieldCheck, DollarSign, BookOpen, FileText, LayoutDashboard, Plus, Trophy, BarChart3, Brain, Heart, Eye, Zap, Award, Map, Mic } from 'lucide-react';
 import { supabase } from './services/supabaseClient';
-import { getChallenges, getStats, addChallenge, addAuditLog, getProfileById } from './services/supabaseService';
+import { getChallenges, getStats, addChallenge, updateChallenge, addAuditLog, getProfileById, uploadEvidenceFiles } from './services/supabaseService';
 import LandingPage from './pages/LandingPage';
 import ExplorePage from './pages/ExplorePage';
 import SubmitPage from './pages/SubmitPage';
@@ -247,7 +247,25 @@ export default function App() {
 
   const refreshDatabaseState = async () => {
     const [newChallenges, newStats] = await Promise.all([getChallenges(), getStats()]);
-    setChallenges(newChallenges);
+    // Filter out old duplicate challenges with hardcoded default data
+    // These were created by the old wizard that had fallback defaults
+    const seenDefaults = new Set();
+    const cleaned = newChallenges.filter(c => {
+      const isOldDefault = (
+        c.title === 'Drinking water issue' &&
+        c.description === 'Village roads become impassable during heavy rainfall.' &&
+        c.location === 'Sikaripara Block, Dumka' &&
+        c.priority_score === 91
+      );
+      if (isOldDefault) {
+        // Keep only the first occurrence, remove duplicates
+        const key = `${c.title}|${c.description}|${c.location}`;
+        if (seenDefaults.has(key)) return false;
+        seenDefaults.add(key);
+      }
+      return true;
+    });
+    setChallenges(cleaned);
     setStats(newStats);
   };
 
@@ -279,12 +297,35 @@ export default function App() {
   };
 
   const handleCreateChallenge = async (newChallenge) => {
-    // Strip client-only fields before inserting
-    const { id: _id, evidence, timeline, comments, ...insertable } = newChallenge;
+    // Strip client-only fields before inserting to DB
+    const { id: _id, evidence, timeline, comments, _rawFiles, evidence_files, ...insertable } = newChallenge;
+    // Ensure required fields have defaults
+    insertable.title = insertable.title || 'Untitled Challenge';
+    insertable.description = insertable.description || '';
+    insertable.status = insertable.status || 'reported';
+    insertable.created_at = insertable.created_at || new Date().toISOString();
+    insertable.priority_score = insertable.priority_score || 50;
+    insertable.skills_required = insertable.skills_required || [];
+    insertable.support_count = insertable.support_count || 0;
+    insertable.reports_count = insertable.reports_count || 1;
     const saved = await addChallenge(insertable);
+
     if (saved) {
+      // Upload evidence files to storage and save URLs to the challenge
+      const rawFiles = _rawFiles || [];
+      if (rawFiles.length > 0) {
+        try {
+          const uploadedUrls = await uploadEvidenceFiles(rawFiles, saved.id);
+          if (uploadedUrls.length > 0) {
+            await updateChallenge(saved.id, { evidence: uploadedUrls });
+          }
+        } catch (fileErr) {
+          console.warn('[App] Evidence upload error:', fileErr.message);
+        }
+      }
+
       await refreshDatabaseState();
-      addToast('Challenge Submitted', `"${newChallenge.title}" — AI Priority: ${newChallenge.priority_score}/100.`, 'success');
+      addToast('Challenge Submitted', `"${newChallenge.title}" — AI Priority: ${newChallenge.priority_score}/100.${rawFiles.length > 0 ? ` ${rawFiles.length} file(s) uploaded.` : ''}`, 'success');
     } else {
       addToast('Error', 'Failed to submit challenge. Please try again.', 'error');
     }
@@ -596,7 +637,7 @@ export default function App() {
           </ProtectedRoute>
         )}
         {currentRoute === 'report' && (
-          isMobile ? <MobileReportWizard onSubmit={handleCreateChallenge} onBack={() => handleNavigate('landing')} /> : <SubmitPage onSubmit={handleCreateChallenge} challenges={challenges} onNavigate={handleNavigate} preFillData={voicePreFillData} onOpenVoice={() => setIsVoiceOpen(true)} />
+          isMobile ? <MobileReportWizard onSubmit={handleCreateChallenge} onBack={() => handleNavigate('landing')} preFillData={voicePreFillData} onOpenVoice={() => setIsVoiceOpen(true)} /> : <SubmitPage onSubmit={handleCreateChallenge} challenges={challenges} onNavigate={handleNavigate} preFillData={voicePreFillData} onOpenVoice={() => setIsVoiceOpen(true)} />
         )}
         {currentRoute === 'challenge-detail' && (
           <DetailPage
@@ -721,7 +762,7 @@ export default function App() {
   );
 }
 
-// ─── App Header — Liquid Glass ─────────────────────────────────────────────────
+// ─── App Header — iOS 27 Floating Pill ──────────────────────────────────────────
 function AppHeader({
   currentRoute, currentUser,
   isNotifOpen, setIsNotifOpen,
@@ -736,11 +777,6 @@ function AppHeader({
   onSelectTab = () => {},
   onOpenVoice = () => {},
 }) {
-  const getSectorColor = (sector) => {
-    const map = { citizen: '#06b6d4', government: '#3b82f6', university: '#f59e0b', student: '#10b981', industry: '#ec4899', expert: '#8b5cf6', ngo: '#f97316', startup: '#06b6d4', incubator: '#10b981', research: '#8b5cf6', funding: '#f59e0b', super_admin: '#ef4444' };
-    return map[sector] || '#3b82f6';
-  };
-
   return (
     <header style={{
       position: 'sticky',
@@ -748,8 +784,8 @@ function AppHeader({
       zIndex: 900,
       display: 'flex',
       justifyContent: 'center',
-      paddingTop: isMobile ? 'max(8px, var(--safe-top))' : '14px',
-      paddingBottom: isMobile ? '8px' : '14px',
+      paddingTop: isMobile ? 'max(8px, var(--safe-top))' : '10px',
+      paddingBottom: isMobile ? '8px' : '10px',
       background: '#f8f9fa',
       borderBottom: '1px solid var(--border-subtle)',
       pointerEvents: 'none',
@@ -759,21 +795,21 @@ function AppHeader({
           position: 'relative',
           display: 'flex',
           alignItems: 'center',
-          width: isMobile ? 'calc(100% - 24px)' : '95%',
-          maxWidth: isMobile ? '480px' : '1320px',
-          height: isMobile ? '52px' : '64px',
-          padding: isMobile ? '0 8px 0 10px' : '0 12px 0 20px',
+          width: isMobile ? 'calc(100% - 24px)' : '98%',
+          maxWidth: isMobile ? '480px' : '1400px',
+          height: isMobile ? '52px' : '58px',
+          padding: isMobile ? '0 8px 0 10px' : '0 16px 0 16px',
           background: '#ffffff',
           border: '1px solid var(--border-subtle)',
           borderRadius: '9999px',
-          boxShadow: '0 2px 10px rgba(0,0,0,0.10)',
+          boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
           pointerEvents: 'auto',
           overflow: 'visible',
           boxSizing: 'border-box',
         }}
       >
 
-        {/* Logo — fixed compact width on mobile */}
+        {/* Logo */}
         <div
           onClick={() => onNavigate('landing')}
           style={{
@@ -784,39 +820,48 @@ function AppHeader({
             flexShrink: 0,
             zIndex: 2,
             minWidth: 0,
+            paddingRight: isMobile ? '4px' : '12px',
           }}
         >
           <div style={{
             background: 'var(--primary)',
-            width: isMobile ? '32px' : '36px',
-            height: isMobile ? '32px' : '36px',
-            borderRadius: '8px',
+            width: isMobile ? '32px' : '38px',
+            height: isMobile ? '32px' : '38px',
+            borderRadius: '10px',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             flexShrink: 0,
           }}>
             <Sparkles size={isMobile ? 15 : 18} color="white" />
           </div>
-          <span style={{
-            fontSize: isMobile ? '0.92rem' : '1.1rem',
-            fontWeight: 800,
-            fontFamily: 'var(--font-display)',
-            letterSpacing: '-0.01em',
-            color: 'var(--primary)',
-            whiteSpace: 'nowrap',
-          }}>
-            JanSetu <span style={{ color: 'var(--accent)' }}>AI</span>
-          </span>
-          {!isMobile && (
-            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 500, letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>
-              Government Innovation Portal
+          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+            <span style={{
+              fontSize: isMobile ? '0.92rem' : '1.05rem',
+              fontWeight: 800,
+              fontFamily: 'var(--font-display)',
+              letterSpacing: '-0.01em',
+              color: 'var(--primary)',
+              whiteSpace: 'nowrap',
+              lineHeight: 1.15,
+            }}>
+              JanSetu <span style={{ color: 'var(--accent)' }}>AI</span>
             </span>
-          )}
+            {!isMobile && (
+              <span style={{ fontSize: '0.58rem', color: 'var(--text-muted)', fontWeight: 500, letterSpacing: '0.02em', whiteSpace: 'nowrap', lineHeight: 1.2 }}>
+                Government Innovation Portal
+              </span>
+            )}
+          </div>
         </div>
+
+        {/* Vertical divider */}
+        {!isMobile && (
+          <div style={{ width: '1px', height: '22px', background: 'rgba(0,0,0,0.08)', flexShrink: 0, margin: '0 6px 0 4px' }} />
+        )}
 
         {/* Desktop Navigation Items */}
         {!isMobile && (
-          <div style={{ display: 'flex', flex: 1, justifyContent: 'center', gap: '2px', position: 'relative', zIndex: 1 }}>
-            {NAV_ITEMS.map((item, idx) => {
+          <div style={{ display: 'flex', flex: 1, gap: '2px', position: 'relative', zIndex: 1 }}>
+            {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
 
@@ -829,7 +874,7 @@ function AppHeader({
                       display: 'flex',
                       alignItems: 'center',
                       gap: '6px',
-                      padding: '9px 18px',
+                      padding: '8px 18px',
                       borderRadius: '9999px',
                       border: '2px solid var(--accent)',
                       background: 'var(--accent)',
@@ -839,7 +884,7 @@ function AppHeader({
                       fontWeight: 700,
                       fontFamily: 'var(--font-body)',
                       whiteSpace: 'nowrap',
-                      margin: '0 6px',
+                      margin: '0 4px',
                       transition: 'background 0.15s ease',
                     }}
                     onMouseEnter={e => { e.currentTarget.style.background = '#cc4e00'; }}
@@ -907,7 +952,7 @@ function AppHeader({
           zIndex: 2,
           flexShrink: 0,
         }}>
-          {/* Voice AI Trigger — always visible, compact circle on mobile */}
+          {/* Voice AI Trigger */}
           <button
             onClick={onOpenVoice}
             title="Open JanSetu Voice AI Engine"
@@ -916,17 +961,20 @@ function AppHeader({
               background: 'var(--accent)',
               border: 'none',
               borderRadius: '9999px',
-              padding: isMobile ? '0' : '7px 14px',
+              padding: isMobile ? '0' : '8px 14px',
               width: isMobile ? '36px' : 'auto',
               height: isMobile ? '36px' : 'auto',
               justifyContent: 'center',
-              fontSize: '0.78rem',
+              fontSize: '0.8rem',
               fontWeight: 700,
               color: '#ffffff',
               cursor: 'pointer',
               flexShrink: 0,
               boxShadow: '0 2px 8px rgba(255,98,0,0.35)',
+              transition: 'background 0.15s ease',
             }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#cc4e00'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'var(--accent)'; }}
           >
             <Mic size={16} />
             {!isMobile && <span>Voice AI</span>}

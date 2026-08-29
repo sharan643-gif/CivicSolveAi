@@ -163,9 +163,9 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
       <div className="glass-card reveal detail-header-row" style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '20px', borderLeft: `5px solid ${getSeverityColor(challenge.severity)}` }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span className={`badge badge-${challenge.severity}`}>{challenge.severity}</span>
+            <span className={`badge badge-${challenge.severity || 'medium'}`}>{challenge.severity || 'medium'}</span>
             <span className="badge" style={{ background: 'rgba(59, 130, 246, 0.1)', color: 'var(--primary)' }}>
-              {challenge.status.replace('_', ' ')}
+              {(challenge.status || 'reported').replace('_', ' ')}
             </span>
           </div>
           
@@ -176,7 +176,7 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
               <MapPin size={14} />
               <span>{challenge.location}</span>
             </div>
-            <div>Affected: <strong style={{ color: 'var(--text-primary)' }}>{challenge.affected_population.toLocaleString()} residents</strong></div>
+            <div>Affected: <strong style={{ color: 'var(--text-primary)' }}>{(challenge.affected_population || 0).toLocaleString()} residents</strong></div>
             <div>Reports: <strong style={{ color: 'var(--text-primary)' }}>{challenge.reports_count} files</strong></div>
           </div>
         </div>
@@ -257,11 +257,17 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
               <div style={{ marginTop: '16px' }}>
                 <h4 style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 700, marginBottom: '10px' }}>Submitted Photographic Evidence</h4>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px' }}>
-                  {challenge.evidence.map(ev => (
-                    <div key={ev.id} style={{ borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
-                      <img src={ev.url} alt={ev.name} style={{ width: '100%', height: '140px', objectFit: 'cover' }} />
+                  {challenge.evidence.map((ev, evIdx) => (
+                    <div key={ev.id || evIdx} style={{ borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
+                      {ev.type && ev.type.startsWith('video/') ? (
+                        <video src={ev.url} controls style={{ width: '100%', height: '140px', objectFit: 'cover' }} />
+                      ) : ev.url && (ev.url.startsWith('http') || ev.url.startsWith('data:')) ? (
+                        <img src={ev.url} alt={ev.name || 'Evidence'} style={{ width: '100%', height: '140px', objectFit: 'cover' }} />
+                      ) : (
+                        <div style={{ width: '100%', height: '140px', background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem' }}>📎</div>
+                      )}
                       <div style={{ padding: '8px', fontSize: '0.75rem', color: 'var(--text-secondary)', background: 'var(--bg-primary)' }}>
-                        📎 {ev.name}
+                        📎 {ev.name || 'Evidence file'}
                       </div>
                     </div>
                   ))}
