@@ -418,7 +418,7 @@ export default function App() {
   if (authState === 'super-admin-login') {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--bg-primary)' }}>
-        <SuperAdminLogin onLogin={handleLogin} />
+        <SuperAdminLogin onLogin={handleLogin} onBack={() => setAuthState('sector-select')} />
       </div>
     );
   }

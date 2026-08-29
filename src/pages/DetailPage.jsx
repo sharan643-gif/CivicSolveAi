@@ -478,15 +478,15 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
             /* AI Skill Matching recommendations (If no team formed yet) */
             <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div>
-                <h3 style={{ fontSize: '1.2rem', color: 'white', marginBottom: '4px' }}>AI-Powered Team Matching Recommendations</h3>
+                <h3 style={{ fontSize: '1.2rem', color: 'var(--text-primary)', marginBottom: '4px', fontWeight: 800 }}>AI-Powered Team Matching Recommendations</h3>
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>We have identified active students with complementary skills compatible with this challenge.</p>
               </div>
 
               {/* Skill checklist matching */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', padding: '12px', background: 'rgba(139, 92, 246, 0.05)', borderRadius: '8px', border: '1px solid rgba(139, 92, 246, 0.15)' }}>
-                <span style={{ fontSize: '0.8rem', color: 'var(--ai-purple)', fontWeight: 600 }}>Challenge Demands:</span>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', padding: '12px', background: 'rgba(0, 48, 135, 0.05)', borderRadius: '8px', border: '1px solid rgba(0, 48, 135, 0.15)' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 700 }}>Challenge Demands:</span>
                 {challenge.skills_required.map((skill, i) => (
-                  <span key={i} style={{ fontSize: '0.75rem', color: '#fff' }}>✓ {skill}</span>
+                  <span key={i} style={{ fontSize: '0.78rem', color: 'var(--text-primary)', fontWeight: 500 }}>✓ {skill}</span>
                 ))}
               </div>
 
@@ -497,16 +497,16 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
                   { name: 'Priya Sharma', role: 'Backend Architect', compatibility: 94, avatar: '👩‍💻', skills: ['Python', 'IoT', 'Django'] },
                   { name: 'Rohan Das', role: 'IoT Firmware Developer', compatibility: 90, avatar: '👨‍💻', skills: ['IoT', 'Embedded C++', 'Civil Eng.'] }
                 ].map((student, idx) => (
-                  <div key={idx} style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '14px', position: 'relative' }}>
+                  <div key={idx} style={{ background: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '14px', position: 'relative' }}>
                     <div style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--success)' }}>
                       {student.compatibility}% compatible
                     </div>
                     <div style={{ fontSize: '1.5rem', marginBottom: '8px' }}>{student.avatar}</div>
-                    <h4 style={{ fontSize: '0.9rem', color: '#fff' }}>{student.name}</h4>
+                    <h4 style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 700 }}>{student.name}</h4>
                     <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '8px' }}>{student.role}</span>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                       {student.skills.map((s, i) => (
-                        <span key={i} style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.03)', padding: '2px 4px', borderRadius: '2px', color: 'var(--text-secondary)' }}>{s}</span>
+                        <span key={i} style={{ fontSize: '0.68rem', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', color: 'var(--text-secondary)' }}>{s}</span>
                       ))}
                     </div>
                   </div>

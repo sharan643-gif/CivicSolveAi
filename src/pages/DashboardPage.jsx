@@ -570,7 +570,7 @@ export default function DashboardPage({ activeRole, currentUser, onNavigate, onL
     return (
       <div style={{ textAlign: 'center', padding: '60px 20px' }}>
         <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🔒</div>
-        <h2 style={{ fontSize: 'clamp(1.2rem, 4vw, 1.5rem)', fontFamily: 'var(--font-display)', fontWeight: 800, color: '#fff', marginBottom: '12px' }}>Sign In to Access Your Dashboard</h2>
+        <h2 style={{ fontSize: 'clamp(1.2rem, 4vw, 1.5rem)', fontFamily: 'var(--font-display)', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '12px' }}>Sign In to Access Your Dashboard</h2>
         <p style={{ color: 'var(--text-secondary)', marginBottom: '28px', maxWidth: '400px', margin: '0 auto 28px' }}>
           Each sector has its own personalized dashboard with role-specific tools, workflows and permissions.
         </p>

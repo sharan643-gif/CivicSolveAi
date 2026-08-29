@@ -283,9 +283,9 @@ export default function SubmitPage({ onSubmit, challenges = [], onNavigate, preF
                 alignItems: 'center',
                 gap: '8px'
               }}>
-                <Upload size={24} style={{ color: 'var(--text-secondary)' }} />
-                <span style={{ fontSize: '0.85rem', color: '#fff' }}>Click to select files, or drag-and-drop evidence files here</span>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Supports JPG, PNG, PDF (Max 10MB)</span>
+                <Upload size={24} style={{ color: 'var(--primary)' }} />
+                <span style={{ fontSize: '0.88rem', color: 'var(--text-primary)', fontWeight: 600 }}>Click to select files, or drag-and-drop evidence files here</span>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Supports JPG, PNG, PDF (Max 10MB)</span>
               </div>
             </div>
 
@@ -435,7 +435,7 @@ export default function SubmitPage({ onSubmit, challenges = [], onNavigate, preF
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', fontWeight: 600, textTransform: 'uppercase' }}>Suggested Technologies</span>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   {aiAnalysis.suggested_technologies.map((tech, i) => (
-                    <div key={i} style={{ fontSize: '0.75rem', color: '#fff', background: 'rgba(59,130,246,0.1)', padding: '4px 8px', borderRadius: '4px', border: '1px solid rgba(59,130,246,0.15)' }}>
+                    <div key={i} style={{ fontSize: '0.78rem', color: 'var(--text-primary)', background: 'var(--primary-light)', padding: '6px 10px', borderRadius: '6px', border: '1px solid rgba(0,48,135,0.15)', fontWeight: 600 }}>
                       🛠 {tech}
                     </div>
                   ))}

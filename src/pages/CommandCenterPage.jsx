@@ -63,7 +63,7 @@ export default function CommandCenterPage() {
       </div>
 
       {/* State → District → Block → Village Administrative Drilldown */}
-      <div className="glass-l2" style={{ padding: '16px 20px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', alignItems: 'center' }}>
+      <div className="glass-l2" style={{ padding: '16px 20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', alignItems: 'center' }}>
         <div>
           <label style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px', display: 'block' }}>State</label>
           <select value={stateName} onChange={e => setStateName(e.target.value)} className="form-select" style={{ padding: '8px' }}>
@@ -97,7 +97,7 @@ export default function CommandCenterPage() {
       </div>
 
       {/* Map Heatmap & SLA Section */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
         <GeographicHeatmap />
         <SlaTracker />
       </div>

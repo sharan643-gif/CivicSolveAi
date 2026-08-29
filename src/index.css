@@ -634,6 +634,11 @@ body select option {
    MOBILE RESPONSIVE
    ═══════════════════════════════════════════════════════════════════ */
 
+/* Auth mobile header - hidden on desktop by default */
+.auth-mobile-header {
+  display: none !important;
+}
+
 @media (max-width: 768px), (max-aspect-ratio: 13/10) {
   h1 { font-size: clamp(1.4rem, 5vw, 2rem) !important; }
   h2 { font-size: clamp(1.1rem, 4vw, 1.5rem) !important; }
@@ -712,29 +717,64 @@ body select option {
     font-size: 0.75rem !important;
   }
 
+  /* ── Auth Sector Mobile Layout ─────────────────────────────────── */
   .auth-sector-page {
-    padding: 12px !important;
-    align-items: flex-start !important;
+    padding: 0 0 80px !important;
+    align-items: stretch !important;
+    min-height: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .auth-sector-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template-columns: 1fr !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Branding panel: full-width vertical block */
+  .auth-sector-left {
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 18px 18px 14px !important;
+    gap: 10px !important;
+    border-right: none !important;
+    border-bottom: 1px solid rgba(0,48,135,0.15) !important;
     min-height: auto !important;
   }
+  .auth-sector-left h2 { font-size: 1.1rem !important; margin-bottom: 4px !important; }
 
-  .auth-sector-grid { border-radius: 8px !important; }
-
-  .auth-sector-left {
-    padding: 28px 20px !important;
-    border-right: none !important;
-    border-bottom: 1px solid var(--border-subtle) !important;
-    gap: 16px !important;
+  /* Compact mobile header: HIDDEN — branding panel replaces it */
+  .auth-mobile-header {
+    display: none !important;
   }
 
-  .auth-sector-left h2 { font-size: 1.4rem !important; }
-
+  /* Form panel: full-width below the branding */
   .auth-sector-right {
-    padding: 24px 20px !important;
+    padding: 18px 18px 24px !important;
     gap: 14px !important;
   }
 
-  .auth-sector-page .btn-primary { width: 100%; }
+  .auth-sector-page .btn-primary { width: 100% !important; }
+
+  /* Mobile table scroll containers */
+  .mobile-table-wrapper {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    margin: 0 -12px !important;
+    padding: 0 12px !important;
+  }
+
+  /* Responsive form inputs */
+  .form-input, .form-select, .form-textarea {
+    font-size: 16px !important; /* Prevent iOS zoom */
+  }
+
 }
 
 /* ═══════════════════════════════════════════════════════════════════
