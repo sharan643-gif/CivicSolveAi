@@ -79,10 +79,12 @@ export async function addChallenge(challenge) {
 // ─── FILE UPLOAD (EVIDENCE) ───────────────────────────────────────────────────
 
 /**
- * Upload evidence files to Supabase Storage and return an array of URL objects.
- * Falls back to base64 local encoding if Supabase storage is unavailable.
+ * Process evidence files: create compressed thumbnails for database storage.
+ * Images are resized to max 400px width and compressed to JPEG quality 0.6
+ * so each thumbnail is ~10-30KB, well within database row limits.
+ * Videos/PDFs store metadata only.
  * @param {File[]} files - Array of File objects from <input type="file">
- * @param {string} challengeId - The challenge ID to namespace the upload path
+ * @param {string} challengeId - The challenge ID for namespacing
  * @returns {Promise<Array<{name: string, url: string, type: string, size: number}>>}
  */
 export async function uploadEvidenceFiles(files, challengeId) {
@@ -92,46 +94,27 @@ export async function uploadEvidenceFiles(files, challengeId) {
 
   for (const file of files) {
     try {
-      const filePath = `${challengeId}/${Date.now()}-${file.name}`;
-
-      // Try Supabase Storage first
-      const { data, error } = await supabase.storage
-        .from('evidence')
-        .upload(filePath, file, {
-          contentType: file.type,
-          upsert: false
-        });
-
-      if (!error && data?.path) {
-        // Get public URL
-        const { data: urlData } = supabase.storage
-          .from('evidence')
-          .getPublicUrl(data.path);
-
+      // For images: create compressed thumbnail via canvas
+      if (file.type.startsWith('image/')) {
+        const thumbUrl = await createCompressedThumbnail(file, 400, 0.6);
         uploaded.push({
           name: file.name,
-          url: urlData?.publicUrl || '',
+          url: thumbUrl,
           type: file.type,
           size: file.size
         });
-        continue;
+      } else {
+        // For videos/PDFs/other: store metadata only (no URL)
+        uploaded.push({
+          name: file.name,
+          url: '',
+          type: file.type,
+          size: file.size
+        });
       }
-    } catch (storageErr) {
-      console.warn('[supabaseService] Storage upload failed, using fallback:', storageErr.message);
-    }
-
-    // Fallback: convert to base64 data URL for local/mock storage
-    try {
-      const dataUrl = await fileToBase64(file);
-      uploaded.push({
-        name: file.name,
-        url: dataUrl,
-        type: file.type,
-        size: file.size
-      });
-    } catch (b64Err) {
-      console.warn('[supabaseService] Base64 fallback failed:', b64Err.message);
-      // At minimum store metadata even if file content couldn't be read
+    } catch (err) {
+      console.warn('[supabaseService] File processing failed:', err.message);
+      // At minimum store metadata
       uploaded.push({
         name: file.name,
         url: '',
@@ -144,10 +127,44 @@ export async function uploadEvidenceFiles(files, challengeId) {
   return uploaded;
 }
 
-function fileToBase64(file) {
+/**
+ * Create a compressed JPEG thumbnail from an image File.
+ * Resizes to maxWidth while maintaining aspect ratio.
+ * Returns a base64 data URL string (~10-30KB per image).
+ */
+function createCompressedThumbnail(file, maxWidth = 400, quality = 0.6) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          // Scale down if wider than maxWidth
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Compress to JPEG data URL
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve(dataUrl);
+        } catch (canvasErr) {
+          reject(canvasErr);
+        }
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });

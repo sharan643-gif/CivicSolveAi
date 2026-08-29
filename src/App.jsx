@@ -247,6 +247,19 @@ export default function App() {
 
   const refreshDatabaseState = async () => {
     const [newChallenges, newStats] = await Promise.all([getChallenges(), getStats()]);
+
+    // Merge localStorage evidence data (reliable fallback for uploaded images)
+    try {
+      const localEvidence = JSON.parse(localStorage.getItem('civicsolve_evidence') || '{}');
+      newChallenges.forEach(c => {
+        if (localEvidence[c.id] && (!c.evidence || c.evidence.length === 0)) {
+          c.evidence = localEvidence[c.id];
+        }
+      });
+    } catch (lsErr) {
+      // ignore
+    }
+
     // Filter out old duplicate challenges with hardcoded default data
     // These were created by the old wizard that had fallback defaults
     const seenDefaults = new Set();
@@ -297,8 +310,8 @@ export default function App() {
   };
 
   const handleCreateChallenge = async (newChallenge) => {
-    // Strip client-only fields before inserting to DB
-    const { id: _id, evidence, timeline, comments, _rawFiles, evidence_files, ...insertable } = newChallenge;
+    // Strip only client-only runtime fields before inserting to DB
+    const { id: _id, evidence, timeline, comments, _rawFiles, ...insertable } = newChallenge;
     // Ensure required fields have defaults
     insertable.title = insertable.title || 'Untitled Challenge';
     insertable.description = insertable.description || '';
@@ -308,24 +321,47 @@ export default function App() {
     insertable.skills_required = insertable.skills_required || [];
     insertable.support_count = insertable.support_count || 0;
     insertable.reports_count = insertable.reports_count || 1;
+    insertable.evidence = [];
     const saved = await addChallenge(insertable);
 
     if (saved) {
-      // Upload evidence files to storage and save URLs to the challenge
+      // Process and save evidence files
       const rawFiles = _rawFiles || [];
+      let evidenceData = [];
+
       if (rawFiles.length > 0) {
         try {
-          const uploadedUrls = await uploadEvidenceFiles(rawFiles, saved.id);
-          if (uploadedUrls.length > 0) {
-            await updateChallenge(saved.id, { evidence: uploadedUrls });
-          }
+          // Create compressed thumbnails for database storage
+          evidenceData = await uploadEvidenceFiles(rawFiles, saved.id);
         } catch (fileErr) {
-          console.warn('[App] Evidence upload error:', fileErr.message);
+          console.warn('[App] Evidence processing error:', fileErr.message);
+        }
+
+        // Always save evidence_files metadata (name, type, size)
+        const evidenceMeta = insertable.evidence_files || [];
+
+        // Save to database
+        try {
+          await updateChallenge(saved.id, {
+            evidence: evidenceData,
+            evidence_files: evidenceMeta
+          });
+        } catch (dbErr) {
+          console.warn('[App] DB update for evidence failed, saving to localStorage:', dbErr.message);
+        }
+
+        // Always save to localStorage as reliable fallback
+        try {
+          const localEvidence = JSON.parse(localStorage.getItem('civicsolve_evidence') || '{}');
+          localEvidence[saved.id] = evidenceData;
+          localStorage.setItem('civicsolve_evidence', JSON.stringify(localEvidence));
+        } catch (lsErr) {
+          console.warn('[App] localStorage save failed:', lsErr.message);
         }
       }
 
       await refreshDatabaseState();
-      addToast('Challenge Submitted', `"${newChallenge.title}" — AI Priority: ${newChallenge.priority_score}/100.${rawFiles.length > 0 ? ` ${rawFiles.length} file(s) uploaded.` : ''}`, 'success');
+      addToast('Challenge Submitted', `"${newChallenge.title}" — AI Priority: ${newChallenge.priority_score}/100.${evidenceData.length > 0 ? ` ${evidenceData.length} photo(s) attached.` : ''}`, 'success');
     } else {
       addToast('Error', 'Failed to submit challenge. Please try again.', 'error');
     }

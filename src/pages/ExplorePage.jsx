@@ -195,7 +195,14 @@ export default function ExplorePage({ challenges = [], onNavigate }) {
               }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', position: 'relative' }}>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'var(--font-display)', fontWeight: 700 }}>ID: #{item.id}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'var(--font-display)', fontWeight: 700 }}>ID: #{item.id}</span>
+                      {(item.evidence?.length > 0 || item.evidence_files?.length > 0) && (
+                        <span style={{ fontSize: '0.65rem', color: 'var(--primary)', background: 'var(--primary-light)', padding: '1px 6px', borderRadius: '10px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '3px' }}>
+                          📷 {item.evidence?.length || item.evidence_files?.length || 0}
+                        </span>
+                      )}
+                    </div>
                     <span className="badge" style={{
                       background: `${getSeverityColor(item.severity)}12`,
                       color: getSeverityColor(item.severity),
@@ -204,6 +211,17 @@ export default function ExplorePage({ challenges = [], onNavigate }) {
                       {item.severity} severity
                     </span>
                   </div>
+
+                  {/* Evidence thumbnail if photos uploaded */}
+                  {item.evidence && item.evidence.length > 0 && item.evidence[0]?.url && (
+                    <div style={{ marginBottom: '10px', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
+                      <img
+                        src={item.evidence[0].url}
+                        alt="Evidence"
+                        style={{ width: '100%', height: '140px', objectFit: 'cover', display: 'block' }}
+                      />
+                    </div>
+                  )}
 
                   <h3 style={{ fontSize: '1.15rem', color: 'var(--text-primary)', fontWeight: 800, marginBottom: '8px' }}>{item.title}</h3>
                   

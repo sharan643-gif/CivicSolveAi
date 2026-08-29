@@ -21,6 +21,19 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
     async function loadData() {
       setLoading(true);
       const [cList, tList] = await Promise.all([getChallenges(), getTeams()]);
+
+      // Merge localStorage evidence data with database challenges
+      try {
+        const localEvidence = JSON.parse(localStorage.getItem('civicsolve_evidence') || '{}');
+        cList.forEach(c => {
+          if (localEvidence[c.id] && (!c.evidence || c.evidence.length === 0)) {
+            c.evidence = localEvidence[c.id];
+          }
+        });
+      } catch (lsErr) {
+        console.warn('[DetailPage] Failed to load local evidence:', lsErr.message);
+      }
+
       setChallenges(cList);
       setTeams(tList);
       setLoading(false);
@@ -206,6 +219,64 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
           </div>
         </div>
       </div>
+
+      {/* ── EVIDENCE GALLERY — Prominent display of uploaded photos/videos ── */}
+      {(challenge.evidence && challenge.evidence.length > 0) || (challenge.evidence_files && challenge.evidence_files.length > 0) ? (
+        <div style={{ background: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '20px', boxShadow: 'var(--shadow-sm)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+            <span style={{ fontSize: '1.1rem' }}>📷</span>
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+              Field Evidence — {challenge.evidence?.length || challenge.evidence_files?.length || 0} file{(challenge.evidence?.length || challenge.evidence_files?.length || 0) > 1 ? 's' : ''} uploaded
+            </h3>
+          </div>
+
+          {/* Main gallery grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' }}>
+            {/* Render evidence from 'evidence' array (uploaded URLs) */}
+            {(challenge.evidence || []).map((ev, idx) => (
+              <div key={ev.id || `ev-${idx}`} style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)' }}>
+                {ev.type && ev.type.startsWith('video/') ? (
+                  <video src={ev.url} controls style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block' }} />
+                ) : ev.url && (ev.url.startsWith('http') || ev.url.startsWith('data:')) ? (
+                  <img
+                    src={ev.url}
+                    alt={ev.name || 'Evidence photo'}
+                    style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block', cursor: 'pointer' }}
+                    onClick={() => window.open(ev.url, '_blank')}
+                  />
+                ) : (
+                  <div style={{ width: '100%', height: '180px', background: 'linear-gradient(135deg, #f1f5f9, #e2e8f0)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '6px' }}>
+                    <span style={{ fontSize: '2rem' }}>📎</span>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>File attached</span>
+                  </div>
+                )}
+                <div style={{ padding: '8px 10px', background: 'var(--bg-primary)', borderTop: '1px solid var(--border-subtle)' }}>
+                  <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    📎 {ev.name || 'Evidence file'}
+                  </div>
+                  {ev.size && <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '2px' }}>{(ev.size / 1024).toFixed(0)} KB</div>}
+                </div>
+              </div>
+            ))}
+
+            {/* Also render evidence_files metadata (name/type/size only, no URL) */}
+            {(challenge.evidence_files || []).map((ef, idx) => (
+              <div key={`ef-${idx}`} style={{ borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)' }}>
+                <div style={{ width: '100%', height: '180px', background: 'linear-gradient(135deg, #f1f5f9, #e2e8f0)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '6px' }}>
+                  <span style={{ fontSize: '2rem' }}>{ef.type?.includes('video') ? '📹' : ef.type?.includes('pdf') ? '📄' : '🖼️'}</span>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>File attached</span>
+                </div>
+                <div style={{ padding: '8px 10px', background: 'var(--bg-primary)', borderTop: '1px solid var(--border-subtle)' }}>
+                  <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    📎 {ef.name || 'Evidence file'}
+                  </div>
+                  {ef.size && <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '2px' }}>{(ef.size / 1024).toFixed(0)} KB</div>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       {/* JanSetu Lifecycle Loop Signature */}
       <JanSetuLoop activeStage={challenge.status === 'prototype' ? 'BUILD' : challenge.status === 'pilot' ? 'VALIDATE' : challenge.status === 'implemented' ? 'MEASURE' : 'UNDERSTAND'} />
