@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { Sparkles, AlertTriangle, Upload, Eye, FileText, Brain, ArrowRight, ArrowLeft, Wand2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Sparkles, AlertTriangle, Upload, Eye, FileText, Brain, ArrowRight, ArrowLeft, Wand2, Mic } from 'lucide-react';
 import { aiService } from '../services/aiService';
 import { groqService } from '../services/groqClientService';
 import { CATEGORIES } from '../services/mockData';
 
-export default function SubmitPage({ onSubmit, challenges = [], onNavigate }) {
+export default function SubmitPage({ onSubmit, challenges = [], onNavigate, preFillData = null, onOpenVoice = () => {} }) {
   // Form State
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -19,6 +19,19 @@ export default function SubmitPage({ onSubmit, challenges = [], onNavigate }) {
   const [severity, setSeverity] = useState('high');
   const [additionalInfo, setAdditionalInfo] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+
+  // Sync Voice Pre-fill Data if provided
+  useEffect(() => {
+    if (preFillData) {
+      if (preFillData.title) setTitle(preFillData.title);
+      if (preFillData.description) setDescription(preFillData.description);
+      if (preFillData.category) setCategory(preFillData.category);
+      if (preFillData.location) setLocation(preFillData.location);
+      if (preFillData.district) setLocation(prev => prev ? `${prev}, ${preFillData.district}` : preFillData.district);
+      if (preFillData.severity) setSeverity(preFillData.severity.toLowerCase());
+      if (preFillData.affected_population) setAffectedPop(preFillData.affected_population.toString());
+    }
+  }, [preFillData]);
 
   // UI Flow State
   const [step, setStep] = useState(1); // 1 = Form, 2 = AI Loading, 3 = Duplicate Alert, 4 = AI Preview/Approve
@@ -119,23 +132,44 @@ export default function SubmitPage({ onSubmit, challenges = [], onNavigate }) {
       {/* STEP 1: Main Citizen Report Form */}
       {step === 1 && (
         <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
-            <div>
-              <h1 style={{ fontSize: '1.8rem', color: 'white', marginBottom: '6px' }}>Report a Societal Challenge</h1>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                Report a localized bottleneck. Our Groq AI Engine will analyze details, classify severity, match experts, and suggest departments.
-              </p>
+          <div>
+            <h1 style={{ fontSize: '1.8rem', color: 'white', marginBottom: '6px' }}>Report a Societal Challenge</h1>
+          </div>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Fill out the citizen grievance details below:</span>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={onOpenVoice}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  padding: '8px 14px',
+                  background: 'var(--accent)',
+                  border: 'none',
+                  color: '#ffffff',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(255,98,0,0.3)',
+                }}
+              >
+                <Mic size={15} />
+                <span>Speak & AI Auto-Fill</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleGenerateDraft}
+                disabled={isGenerating}
+                className="btn btn-secondary"
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', fontSize: '0.82rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer' }}
+              >
+                <Wand2 size={15} />
+                {isGenerating ? 'Drafting with AI...' : 'Auto-Generate Draft'}
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={handleGenerateDraft}
-              disabled={isGenerating}
-              className="btn btn-secondary"
-              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)', color: '#c084fc', fontSize: '0.82rem', fontWeight: 600, borderRadius: '8px', cursor: 'pointer' }}
-            >
-              <Wand2 size={15} />
-              {isGenerating ? 'Drafting with Groq AI...' : 'Auto-Generate Draft with AI'}
-            </button>
           </div>
 
           <form onSubmit={e => { e.preventDefault(); triggerAiAnalysis(); }} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>

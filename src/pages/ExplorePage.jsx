@@ -62,9 +62,10 @@ export default function ExplorePage({ challenges = [], onNavigate }) {
               padding: '8px 12px',
               fontSize: '0.8rem',
               borderRadius: '8px',
-              background: viewMode === 'grid' ? 'rgba(59,130,246,0.15)' : 'transparent',
-              borderColor: viewMode === 'grid' ? 'rgba(59,130,246,0.3)' : 'transparent',
-              color: viewMode === 'grid' ? 'white' : 'var(--text-secondary)'
+              background: viewMode === 'grid' ? 'var(--primary-light)' : 'transparent',
+              borderColor: viewMode === 'grid' ? 'var(--primary)' : 'transparent',
+              color: viewMode === 'grid' ? 'var(--primary)' : 'var(--text-secondary)',
+              fontWeight: 700
             }}
           >
             <LayoutGrid size={14} />
@@ -77,9 +78,10 @@ export default function ExplorePage({ challenges = [], onNavigate }) {
               padding: '8px 12px',
               fontSize: '0.8rem',
               borderRadius: '8px',
-              background: viewMode === 'map' ? 'rgba(59,130,246,0.15)' : 'transparent',
-              borderColor: viewMode === 'map' ? 'rgba(59,130,246,0.3)' : 'transparent',
-              color: viewMode === 'map' ? 'white' : 'var(--text-secondary)'
+              background: viewMode === 'map' ? 'var(--primary-light)' : 'transparent',
+              borderColor: viewMode === 'map' ? 'var(--primary)' : 'transparent',
+              color: viewMode === 'map' ? 'var(--primary)' : 'var(--text-secondary)',
+              fontWeight: 700
             }}
           >
             <Map size={14} />
@@ -164,7 +166,7 @@ export default function ExplorePage({ challenges = [], onNavigate }) {
         <div>
           {/* Active Items Counter */}
           <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
-            <span>Found <strong style={{ color: 'white' }}>{filteredChallenges.length}</strong> active challenges waiting for review.</span>
+            <span>Found <strong style={{ color: 'var(--primary)', fontWeight: 800 }}>{filteredChallenges.length}</strong> active challenges waiting for review.</span>
             {filteredChallenges.length === 0 && <span style={{ color: 'var(--danger)' }}>Adjust your filters.</span>}
           </div>
 
@@ -189,7 +191,7 @@ export default function ExplorePage({ challenges = [], onNavigate }) {
                     </span>
                   </div>
 
-                  <h3 style={{ fontSize: '1.15rem', color: '#fff', marginBottom: '8px' }}>{item.title}</h3>
+                  <h3 style={{ fontSize: '1.15rem', color: 'var(--text-primary)', fontWeight: 800, marginBottom: '8px' }}>{item.title}</h3>
                   
                   <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: '14px', lineHeight: '1.4', position: 'relative' }}>
                     {item.description}
@@ -197,7 +199,7 @@ export default function ExplorePage({ challenges = [], onNavigate }) {
 
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '16px', position: 'relative' }}>
                     {item.skills_required.map((skill, sIdx) => (
-                      <span key={sIdx} style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.04)', padding: '3px 8px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
+                      <span key={sIdx} style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', background: 'var(--bg-elevated)', padding: '3px 8px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
                         {skill}
                       </span>
                     ))}
@@ -217,7 +219,7 @@ export default function ExplorePage({ challenges = [], onNavigate }) {
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                     <div style={{ display: 'flex', gap: '12px' }}>
-                      <div>Supports: <strong style={{ color: 'white' }}>{item.support_count || 0}</strong></div>
+                      <div>Supports: <strong style={{ color: 'var(--text-primary)' }}>{item.support_count || 0}</strong></div>
                       <div>Status: <strong style={{ color: 'var(--primary)', textTransform: 'capitalize' }}>{item.status.replace('_', ' ')}</strong></div>
                     </div>
                     <button 

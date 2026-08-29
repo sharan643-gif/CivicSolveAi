@@ -74,7 +74,7 @@ export default function SolutionMarketplacePage({ onNavigate }) {
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', padding: '4px 10px', borderRadius: '100px', fontSize: '0.75rem', color: '#10b981', marginBottom: '8px' }}>
             <Rocket size={12} /> Solution Marketplace & Repository
           </div>
-          <h1 style={{ fontSize: '2rem', fontFamily: 'var(--font-display)', fontWeight: 800, color: '#fff' }}>
+          <h1 style={{ fontSize: '2rem', fontFamily: 'var(--font-display)', fontWeight: 800, color: 'var(--text-primary)' }}>
             Proven & Prototype Solutions
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
@@ -97,7 +97,7 @@ export default function SolutionMarketplacePage({ onNavigate }) {
         <div style={{ display: 'flex', gap: '6px' }}>
           {['all', 'idea', 'prototype', 'pilot-ready', 'implemented'].map(st => (
             <button key={st} onClick={() => setStageFilter(st)}
-              style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: stageFilter === st ? 'rgba(59,130,246,0.15)' : 'transparent', color: stageFilter === st ? '#fff' : 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.78rem', textTransform: 'capitalize', fontWeight: 600 }}>
+              style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: stageFilter === st ? 'var(--primary-light)' : 'transparent', color: stageFilter === st ? 'var(--primary)' : 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.78rem', textTransform: 'capitalize', fontWeight: 700 }}>
               {st.replace('-', ' ')}
             </button>
           ))}
@@ -110,14 +110,14 @@ export default function SolutionMarketplacePage({ onNavigate }) {
           <div key={sol.id} className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderTop: '3px solid var(--primary)' }}>
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                <span style={{ background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.25)', color: '#60a5fa', padding: '3px 8px', borderRadius: '100px', fontSize: '0.68rem', fontWeight: 700 }}>
+                <span style={{ background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.25)', color: '#1d4ed8', padding: '3px 8px', borderRadius: '100px', fontSize: '0.68rem', fontWeight: 700 }}>
                   {sol.stage}
                 </span>
-                <span style={{ fontSize: '0.78rem', color: '#f59e0b', fontWeight: 700 }}>★ {sol.rating} ({sol.reviews})</span>
+                <span style={{ fontSize: '0.78rem', color: '#b45309', fontWeight: 700 }}>★ {sol.rating} ({sol.reviews})</span>
               </div>
 
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff', marginBottom: '8px', lineHeight: 1.3 }}>{sol.title}</h3>
-              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '12px' }}>By: <strong style={{ color: 'var(--text-secondary)' }}>{sol.author}</strong></p>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px', lineHeight: 1.3 }}>{sol.title}</h3>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '12px' }}>By: <strong style={{ color: 'var(--text-primary)' }}>{sol.author}</strong></p>
               <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '16px' }}>{sol.impact}</p>
 
               {/* Tech stack */}
@@ -127,9 +127,9 @@ export default function SolutionMarketplacePage({ onNavigate }) {
                 ))}
               </div>
 
-              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '10px', borderRadius: '8px', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
-                <span>Estimated Cost: <strong style={{ color: '#fff' }}>{sol.estimatedCost}</strong></span>
-                <span>Sponsors: <strong style={{ color: '#10b981' }}>{sol.sponsors.length}</strong></span>
+              <div style={{ background: '#f8fafc', border: '1px solid var(--border-subtle)', padding: '10px', borderRadius: '8px', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
+                <span>Estimated Cost: <strong style={{ color: 'var(--text-primary)' }}>{sol.estimatedCost}</strong></span>
+                <span>Sponsors: <strong style={{ color: 'var(--success)' }}>{sol.sponsors.length}</strong></span>
               </div>
             </div>
 

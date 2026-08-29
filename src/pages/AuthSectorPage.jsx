@@ -184,39 +184,40 @@ export default function AuthSectorPage({ sectorId, onBack, onLogin }) {
 
   return (
     <div className="fade-in auth-sector-page" style={{ display: 'flex', minHeight: '90vh', alignItems: 'center', justifyContent: 'center', padding: '40px 0' }}>
-      <div className="auth-sector-grid" style={{ width: '100%', maxWidth: '900px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0', borderRadius: '24px', overflow: 'hidden', border: '1px solid var(--glass-border)', boxShadow: '0 24px 80px -16px rgba(0,0,0,0.7)' }}>
+      <div className="auth-sector-grid" style={{ width: '100%', maxWidth: '920px', display: 'grid', gridTemplateColumns: '1fr 1.1fr', gap: '0', borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--border-subtle)', boxShadow: '0 12px 40px rgba(0, 48, 135, 0.15)', background: '#ffffff' }}>
 
-        {/* Left: Branding Panel */}
+        {/* Left: Branding Panel — Deep Government Navy */}
         <div className="auth-sector-left" style={{
-          background: `linear-gradient(145deg, ${meta.color}1a, rgba(0,0,0,0.6))`,
-          borderRight: '1px solid var(--border-subtle)',
+          background: 'linear-gradient(135deg, #003087 0%, #001d5a 100%)',
+          borderRight: '1px solid rgba(255, 255, 255, 0.1)',
           padding: '48px 40px',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          gap: '24px'
+          gap: '24px',
+          color: '#ffffff'
         }}>
           <div>
-            <button onClick={onBack} className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '0.78rem', marginBottom: '32px' }}>
+            <button onClick={onBack} className="btn" style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: '#ffffff', padding: '6px 14px', fontSize: '0.78rem', marginBottom: '32px', borderRadius: '6px', fontWeight: 600 }}>
               <ArrowLeft size={14} /> All Sectors
             </button>
             <div style={{ fontSize: '3rem', marginBottom: '16px' }}>{sector.icon}</div>
             {meta.badge && (
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '100px', padding: '4px 10px', fontSize: '0.7rem', color: '#f87171', marginBottom: '16px' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(255,98,0,0.25)', border: '1px solid #FF6200', borderRadius: '100px', padding: '4px 12px', fontSize: '0.72rem', color: '#ffffff', marginBottom: '16px', fontWeight: 700 }}>
                 <Lock size={11} /> {meta.badge}
               </div>
             )}
-            <h2 style={{ fontSize: '1.8rem', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 800, lineHeight: 1.2, marginBottom: '12px' }}>{meta.title}</h2>
-            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{meta.subtitle}</p>
+            <h2 style={{ fontSize: '1.8rem', color: '#ffffff', fontFamily: 'var(--font-display)', fontWeight: 800, lineHeight: 1.2, marginBottom: '12px' }}>{meta.title}</h2>
+            <p style={{ fontSize: '0.9rem', color: 'rgba(255, 255, 255, 0.88)', lineHeight: 1.5 }}>{meta.subtitle}</p>
           </div>
 
           {/* Roles available list */}
           <div>
-            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px' }}>Available Roles</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <p style={{ fontSize: '0.72rem', color: 'rgba(255, 255, 255, 0.7)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px', fontWeight: 700 }}>Available Roles</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {roles.map(r => (
-                <div key={r} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: meta.color }} />
+                <div key={r} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.84rem', color: '#ffffff', fontWeight: 500 }}>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#FF6200' }} />
                   {r}
                 </div>
               ))}
@@ -224,18 +225,18 @@ export default function AuthSectorPage({ sectorId, onBack, onLogin }) {
           </div>
 
           {/* Info note */}
-          <div style={{ background: `${meta.color}10`, border: `1px solid ${meta.color}30`, borderRadius: '8px', padding: '12px 14px', fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+          <div style={{ background: 'rgba(255, 255, 255, 0.12)', border: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '8px', padding: '12px 14px', fontSize: '0.78rem', color: 'rgba(255, 255, 255, 0.95)', lineHeight: 1.5 }}>
             🔒 Credentials are verified through Supabase Auth. New registrations require admin approval.
           </div>
         </div>
 
         {/* Right: Form Panel */}
-        <div className="auth-sector-right glass-l2" style={{ padding: '48px 40px', display: 'flex', flexDirection: 'column', gap: '20px', borderRadius: '0' }}>
+        <div className="auth-sector-right" style={{ padding: '48px 40px', display: 'flex', flexDirection: 'column', gap: '20px', background: '#ffffff' }}>
           {/* Mode toggle */}
-          <div className="glass-l1" style={{ display: 'flex', gap: '2px', padding: '4px', borderRadius: '10px' }}>
+          <div style={{ display: 'flex', gap: '4px', padding: '4px', borderRadius: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-subtle)' }}>
             {['login', 'register'].map(m => (
               <button key={m} onClick={() => { setMode(m); setStep(1); setError(''); }}
-                style={{ flex: 1, padding: '8px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600, background: mode === m ? 'rgba(59,130,246,0.15)' : 'transparent', color: mode === m ? 'white' : 'var(--text-secondary)', textTransform: 'capitalize' }}>
+                style={{ flex: 1, padding: '8px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 700, background: mode === m ? 'var(--primary)' : 'transparent', color: mode === m ? '#ffffff' : 'var(--text-secondary)', textTransform: 'capitalize', transition: 'all 0.15s ease' }}>
                 {m === 'login' ? 'Sign In' : 'Create Account'}
               </button>
             ))}

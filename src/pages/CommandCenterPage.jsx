@@ -47,7 +47,7 @@ export default function CommandCenterPage() {
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)', padding: '4px 10px', borderRadius: '100px', fontSize: '0.75rem', color: '#60a5fa', marginBottom: '8px' }}>
             <ShieldAlert size={12} /> National & District Command Operations
           </div>
-          <h1 style={{ fontSize: '2rem', fontFamily: 'var(--font-display)', fontWeight: 800, color: '#fff' }}>
+          <h1 style={{ fontSize: '2rem', fontFamily: 'var(--font-display)', fontWeight: 800, color: 'var(--text-primary)' }}>
             District Command Center
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
@@ -107,7 +107,7 @@ export default function CommandCenterPage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <GitMerge size={18} color="#f59e0b" />
-            <h3 style={{ fontSize: '1.1rem', fontFamily: 'var(--font-display)', fontWeight: 800, color: '#fff' }}>
+            <h3 style={{ fontSize: '1.1rem', fontFamily: 'var(--font-display)', fontWeight: 800, color: 'var(--text-primary)' }}>
               Regional Challenge Clusters (#1042)
             </h3>
           </div>
@@ -119,8 +119,8 @@ export default function CommandCenterPage() {
             <div key={cl.id} className="glass-l1" style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '0.72rem', background: 'rgba(245,158,11,0.15)', color: '#f59e0b', padding: '2px 8px', borderRadius: '4px', fontWeight: 700, fontFamily: 'monospace' }}>{cl.id}</span>
-                  <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff' }}>{cl.name}</h4>
+                  <span style={{ fontSize: '0.72rem', background: 'rgba(245,158,11,0.15)', color: '#b45309', padding: '2px 8px', borderRadius: '4px', fontWeight: 700, fontFamily: 'monospace' }}>{cl.id}</span>
+                  <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>{cl.name}</h4>
                 </div>
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '4px', display: 'flex', gap: '16px' }}>
                   <span>📊 {cl.reportsCount} Individual Reports</span>

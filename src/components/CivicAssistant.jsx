@@ -1,11 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Sparkles, Send, X, MessageSquare, Bot, RefreshCw, Trash2 } from 'lucide-react';
+import { Sparkles, Send, X, Bot, Trash2 } from 'lucide-react';
 import { groqService } from '../services/groqClientService';
 
 export default function CivicAssistant({ challenges = [] }) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
-    { role: 'assistant', text: 'Hello! I am your CivicSolve AI Assistant powered by Groq. Ask me how to report potholes, garbage issues, water leaks, or help draft a formal civic complaint.', date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
+    {
+      role: 'assistant',
+      text: 'Hello! I am your JanSetu AI Assistant. Ask me how to report potholes, water supply, road accessibility, or track civic solutions across Jharkhand.',
+      date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -35,7 +39,6 @@ export default function CivicAssistant({ challenges = [] }) {
     setHasError(false);
 
     try {
-      // Map to server payload format
       const payload = updatedMessages.map(m => ({ role: m.role, content: m.content || m.text }));
       const response = await groqService.generateCivicResponse(payload);
       
@@ -60,71 +63,87 @@ export default function CivicAssistant({ challenges = [] }) {
 
   const handleClearChat = () => {
     setMessages([
-      { role: 'assistant', text: 'Conversation cleared. How can I assist you with civic issues today?', date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
+      {
+        role: 'assistant',
+        text: 'Conversation cleared. How can I assist you with JanSetu civic issues today?',
+        date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }
     ]);
     setHasError(false);
   };
 
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+
   return (
-    <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 500, fontFamily: 'var(--font-body)' }}>
-      {/* Floating Action Button — Glass */}
+    <div style={{ position: 'fixed', bottom: isMobile ? '88px' : '24px', right: isMobile ? '14px' : '24px', zIndex: 980, fontFamily: 'var(--font-body)' }}>
+      {/* Floating Action Launcher */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="btn btn-ai"
+          title="Open JanSetu AI Assistant"
           style={{
-            width: '56px', height: '56px',
-            borderRadius: '50%',
-            padding: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 8px 30px rgba(139, 92, 246, 0.4), 0 0 0 1px rgba(255,255,255,0.1)',
-            transition: 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease',
+            height: '42px',
+            padding: '0 16px',
+            borderRadius: '9999px',
+            background: 'linear-gradient(135deg, #003087 0%, #001d5a 100%)',
+            border: '2px solid #FF6200',
+            color: '#ffffff',
+            fontWeight: 700,
+            fontSize: '0.82rem',
+            display: 'flex', alignItems: 'center', gap: '8px',
+            boxShadow: '0 4px 16px rgba(0, 48, 135, 0.3)',
+            cursor: 'pointer',
+            transition: 'transform 0.15s ease',
+            fontFamily: 'inherit',
           }}
         >
-          <Sparkles size={24} />
+          <Bot size={18} color="#FF6200" />
+          <span>JanSetu Assistant</span>
         </button>
       )}
 
-      {/* Chat Window Panel — Glass */}
+      {/* Chat Window Panel — High Contrast Government Portal Theme */}
       {isOpen && (
         <div
           style={{
-            width: '380px', height: '500px',
-            background: 'rgba(14, 19, 32, 0.92)',
-            backdropFilter: 'blur(40px) saturate(1.2)',
-            WebkitBackdropFilter: 'blur(40px) saturate(1.2)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '20px',
-            boxShadow: '0 24px 64px -16px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.06)',
+            width: isMobile ? 'calc(100vw - 28px)' : '380px',
+            height: isMobile ? '72vh' : '520px',
+            maxHeight: isMobile ? '72vh' : '520px',
+            background: '#ffffff',
+            border: '1px solid var(--border-medium)',
+            borderRadius: isMobile ? '16px' : '12px',
+            boxShadow: '0 12px 36px rgba(0, 48, 135, 0.25)',
             display: 'flex', flexDirection: 'column',
             overflow: 'hidden',
-            animation: 'scaleIn 0.25s cubic-bezier(0.22, 1.2, 0.36, 1) forwards',
+            animation: 'scaleIn 0.2s ease forwards',
             position: 'relative',
+            right: isMobile ? 0 : 'auto',
           }}
         >
-          {/* Header — Glass with gradient */}
+          {/* Header */}
           <div style={{
-            background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.12), rgba(59, 130, 246, 0.12))',
-            padding: '16px',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+            background: '#003087',
+            borderBottom: '3px solid #FF6200',
+            padding: '14px 16px',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            position: 'relative',
+            color: '#ffffff'
           }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)', pointerEvents: 'none' }} />
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{
-                background: 'linear-gradient(135deg, var(--ai-purple), var(--primary))',
+                background: '#FF6200',
                 width: '34px', height: '34px', borderRadius: '50%',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
               }}>
-                <Bot size={18} color="white" />
+                <Bot size={18} color="#ffffff" />
               </div>
               <div>
-                <h4 style={{ fontSize: '0.9rem', color: 'white', fontWeight: 600 }}>CivicSolve AI Assistant</h4>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 6px rgba(16,185,129,0.5)' }}></span>
-                  <span style={{ fontSize: '0.68rem', color: '#10b981', fontWeight: 600 }}>Powered by Groq</span>
+                <h4 style={{ fontSize: '0.92rem', color: '#ffffff', fontWeight: 800, margin: 0, lineHeight: 1.2 }}>
+                  JanSetu AI Assistant
+                </h4>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#4ade80' }}></span>
+                  <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.85)', fontWeight: 600 }}>Groq Powered Telemetry</span>
                 </div>
               </div>
             </div>
@@ -134,38 +153,39 @@ export default function CivicAssistant({ challenges = [] }) {
                 onClick={handleClearChat}
                 title="Clear Conversation"
                 style={{
-                  background: 'rgba(255,255,255,0.06)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: '8px',
+                  background: 'rgba(255,255,255,0.15)',
+                  border: 'none',
+                  borderRadius: '4px',
                   cursor: 'pointer',
-                  color: 'var(--text-muted)',
+                  color: '#ffffff',
                   padding: '5px',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'all 0.15s ease',
+                  transition: 'background 0.15s ease',
                 }}
               >
                 <Trash2 size={14} />
               </button>
               <button
                 onClick={() => setIsOpen(false)}
+                title="Close"
                 style={{
-                  background: 'rgba(255,255,255,0.06)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: '8px',
+                  background: 'rgba(255,255,255,0.15)',
+                  border: 'none',
+                  borderRadius: '4px',
                   cursor: 'pointer',
-                  color: 'var(--text-muted)',
+                  color: '#ffffff',
                   padding: '5px',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'all 0.15s ease',
+                  transition: 'background 0.15s ease',
                 }}
               >
-                <X size={15} />
+                <X size={16} />
               </button>
             </div>
           </div>
 
           {/* Messages list */}
-          <div style={{ flexGrow: 1, padding: '16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ flexGrow: 1, padding: '16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', background: '#f8fafc' }}>
             {messages.map((msg, index) => {
               const isAssistant = msg.role === 'assistant';
               return (
@@ -174,25 +194,24 @@ export default function CivicAssistant({ challenges = [] }) {
                   style={{
                     display: 'flex', flexDirection: 'column',
                     alignSelf: isAssistant ? 'flex-start' : 'flex-end',
-                    maxWidth: '85%',
-                    animation: 'fadeInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                    maxWidth: '88%',
                   }}
                 >
                   <div
                     style={{
-                      background: isAssistant ? 'rgba(255,255,255,0.04)' : 'var(--primary)',
-                      border: isAssistant ? '1px solid rgba(255,255,255,0.08)' : '1px solid transparent',
-                      borderRadius: isAssistant ? '14px 14px 14px 4px' : '14px 14px 4px 14px',
+                      background: isAssistant ? '#ffffff' : '#003087',
+                      border: isAssistant ? '1px solid #cbd5e1' : 'none',
+                      borderRadius: isAssistant ? '10px 10px 10px 2px' : '10px 10px 2px 10px',
                       padding: '10px 14px',
-                      fontSize: '0.82rem',
+                      fontSize: '0.84rem',
                       lineHeight: '1.45',
-                      color: '#ffffff',
-                      backdropFilter: isAssistant ? 'blur(8px)' : 'none',
+                      color: isAssistant ? '#0f172a' : '#ffffff',
+                      boxShadow: 'var(--shadow-xs)',
                     }}
                   >
                     {msg.text}
                   </div>
-                  <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)', marginTop: '3px', alignSelf: isAssistant ? 'flex-start' : 'flex-end' }}>
+                  <span style={{ fontSize: '0.62rem', color: '#64748b', marginTop: '3px', alignSelf: isAssistant ? 'flex-start' : 'flex-end', fontWeight: 500 }}>
                     {msg.date}
                   </span>
                 </div>
@@ -200,7 +219,7 @@ export default function CivicAssistant({ challenges = [] }) {
             })}
 
             {loading && (
-              <div style={{ display: 'flex', gap: '6px', alignSelf: 'flex-start', padding: '10px 14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '14px 14px 14px 4px' }}>
+              <div style={{ display: 'flex', gap: '6px', alignSelf: 'flex-start', padding: '10px 14px', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '10px 10px 10px 2px' }}>
                 <span className="skeleton" style={{ width: '8px', height: '8px', borderRadius: '50%' }}></span>
                 <span className="skeleton" style={{ width: '8px', height: '8px', borderRadius: '50%', animationDelay: '0.15s' }}></span>
                 <span className="skeleton" style={{ width: '8px', height: '8px', borderRadius: '50%', animationDelay: '0.3s' }}></span>
@@ -211,34 +230,38 @@ export default function CivicAssistant({ challenges = [] }) {
 
           {/* Quick suggestions */}
           {messages.length === 1 && !loading && (
-            <div style={{ padding: '0 16px 8px 16px' }}>
-              <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Suggested Inquiries</span>
+            <div style={{ padding: '8px 16px', background: '#ffffff', borderTop: '1px solid #e2e8f0' }}>
+              <span style={{ fontSize: '0.68rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '6px', fontWeight: 700 }}>
+                Suggested Inquiries
+              </span>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {suggestedQuestions.map((q, idx) => (
                   <button
                     key={idx}
                     onClick={() => handleSend(q)}
                     style={{
-                      background: 'rgba(255,255,255,0.03)',
-                      border: '1px solid rgba(255,255,255,0.06)',
-                      borderRadius: '10px',
+                      background: '#f8fafc',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '6px',
                       padding: '8px 12px',
                       textAlign: 'left',
-                      fontSize: '0.76rem',
-                      color: 'var(--text-secondary)',
+                      fontSize: '0.78rem',
+                      color: '#1e293b',
+                      fontWeight: 600,
                       cursor: 'pointer',
-                      transition: 'all 0.15s cubic-bezier(0.16, 1, 0.3, 1)',
+                      transition: 'all 0.15s ease',
                       lineHeight: 1.4,
+                      fontFamily: 'inherit'
                     }}
                     onMouseEnter={e => {
-                      e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.3)';
-                      e.currentTarget.style.color = 'white';
-                      e.currentTarget.style.background = 'rgba(139, 92, 246, 0.06)';
+                      e.currentTarget.style.borderColor = '#003087';
+                      e.currentTarget.style.color = '#003087';
+                      e.currentTarget.style.background = '#e8eef8';
                     }}
                     onMouseLeave={e => {
-                      e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
-                      e.currentTarget.style.color = 'var(--text-secondary)';
-                      e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                      e.currentTarget.style.borderColor = '#cbd5e1';
+                      e.currentTarget.style.color = '#1e293b';
+                      e.currentTarget.style.background = '#f8fafc';
                     }}
                   >
                     {q}
@@ -248,49 +271,57 @@ export default function CivicAssistant({ challenges = [] }) {
             </div>
           )}
 
-          {/* Input bar — Glass */}
+          {/* Input bar */}
           <form
             onSubmit={e => { e.preventDefault(); handleSend(input); }}
             style={{
-              padding: '12px',
-              borderTop: '1px solid rgba(255,255,255,0.06)',
+              padding: '12px 16px',
+              background: '#ffffff',
+              borderTop: '1px solid var(--border-subtle)',
               display: 'flex', gap: '8px',
             }}
           >
             <input
               type="text"
-              placeholder="Ask Civic AI..."
+              placeholder="Ask JanSetu AI..."
               value={input}
               onChange={e => setInput(e.target.value)}
               disabled={loading}
               style={{
                 flexGrow: 1,
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '10px',
-                color: 'white',
-                padding: '10px 14px',
-                fontSize: '0.85rem',
+                background: '#ffffff',
+                border: '1px solid #cbd5e1',
+                borderRadius: '6px',
+                color: '#0f172a',
+                padding: '10px 12px',
+                fontSize: '0.84rem',
                 outline: 'none',
-                fontFamily: 'var(--font-body)',
-                transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
+                fontFamily: 'inherit',
               }}
               onFocus={e => {
-                e.target.style.borderColor = 'rgba(139, 92, 246, 0.4)';
-                e.target.style.boxShadow = '0 0 0 2px rgba(139, 92, 246, 0.1)';
+                e.target.style.borderColor = '#003087';
+                e.target.style.boxShadow = '0 0 0 2px rgba(0, 48, 135, 0.15)';
               }}
               onBlur={e => {
-                e.target.style.borderColor = 'rgba(255,255,255,0.08)';
+                e.target.style.borderColor = '#cbd5e1';
                 e.target.style.boxShadow = 'none';
               }}
             />
             <button
               type="submit"
-              className="btn btn-primary"
               disabled={loading || !input.trim()}
-              style={{ padding: '10px 14px', borderRadius: '10px' }}
+              style={{
+                padding: '10px 16px',
+                borderRadius: '6px',
+                background: '#003087',
+                color: '#ffffff',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: 700,
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}
             >
-              <Send size={14} />
+              <Send size={15} />
             </button>
           </form>
         </div>

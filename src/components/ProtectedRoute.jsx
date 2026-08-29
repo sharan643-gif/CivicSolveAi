@@ -18,7 +18,7 @@ export function AccessDeniedPage({ reason, onNavigate, requiredRole, currentRole
         <ShieldOff size={36} color="#ef4444" />
       </div>
 
-      <h1 style={{ fontSize: '1.8rem', color: '#fff', fontWeight: 800, marginBottom: '8px' }}>
+      <h1 style={{ fontSize: '1.8rem', color: 'var(--text-primary)', fontWeight: 800, marginBottom: '8px' }}>
         Access Restricted
       </h1>
       <p style={{ fontSize: '1rem', color: 'var(--text-secondary)', maxWidth: '400px', marginBottom: '8px' }}>

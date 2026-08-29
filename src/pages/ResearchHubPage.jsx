@@ -22,7 +22,7 @@ export default function ResearchHubPage() {
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.2)', padding: '4px 10px', borderRadius: '100px', fontSize: '0.75rem', color: '#a78bfa', marginBottom: '8px' }}>
             <BookOpen size={12} /> Academic & Open Data Ecosystem
           </div>
-          <h1 style={{ fontSize: '2rem', fontFamily: 'var(--font-display)', fontWeight: 800, color: '#fff' }}>
+          <h1 style={{ fontSize: '2rem', fontFamily: 'var(--font-display)', fontWeight: 800, color: 'var(--text-primary)' }}>
             Research & Knowledge Hub
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
@@ -31,10 +31,10 @@ export default function ResearchHubPage() {
         </div>
 
         <div className="glass-l1" style={{ display: 'flex', gap: '6px', padding: '4px', borderRadius: '10px' }}>
-          <button onClick={() => setActiveTab('papers')} style={{ padding: '6px 14px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, background: activeTab === 'papers' ? 'rgba(139,92,246,0.15)' : 'transparent', color: activeTab === 'papers' ? '#a78bfa' : 'var(--text-secondary)' }}>
+          <button onClick={() => setActiveTab('papers')} style={{ padding: '6px 14px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700, background: activeTab === 'papers' ? 'var(--primary-light)' : 'transparent', color: activeTab === 'papers' ? 'var(--primary)' : 'var(--text-secondary)' }}>
             Research Publications ({papers.length})
           </button>
-          <button onClick={() => setActiveTab('datasets')} style={{ padding: '6px 14px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, background: activeTab === 'datasets' ? 'rgba(16,185,129,0.15)' : 'transparent', color: activeTab === 'datasets' ? '#10b981' : 'var(--text-secondary)' }}>
+          <button onClick={() => setActiveTab('datasets')} style={{ padding: '6px 14px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700, background: activeTab === 'datasets' ? 'var(--primary-light)' : 'transparent', color: activeTab === 'datasets' ? 'var(--primary)' : 'var(--text-secondary)' }}>
             Dataset Exchange ({datasets.length})
           </button>
         </div>
@@ -46,7 +46,7 @@ export default function ResearchHubPage() {
           {papers.map((p, i) => (
             <div key={i} className="glass-card" style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#fff' }}>{p.title}</h3>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)' }}>{p.title}</h3>
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
                   Authors: {p.authors} · <em>{p.journal}</em> ({p.year})
                 </div>
@@ -71,7 +71,7 @@ export default function ResearchHubPage() {
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Database size={16} color="#10b981" />
-                  <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#fff' }}>{d.title}</h3>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)' }}>{d.title}</h3>
                 </div>
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
                   Source: {d.org} · Size: {d.size} · Records: {d.records}

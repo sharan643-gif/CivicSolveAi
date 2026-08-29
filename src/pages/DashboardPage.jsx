@@ -182,7 +182,6 @@ const SIDEBAR_CONFIG = {
       { icon: Flag,            label: 'Content Moderation', id: 'moderation' },
       { icon: BarChart3,       label: 'Platform Analytics', id: 'analytics' },
       { icon: Brain,           label: 'AI Intelligence', id: 'intelligence' },
-      { icon: Trophy,          label: 'Leaderboard', id: 'leaderboard' },
       { icon: Users,           label: 'Expert Marketplace', id: 'experts' },
       { icon: Settings,        label: 'System Settings', id: 'settings' },
     ]
@@ -191,7 +190,7 @@ const SIDEBAR_CONFIG = {
 
 // ─── Section Content per Sector ────────────────────────────────────────────
 function DashboardOverview({ currentUser, challenges, sectorConfig, isMobile }) {
-  const color = sectorConfig?.color || '#3b82f6';
+  const color = sectorConfig?.color || '#003087';
   const sector = currentUser?.sector || 'citizen';
   const role = currentUser?.role || 'Citizen';
 
@@ -201,18 +200,27 @@ function DashboardOverview({ currentUser, challenges, sectorConfig, isMobile }) 
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {/* Welcome Banner */}
-      <div style={{ background: `linear-gradient(135deg, ${color}15, ${color}05)`, border: `1px solid ${color}25`, borderRadius: '14px', padding: isMobile ? '20px' : '28px 32px', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '100px', height: '100px', background: `${color}12`, borderRadius: '50%' }} />
+      {/* Welcome Banner — High Contrast Deep Navy Gov Style */}
+      <div style={{
+        background: 'linear-gradient(135deg, #003087 0%, #001d5a 100%)',
+        borderBottom: '4px solid #FF6200',
+        borderRadius: '8px',
+        padding: isMobile ? '20px' : '28px 32px',
+        position: 'relative',
+        overflow: 'hidden',
+        color: '#ffffff',
+        boxShadow: 'var(--shadow-sm)',
+      }}>
+        <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '120px', height: '120px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '50%' }} />
         <div style={{ fontSize: isMobile ? '1.5rem' : '2rem', marginBottom: '6px' }}>{sectorConfig?.icon || '👤'}</div>
-        <h2 style={{ fontSize: isMobile ? '1.2rem' : '1.5rem', fontFamily: 'var(--font-display)', fontWeight: 800, color: '#fff', marginBottom: '6px' }}>
+        <h2 style={{ fontSize: isMobile ? '1.3rem' : '1.6rem', fontFamily: 'var(--font-display)', fontWeight: 800, color: '#ffffff', marginBottom: '6px', letterSpacing: '-0.01em' }}>
           Welcome, {(currentUser?.name || currentUser?.email || 'User').split(' ')[0]}
         </h2>
-        <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-          Role: <strong style={{ color }}>{role}</strong>
+        <p style={{ fontSize: '0.85rem', color: 'rgba(255, 255, 255, 0.88)' }}>
+          Role: <strong style={{ color: '#FF6200', background: 'rgba(255, 98, 0, 0.2)', padding: '2px 8px', borderRadius: '4px', marginLeft: '4px' }}>{role}</strong>
           {currentUser?.organization ? ` · ${currentUser.organization}` : ''}
           {currentUser?.verification === 'pending_verification' && (
-            <span style={{ marginLeft: '8px', color: '#f59e0b', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '100px', padding: '2px 8px', fontSize: '0.72rem' }}>⏳ Pending Verification</span>
+            <span style={{ marginLeft: '8px', color: '#fbbf24', background: 'rgba(245,158,11,0.2)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '4px', padding: '2px 8px', fontSize: '0.72rem', fontWeight: 700 }}>⏳ Pending Verification</span>
           )}
         </p>
       </div>
@@ -220,11 +228,11 @@ function DashboardOverview({ currentUser, challenges, sectorConfig, isMobile }) 
       {/* Quick Stats - 2-col on mobile, 4-col on desktop */}
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '12px' }}>
         {quickStats.map((stat, i) => (
-          <div key={i} className="glass-card" style={{ padding: '20px', position: 'relative', overflow: 'hidden', cursor: 'default' }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: `linear-gradient(90deg, ${stat.color || color}, transparent)` }} />
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>{stat.label}</div>
-            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--font-display)' }}>{stat.value}</div>
-            <div style={{ fontSize: '0.72rem', color: stat.trend > 0 ? '#10b981' : 'var(--text-muted)', marginTop: '4px' }}>
+          <div key={i} style={{ background: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '20px', position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-xs)' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: stat.color || color }} />
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>{stat.label}</div>
+            <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-display)', lineHeight: 1.1 }}>{stat.value}</div>
+            <div style={{ fontSize: '0.72rem', color: stat.trend > 0 ? 'var(--success)' : 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>
               {stat.trend > 0 ? '↑' : ''} {stat.sub}
             </div>
           </div>
@@ -234,22 +242,22 @@ function DashboardOverview({ currentUser, challenges, sectorConfig, isMobile }) 
       {/* Challenges & Activity Grid - stacked on mobile */}
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 320px', gap: '16px' }}>
         {/* Challenges List */}
-        <div className="glass-card" style={{ padding: '20px' }}>
+        <div style={{ background: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '20px', boxShadow: 'var(--shadow-xs)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff' }}>Priority Challenges</h3>
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{challenges.length} total</span>
+            <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>Priority Challenges</h3>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>{challenges.length} total</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {priorityChallenges.map(c => (
-              <div key={c.id} style={{ display: 'flex', gap: '12px', padding: '12px', background: 'var(--bg-elevated)', borderRadius: '8px', alignItems: 'center' }}>
-                <div style={{ width: '36px', height: '36px', background: `${color}18`, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>
+              <div key={c.id} style={{ display: 'flex', gap: '12px', padding: '12px', background: 'var(--bg-primary)', border: '1px solid var(--border-subtle)', borderRadius: '4px', alignItems: 'center' }}>
+                <div style={{ width: '36px', height: '36px', background: 'var(--primary-light)', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>
                   {c.sector_icon || '📋'}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.title}</div>
+                  <div style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.title}</div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>{c.location} · {c.status_label || c.status}</div>
                 </div>
-                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: c.priority_score > 80 ? '#ef4444' : c.priority_score > 60 ? '#f59e0b' : '#10b981' }}>
+                <div style={{ fontSize: '0.82rem', fontWeight: 800, color: c.priority_score > 80 ? 'var(--danger)' : c.priority_score > 60 ? 'var(--warning)' : 'var(--success)' }}>
                   {c.priority_score}
                 </div>
               </div>
@@ -258,16 +266,16 @@ function DashboardOverview({ currentUser, challenges, sectorConfig, isMobile }) 
         </div>
 
         {/* Activity Feed */}
-        <div className="glass-card" style={{ padding: '20px' }}>
-          <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff', marginBottom: '16px' }}>Recent Activity</h3>
+        <div style={{ background: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '20px', boxShadow: 'var(--shadow-xs)' }}>
+          <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '16px' }}>Recent Activity</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {recentActivity.map((item, i) => (
               <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: `${item.color || color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', flexShrink: 0 }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', flexShrink: 0 }}>
                   {item.icon}
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{item.text}</div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-primary)', lineHeight: 1.4 }}>{item.text}</div>
                   <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '2px' }}>{item.time}</div>
                 </div>
               </div>
@@ -298,8 +306,8 @@ function SuperAdminOverview({ challenges, isMobile }) {
   };
 
   const platformStats = [
-    { label: 'Total Users', value: users.length.toString(), color: '#3b82f6', sub: 'All sectors' },
-    { label: 'Active Challenges', value: challenges.length.toString(), color: '#10b981', sub: `${challenges.filter(c => c.priority_score > 70).length} high priority` },
+    { label: 'Total Users', value: users.length.toString(), color: 'var(--primary)', sub: 'All sectors' },
+    { label: 'Active Challenges', value: challenges.length.toString(), color: 'var(--success)', sub: `${challenges.filter(c => c.priority_score > 70).length} high priority` },
     { label: 'Sectors Active', value: '12', color: '#8b5cf6', sub: 'All operational' },
     { label: 'Pending Approvals', value: users.filter(u => u.verification === 'pending_verification').length.toString(), color: '#f59e0b', sub: 'Require review' },
   ];
@@ -311,32 +319,34 @@ function SuperAdminOverview({ challenges, isMobile }) {
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: isMobile ? '10px' : '16px' }}>
         {platformStats.map((s, i) => (
-          <div key={i} className="glass-card" style={{ padding: '20px', position: 'relative', overflow: 'hidden', cursor: 'default' }}>
+          <div key={i} style={{ background: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '20px', position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-xs)' }}>
             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: s.color }} />
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>{s.label}</div>
-            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#fff' }}>{s.value}</div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>{s.label}</div>
+            <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)' }}>{s.value}</div>
             <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px' }}>{s.sub}</div>
           </div>
         ))}
-      </div>        {/* Users Table */}
-      <div className="glass-card" style={{ padding: isMobile ? '14px' : '20px' }}>
-        <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff', marginBottom: '16px', position: 'relative' }}>All Registered Users</h3>
+      </div>
+
+      {/* Users Table */}
+      <div style={{ background: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: isMobile ? '14px' : '20px', boxShadow: 'var(--shadow-xs)' }}>
+        <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '16px' }}>All Registered Users</h3>
         <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
           {isMobile ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {users.map(u => (
-                <div key={u.id} style={{ display: 'flex', gap: '10px', padding: '12px', background: 'var(--bg-elevated)', borderRadius: '8px', alignItems: 'center' }}>
+                <div key={u.id} style={{ display: 'flex', gap: '10px', padding: '12px', background: 'var(--bg-primary)', borderRadius: '4px', border: '1px solid var(--border-subtle)', alignItems: 'center' }}>
                   <span style={{ fontSize: '22px', flexShrink: 0 }}>{u.avatar || '👤'}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, color: '#fff', fontSize: '0.82rem' }}>{u.name}</div>
+                    <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.84rem' }}>{u.name}</div>
                     <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.email}</div>
                     <div style={{ display: 'flex', gap: '6px', marginTop: '4px', flexWrap: 'wrap', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.05)', padding: '1px 6px', borderRadius: '4px' }}>{u.sector}</span>
-                      <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.05)', padding: '1px 6px', borderRadius: '4px' }}>{u.role}</span>
+                      <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', background: '#e2e8f0', padding: '1px 6px', borderRadius: '4px' }}>{u.sector}</span>
+                      <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', background: '#e2e8f0', padding: '1px 6px', borderRadius: '4px' }}>{u.role}</span>
                       <span style={{
                         padding: '1px 6px', borderRadius: '100px', fontSize: '0.64rem', fontWeight: 700,
-                        background: u.verification === 'verified' ? 'rgba(16,185,129,0.1)' : u.verification === 'pending_verification' ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)',
-                        color: u.verification === 'verified' ? '#10b981' : u.verification === 'pending_verification' ? '#f59e0b' : '#ef4444'
+                        background: u.verification === 'verified' ? 'var(--success-light)' : u.verification === 'pending_verification' ? 'var(--warning-light)' : 'var(--danger-light)',
+                        color: u.verification === 'verified' ? 'var(--success)' : u.verification === 'pending_verification' ? 'var(--warning)' : 'var(--danger)'
                       }}>
                         {u.verification === 'verified' ? '✓ Verified' : u.verification === 'pending_verification' ? '⏳ Pending' : '● Active'}
                       </span>
@@ -345,7 +355,7 @@ function SuperAdminOverview({ challenges, isMobile }) {
                   {u.verification === 'pending_verification' && (
                     <button
                       onClick={() => handleApprove(u.id)}
-                      style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '6px', padding: '6px 12px', color: '#10b981', fontSize: '0.72rem', cursor: 'pointer', fontWeight: 700, flexShrink: 0 }}>
+                      style={{ background: 'var(--success-light)', border: '1px solid var(--success)', borderRadius: '4px', padding: '6px 12px', color: 'var(--success)', fontSize: '0.72rem', cursor: 'pointer', fontWeight: 700, flexShrink: 0 }}>
                       Approve
                     </button>
                   )}
@@ -355,18 +365,18 @@ function SuperAdminOverview({ challenges, isMobile }) {
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                <tr style={{ borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-primary)' }}>
                   {['Avatar', 'Name / Email', 'Sector', 'Role', 'Verification', 'Action'].map(h => (
-                    <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>{h}</th>
+                    <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {users.map(u => (
-                  <tr key={u.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                  <tr key={u.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                     <td style={{ padding: '10px 12px' }}><span style={{ fontSize: '20px' }}>{u.avatar || '👤'}</span></td>
                     <td style={{ padding: '10px 12px' }}>
-                      <div style={{ fontWeight: 600, color: '#fff' }}>{u.name}</div>
+                      <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{u.name}</div>
                       <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>{u.email}</div>
                     </td>
                     <td style={{ padding: '10px 12px', color: 'var(--text-secondary)' }}>{u.sector}</td>
@@ -374,9 +384,8 @@ function SuperAdminOverview({ challenges, isMobile }) {
                     <td style={{ padding: '10px 12px' }}>
                       <span style={{
                         padding: '2px 8px', borderRadius: '100px', fontSize: '0.68rem', fontWeight: 700,
-                        background: u.verification === 'verified' ? 'rgba(16,185,129,0.1)' : u.verification === 'pending_verification' ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)',
-                        color: u.verification === 'verified' ? '#10b981' : u.verification === 'pending_verification' ? '#f59e0b' : '#ef4444',
-                        border: `1px solid ${u.verification === 'verified' ? 'rgba(16,185,129,0.2)' : u.verification === 'pending_verification' ? 'rgba(245,158,11,0.2)' : 'rgba(239,68,68,0.2)'}`
+                        background: u.verification === 'verified' ? 'var(--success-light)' : u.verification === 'pending_verification' ? 'var(--warning-light)' : 'var(--danger-light)',
+                        color: u.verification === 'verified' ? 'var(--success)' : u.verification === 'pending_verification' ? 'var(--warning)' : 'var(--danger)'
                       }}>
                         {u.verification === 'verified' ? '✓ Verified' : u.verification === 'pending_verification' ? '⏳ Pending' : '● Active'}
                       </span>
@@ -385,7 +394,7 @@ function SuperAdminOverview({ challenges, isMobile }) {
                       {u.verification === 'pending_verification' && (
                         <button
                           onClick={() => handleApprove(u.id)}
-                          style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '6px', padding: '4px 10px', color: '#10b981', fontSize: '0.72rem', cursor: 'pointer', fontWeight: 700 }}>
+                          style={{ background: 'var(--success-light)', border: '1px solid var(--success)', borderRadius: '4px', padding: '4px 10px', color: 'var(--success)', fontSize: '0.72rem', cursor: 'pointer', fontWeight: 700 }}>
                           Approve
                         </button>
                       )}
@@ -396,9 +405,11 @@ function SuperAdminOverview({ challenges, isMobile }) {
             </table>
           )}
         </div>
-      </div>        {/* Audit Logs */}
-      <div className="glass-card" style={{ padding: isMobile ? '14px' : '20px' }}>
-        <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff', marginBottom: '16px', position: 'relative' }}>Audit Log (Recent)</h3>
+      </div>
+
+      {/* Audit Logs */}
+      <div style={{ background: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: isMobile ? '14px' : '20px', boxShadow: 'var(--shadow-xs)' }}>
+        <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '16px' }}>Audit Log (Recent)</h3>
         {auditLogs.length === 0 ? (
           <div style={{ color: 'var(--text-muted)', fontSize: '0.82rem', textAlign: 'center', padding: '20px' }}>No audit logs yet. Actions will appear here.</div>
         ) : (
@@ -409,17 +420,18 @@ function SuperAdminOverview({ challenges, isMobile }) {
                 flexDirection: isMobile ? 'column' : 'row',
                 gap: isMobile ? '4px' : '12px',
                 padding: isMobile ? '10px 12px' : '10px',
-                background: 'var(--bg-elevated)',
-                borderRadius: '8px',
+                background: 'var(--bg-primary)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: '4px',
                 alignItems: isMobile ? 'flex-start' : 'center',
                 fontSize: '0.78rem'
               }}>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center', width: isMobile ? '100%' : 'auto' }}>
                   <span style={{ fontFamily: 'monospace', color: 'var(--text-muted)', fontSize: '0.68rem', flexShrink: 0 }}>{new Date(log.timestamp).toLocaleTimeString()}</span>
-                  <span style={{ color: '#3b82f6', fontWeight: 700, flexShrink: 0 }}>{log.action}</span>
+                  <span style={{ color: 'var(--primary)', fontWeight: 700, flexShrink: 0 }}>{log.action}</span>
                 </div>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flex: 1, minWidth: 0, flexWrap: 'wrap' }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>{log.user}</span>
+                  <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{log.user}</span>
                   {log.details && <span style={{ color: 'var(--text-muted)', fontSize: '0.68rem' }}>{log.details}</span>}
                 </div>
               </div>
@@ -434,15 +446,15 @@ function SuperAdminOverview({ challenges, isMobile }) {
 // ─── Generic Placeholder Section ─────────────────────────────────────────────
 function PlaceholderSection({ label, icon: Icon, color }) {
   return (
-    <div className="glass-l2" style={{ padding: '60px 40px', textAlign: 'center' }}>
-      <div style={{ width: '64px', height: '64px', background: `${color}15`, border: `1px solid ${color}25`, borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-        <Icon size={28} color={color} />
+    <div style={{ background: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '60px 40px', textAlign: 'center', boxShadow: 'var(--shadow-xs)' }}>
+      <div style={{ width: '64px', height: '64px', background: 'var(--primary-light)', border: '1px solid var(--border-medium)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+        <Icon size={28} color="var(--primary)" />
       </div>
-      <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff', marginBottom: '8px' }}>{label}</h3>
+      <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>{label}</h3>
       <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', maxWidth: '380px', margin: '0 auto' }}>
         This section is under active development. Full implementation coming in the next phase.
       </p>
-      <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center', marginTop: '16px', padding: '6px 14px', borderRadius: '100px', background: `${color}10`, border: `1px solid ${color}20`, fontSize: '0.75rem', color }}>
+      <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center', marginTop: '16px', padding: '6px 14px', borderRadius: '100px', background: 'var(--primary-light)', border: '1px solid var(--border-subtle)', fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 600 }}>
         <Zap size={12} /> AI-powered features will be enabled here
       </div>
     </div>
@@ -618,19 +630,17 @@ export default function DashboardPage({ activeRole, currentUser, onNavigate, onL
 
   return (
     <div style={{ display: 'flex', gap: '0', minHeight: 'calc(100vh - 70px - 100px)', position: 'relative' }}>
-      {/* ── Sidebar ─────────────────────────────────────────────────────────── */}
+      {/* ── Sidebar — Government Portal Style ────────────────────────────── */}
       <aside style={{
         width: sidebarOpen ? '240px' : '60px',
-        background: 'rgba(12, 16, 28, 0.65)',
-        backdropFilter: 'blur(28px) saturate(1.6)',
-        WebkitBackdropFilter: 'blur(28px) saturate(1.6)',
-        borderRight: '1px solid var(--glass-border)',
-        borderRadius: '16px 0 0 16px',
-        padding: sidebarOpen ? '20px 0' : '20px 0',
+        background: '#ffffff',
+        borderRight: '1px solid var(--border-subtle)',
+        boxShadow: 'var(--shadow-xs)',
+        padding: '20px 0',
         display: 'flex',
         flexDirection: 'column',
         flexShrink: 0,
-        transition: 'width 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+        transition: 'width 0.25s ease',
         overflow: 'hidden'
       }}>
         {/* Sector badge at top */}
@@ -640,13 +650,13 @@ export default function DashboardPage({ activeRole, currentUser, onNavigate, onL
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span style={{ fontSize: '20px' }}>{sectorConfig.icon}</span>
-                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color, lineHeight: 1.2 }}>{sectorConfig.label}</span>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--primary)', lineHeight: 1.2 }}>{sectorConfig.label}</span>
                 </div>
-                <button onClick={() => setSidebarOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '2px', transition: 'transform 0.2s ease' }}>‹</button>
+                <button onClick={() => setSidebarOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '2px', fontSize: '1.1rem' }}>‹</button>
               </div>
             </>
           ) : (
-            <button onClick={() => setSidebarOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color, fontSize: '20px', padding: '0' }}>
+            <button onClick={() => setSidebarOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)', fontSize: '20px', padding: '0' }}>
               {sectorConfig.icon}
             </button>
           )}
@@ -667,20 +677,20 @@ export default function DashboardPage({ activeRole, currentUser, onNavigate, onL
                   display: 'flex',
                   alignItems: 'center',
                   gap: '10px',
-                  padding: sidebarOpen ? '10px 16px' : '10px',
+                  padding: sidebarOpen ? '11px 16px' : '11px',
                   justifyContent: sidebarOpen ? 'flex-start' : 'center',
-                  background: isActive ? `${color}15` : 'transparent',
+                  background: isActive ? 'var(--primary-light)' : 'transparent',
                   border: 'none',
-                  borderLeft: isActive ? `3px solid ${color}` : '3px solid transparent',
+                  borderLeft: isActive ? '4px solid var(--primary)' : '4px solid transparent',
                   cursor: 'pointer',
-                  color: isActive ? color : 'var(--text-secondary)',
+                  color: isActive ? 'var(--primary)' : 'var(--text-primary)',
                   fontSize: '0.82rem',
-                  fontWeight: isActive ? 700 : 400,
+                  fontWeight: isActive ? 800 : 500,
                   transition: 'all 0.15s ease',
                   textAlign: 'left',
                   whiteSpace: 'nowrap'
                 }}>
-                <Icon size={16} />
+                <Icon size={16} strokeWidth={isActive ? 2.5 : 2} color={isActive ? 'var(--primary)' : 'var(--text-secondary)'} />
                 {sidebarOpen && item.label}
               </button>
             );
@@ -691,7 +701,7 @@ export default function DashboardPage({ activeRole, currentUser, onNavigate, onL
         {onLogout && (
           <div style={{ padding: '12px 0', borderTop: '1px solid var(--border-subtle)' }}>
             <button onClick={onLogout}
-              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: sidebarOpen ? '10px 16px' : '10px', justifyContent: sidebarOpen ? 'flex-start' : 'center', background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', fontSize: '0.8rem' }}>
+              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: sidebarOpen ? '10px 16px' : '10px', justifyContent: sidebarOpen ? 'flex-start' : 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', fontSize: '0.8rem', fontWeight: 600 }}>
               <LogOut size={16} />
               {sidebarOpen && 'Sign Out'}
             </button>
@@ -702,10 +712,10 @@ export default function DashboardPage({ activeRole, currentUser, onNavigate, onL
       {/* ── Main Content ─────────────────────────────────────────────────────── */}
       <div style={{ flex: 1, padding: '28px', minWidth: 0, overflowX: 'hidden' }}>
         {/* Section header */}
-        <div style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+        <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
           <span>{sectorConfig.label}</span>
           <ChevronRight size={14} />
-          <span style={{ color: '#fff', fontWeight: 600 }}>
+          <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>
             {sectorConfig.nav.find(n => n.id === activeSection)?.label || 'Overview'}
           </span>
         </div>
@@ -737,12 +747,12 @@ function LeaderboardSection() {
   ];
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-      <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff' }}>🏆 Civic Leaderboard</h3>
+      <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)' }}>🏆 Civic Leaderboard</h3>
       {LEADERBOARD.map((item, i) => (
-        <div key={i} className="glass-card" style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'default' }}>
+        <div key={i} style={{ background: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'default', boxShadow: 'var(--shadow-xs)' }}>
           <span style={{ fontSize: '1.4rem' }}>{item.avatar}</span>
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 700, color: '#fff', fontSize: '0.9rem' }}>{item.name}</div>
+            <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9rem' }}>{item.name}</div>
             <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{item.problems || item.projects || item.reviews || item.sponsored} items</div>
           </div>
           <div style={{ fontWeight: 900, color: '#f59e0b', fontSize: '1.1rem' }}>{item.score}</div>
@@ -761,15 +771,15 @@ function ExpertSection() {
   ];
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-      <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff' }}>🕵️ Expert Marketplace</h3>
+      <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)' }}>🕵️ Expert Marketplace</h3>
       {EXPERTS.map((exp, i) => (
-        <div key={i} className="glass-card" style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'default' }}>
+        <div key={i} style={{ background: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'default', boxShadow: 'var(--shadow-xs)' }}>
           <span style={{ fontSize: '1.4rem' }}>{exp.avatar}</span>
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 700, color: '#fff', fontSize: '0.9rem' }}>{exp.name}</div>
+            <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9rem' }}>{exp.name}</div>
             <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{exp.expertise} · ⭐ {exp.rating}</div>
           </div>
-          <span style={{ padding: '3px 8px', borderRadius: '100px', fontSize: '0.65rem', fontWeight: 700, background: exp.available ? 'rgba(16,185,129,0.12)' : 'rgba(245,158,11,0.12)', color: exp.available ? '#10b981' : '#f59e0b' }}>
+          <span style={{ padding: '3px 8px', borderRadius: '100px', fontSize: '0.65rem', fontWeight: 700, background: exp.available ? 'var(--success-light)' : 'var(--warning-light)', color: exp.available ? 'var(--success)' : 'var(--warning)' }}>
             {exp.available ? 'Available' : 'Busy'}
           </span>
         </div>
@@ -787,14 +797,13 @@ function IntelligenceSection() {
   ];
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-      <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff' }}>🧠 AI Intelligence Alerts</h3>
+      <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)' }}>🧠 AI Intelligence Alerts</h3>
       {ALERTS.map((alert, i) => (
-        <div key={i} className="glass-card" style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '14px', borderLeft: `3px solid ${alert.severity === 'critical' ? '#ef4444' : alert.severity === 'high' ? '#f97316' : '#eab308'}`, cursor: 'default' }}>
+        <div key={i} style={{ background: '#ffffff', border: '1px solid var(--border-subtle)', borderLeft: '4px solid var(--danger)', borderRadius: 'var(--radius-md)', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'default', boxShadow: 'var(--shadow-xs)' }}>
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 700, color: '#fff', fontSize: '0.9rem' }}>{alert.title}</div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Trend: {alert.trend} this week</div>
+            <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9rem' }}>{alert.title}</div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--danger)', fontWeight: 700, marginTop: '2px' }}>Severity: {alert.severity.toUpperCase()} · Trend: {alert.trend}</div>
           </div>
-          <span className={`badge badge-${alert.severity}`}>{alert.severity}</span>
         </div>
       ))}
     </div>

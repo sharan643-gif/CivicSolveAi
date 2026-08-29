@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Sparkles, Search, Bell, AlertCircle, LogOut, User, ChevronDown, ArrowLeft, Home, Compass, Lightbulb, ShieldCheck, DollarSign, BookOpen, FileText, LayoutDashboard, Plus, Trophy, BarChart3, Brain, Heart, Eye, Zap, Award, Map } from 'lucide-react';
+import { Sparkles, Search, Bell, AlertCircle, LogOut, User, ChevronDown, ArrowLeft, Home, Compass, Lightbulb, ShieldCheck, DollarSign, BookOpen, FileText, LayoutDashboard, Plus, Trophy, BarChart3, Brain, Heart, Eye, Zap, Award, Map, Mic } from 'lucide-react';
 import { supabase } from './services/supabaseClient';
 import { getChallenges, getStats, addChallenge, addAuditLog, getProfileById } from './services/supabaseService';
 import LandingPage from './pages/LandingPage';
@@ -16,11 +16,10 @@ import AuthSectorPage from './pages/AuthSectorPage';
 import SuperAdminLogin from './pages/SuperAdminLogin';
 import CommandMenu from './components/CommandMenu';
 import CivicAssistant from './components/CivicAssistant';
+import JanSetuVoiceAgent from './components/JanSetuVoiceAgent';
 
 // Navigation Components
 import MobilePillNav from './components/MobilePillNav';
-import Aurora from './components/Aurora';
-import Silk from './components/Silk';
 
 // Mobile Pages
 import MobileLandingPage from './pages/MobileLandingPage';
@@ -43,8 +42,10 @@ import CivicPollsPage from './pages/CivicPollsPage';
 import ProjectManagementPage from './pages/ProjectManagementPage';
 import ActivityCenterPage from './pages/ActivityCenterPage';
 import UserProfilePage from './pages/UserProfilePage';
-import DepartmentScorecardPage from './pages/DepartmentScorecardPage';
-import GeospatialAnalyticsPage from './pages/GeospatialAnalyticsPage';
+import EmergingProblemsPage from './pages/EmergingProblemsPage';
+import JudgeModePage from './pages/JudgeModePage';
+import DistrictScorecardPage from './pages/DistrictScorecardPage';
+import AskJanSetuModal from './components/AskJanSetuModal';
 import EnterpriseControlCenter from './pages/EnterpriseControlCenter';
 import DigitalTwinPage from './pages/DigitalTwinPage';
 import FieldOperationsPage from './pages/FieldOperationsPage';
@@ -142,6 +143,9 @@ export default function App() {
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [isAskJanSetuOpen, setIsAskJanSetuOpen] = useState(false);
+  const [isVoiceOpen, setIsVoiceOpen] = useState(false);
+  const [voicePreFillData, setVoicePreFillData] = useState(null);
 
   // ─── RBAC State ─────────────────────────────────────────────────────────────
   const [impersonateRole, setImpersonateRole] = useState(null);
@@ -423,57 +427,27 @@ export default function App() {
   const activeUnreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative', background: 'var(--bg-primary)' }}>
 
-      {/* ── Silk WebGL Background — fixed bottom layer ── */}
-      <div style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 0,
-        pointerEvents: 'none',
-      }}>
-        <Silk
-          speed={8}
-          scale={1.4}
-          color="#22094e"
-          noiseIntensity={2.2}
-          rotation={0.4}
-        />
-        {/* Dark veil — keeps text readable */}
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'rgba(5, 7, 12, 0.5)',
-        }} />
-      </div>
-
-      {/* Toast Notifications — Liquid Glass */}
-      <div style={{ position: 'fixed', top: '24px', right: '24px', display: 'flex', flexDirection: 'column', gap: '10px', zIndex: 2000, maxWidth: '360px', width: '90%' }}>
+      {/* Toast Notifications — Government Style */}
+      <div style={{ position: 'fixed', top: '16px', right: '16px', display: 'flex', flexDirection: 'column', gap: '8px', zIndex: 2000, maxWidth: '360px', width: '90%' }}>
         {toasts.map(t => (
           <div key={t.id} style={{
-            background: 'rgba(12, 16, 28, 0.88)',
-            backdropFilter: 'blur(48px) saturate(2)',
-            WebkitBackdropFilter: 'blur(48px) saturate(2)',
-            border: `1px solid ${t.type === 'success' ? 'rgba(16,185,129,0.22)' : 'rgba(239,68,68,0.22)'}`,
-            borderRadius: 'var(--radius-lg)',
-            padding: '14px 16px',
-            boxShadow: '0 16px 48px -12px rgba(0,0,0,0.6), 0 4px 16px -4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08)',
+            background: '#ffffff',
+            border: `1px solid ${t.type === 'success' ? '#b8dfbb' : '#f5c6c6'}`,
+            borderLeft: `4px solid ${t.type === 'success' ? 'var(--success)' : 'var(--danger)'}`,
+            borderRadius: 'var(--radius-sm)',
+            padding: '12px 16px',
+            boxShadow: 'var(--shadow-md)',
             display: 'flex', gap: '12px', alignItems: 'flex-start',
-            animation: 'toastEnter 0.4s cubic-bezier(0.22, 1.2, 0.36, 1) forwards',
-            position: 'relative', overflow: 'hidden',
+            animation: 'toastEnter 0.25s ease forwards',
           }}>
-            {/* Inner highlight */}
-            <div style={{
-              position: 'absolute', top: 0, left: 0, right: 0, height: '50%',
-              background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 100%)',
-              pointerEvents: 'none', borderRadius: 'inherit',
-            }} />
-            <div style={{ color: t.type === 'success' ? '#10b981' : '#ef4444', padding: '2px', flexShrink: 0, position: 'relative' }}>
+            <div style={{ color: t.type === 'success' ? 'var(--success)' : 'var(--danger)', flexShrink: 0 }}>
               <AlertCircle size={18} />
             </div>
-            <div style={{ position: 'relative' }}>
-              <h4 style={{ fontSize: '0.85rem', color: '#fff', fontWeight: 700 }}>{t.title}</h4>
-              <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '3px' }}>{t.message}</p>
+            <div>
+              <h4 style={{ fontSize: '0.875rem', color: 'var(--text-primary)', fontWeight: 700 }}>{t.title}</h4>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '2px' }}>{t.message}</p>
             </div>
           </div>
         ))}
@@ -500,11 +474,12 @@ export default function App() {
         isScrolled={isScrolled}
         activeTab={currentRoute}
         onSelectTab={handleNavigate}
+        onOpenVoice={() => setIsVoiceOpen(true)}
       />
       </div>
 
       {/* Router Main Content */}
-      <main className="container" style={{ flexGrow: 1, padding: isMobile ? '16px 16px 90px' : '32px 24px', width: '100%', position: 'relative', zIndex: 1 }}>
+      <main className="container" style={{ flexGrow: 1, padding: isMobile ? '16px 14px 110px' : '32px 24px', width: '100%', position: 'relative', zIndex: 1 }}>
 
         {/* Universal Back Button */}
         {currentRoute !== 'landing' && (
@@ -606,13 +581,22 @@ export default function App() {
             <DigitalTwinPage />
           </ProtectedRoute>
         )}
+        {currentRoute === 'emerging-problems' && (
+          <EmergingProblemsPage onNavigate={handleNavigate} />
+        )}
+        {currentRoute === 'demo' && (
+          <JudgeModePage onNavigate={handleNavigate} />
+        )}
+        {currentRoute === 'district-scorecard' && (
+          <DistrictScorecardPage onNavigate={handleNavigate} />
+        )}
         {currentRoute === 'field-ops' && (
           <ProtectedRoute route="field-ops" role={effectiveRole} onNavigate={handleNavigate}>
             <FieldOperationsPage />
           </ProtectedRoute>
         )}
         {currentRoute === 'report' && (
-          isMobile ? <MobileReportWizard onSubmit={handleCreateChallenge} onBack={() => handleNavigate('landing')} /> : <SubmitPage onSubmit={handleCreateChallenge} challenges={challenges} onNavigate={handleNavigate} />
+          isMobile ? <MobileReportWizard onSubmit={handleCreateChallenge} onBack={() => handleNavigate('landing')} /> : <SubmitPage onSubmit={handleCreateChallenge} challenges={challenges} onNavigate={handleNavigate} preFillData={voicePreFillData} onOpenVoice={() => setIsVoiceOpen(true)} />
         )}
         {currentRoute === 'challenge-detail' && (
           <DetailPage
@@ -632,24 +616,44 @@ export default function App() {
         )}
       </main>
 
-      {/* Footer (Liquid Glass) — Hidden on Mobile */}
+      {/* Footer — Government Style */}
       {!isMobile && (
         <footer style={{
-          borderTop: '1px solid var(--glass-border)',
-          background: 'rgba(10, 14, 24, 0.6)',
-          backdropFilter: 'blur(32px) saturate(1.5)',
-          WebkitBackdropFilter: 'blur(32px) saturate(1.5)',
-          padding: '28px 0',
-          color: 'var(--text-muted)',
-          fontSize: '0.8rem',
+          borderTop: '3px solid var(--primary)',
+          background: '#1a1a2e',
+          padding: '32px 0 24px',
+          color: '#adb5bd',
+          fontSize: '0.82rem',
           position: 'relative',
           zIndex: 1,
+          marginTop: 'auto',
         }}>
-          <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-            <div style={{ color: 'var(--text-secondary)' }}>© 2026 CivicSolve AI · National Societal Innovation Operating System</div>
-            <div style={{ display: 'flex', gap: '20px' }}>
-              <div>Database: <strong style={{ color: 'var(--primary)' }}>Supabase PostgreSQL</strong></div>
-              <div>AI Engine: <strong style={{ color: 'var(--ai-purple)' }}>Groq · groq/compound</strong></div>
+          <div className="container">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '24px', marginBottom: '20px' }}>
+              <div>
+                <div style={{ color: '#ffffff', fontWeight: 700, fontSize: '1rem', marginBottom: '6px' }}>CivicSolve AI</div>
+                <div style={{ color: '#adb5bd', maxWidth: '320px', lineHeight: 1.6 }}>National Societal Innovation Operating System · Powered by AI for better governance.</div>
+              </div>
+              <div style={{ display: 'flex', gap: '40px', flexWrap: 'wrap' }}>
+                <div>
+                  <div style={{ color: '#ffffff', fontWeight: 600, marginBottom: '8px', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Platform</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    {['Accessibility', 'Privacy Policy', 'Terms of Use', 'Contact Us'].map(l => <span key={l} style={{ color: '#adb5bd', cursor: 'pointer' }}>{l}</span>)}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ color: '#ffffff', fontWeight: 600, marginBottom: '8px', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Technology</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <span style={{ color: '#adb5bd' }}>Supabase PostgreSQL</span>
+                    <span style={{ color: '#adb5bd' }}>Groq AI Engine</span>
+                    <span style={{ color: '#adb5bd' }}>Open Source</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+              <div>© 2026 CivicSolve AI. All rights reserved. Government of India Initiative.</div>
+              <div style={{ color: '#6c757d' }}>Last updated: August 2026</div>
             </div>
           </div>
         </footer>
@@ -686,11 +690,11 @@ export default function App() {
 
       {/* Mobile Pill Navigation */}
       {isMobile && (
-        <DynamicSidebar
-          role={effectiveRole}
-          currentRoute={currentRoute}
-          onNavigate={handleNavigate}
-          isMobile={true}
+        <MobilePillNav
+          activeTab={currentRoute}
+          onSelectTab={handleNavigate}
+          currentUser={currentUser}
+          onOpenVoice={() => setIsVoiceOpen(true)}
         />
       )}
 
@@ -703,6 +707,16 @@ export default function App() {
         challenges={challenges}
       />
       <CivicAssistant challenges={challenges} />
+      <AskJanSetuModal isOpen={isAskJanSetuOpen} onClose={() => setIsAskJanSetuOpen(false)} userRole={effectiveRole} />
+      <JanSetuVoiceAgent
+        isOpen={isVoiceOpen}
+        onClose={() => setIsVoiceOpen(false)}
+        onNavigate={handleNavigate}
+        onAutoFillReport={(data) => {
+          setVoicePreFillData(data);
+          handleNavigate('report');
+        }}
+      />
     </div>
   );
 }
@@ -720,6 +734,7 @@ function AppHeader({
   isScrolled = false,
   activeTab = 'landing',
   onSelectTab = () => {},
+  onOpenVoice = () => {},
 }) {
   const getSectorColor = (sector) => {
     const map = { citizen: '#06b6d4', government: '#3b82f6', university: '#f59e0b', student: '#10b981', industry: '#ec4899', expert: '#8b5cf6', ngo: '#f97316', startup: '#06b6d4', incubator: '#10b981', research: '#8b5cf6', funding: '#f59e0b', super_admin: '#ef4444' };
@@ -733,9 +748,10 @@ function AppHeader({
       zIndex: 900,
       display: 'flex',
       justifyContent: 'center',
-      paddingTop: isMobile ? 'max(8px, var(--safe-top))' : '16px',
-      paddingBottom: isMobile ? '8px' : '16px',
-      transition: 'all 0.4s var(--ease-out-expo)',
+      paddingTop: isMobile ? 'max(8px, var(--safe-top))' : '14px',
+      paddingBottom: isMobile ? '8px' : '14px',
+      background: '#f8f9fa',
+      borderBottom: '1px solid var(--border-subtle)',
       pointerEvents: 'none',
     }}>
       <nav
@@ -743,79 +759,63 @@ function AppHeader({
           position: 'relative',
           display: 'flex',
           alignItems: 'center',
-          width: isMobile ? 'calc(100% - 32px)' : '95%',
-          maxWidth: isMobile ? '420px' : '1320px',
-          height: isMobile ? '60px' : '72px',
-          padding: isMobile ? '0 8px' : '0 12px 0 24px',
-          background: 'rgba(16, 20, 34, 0.45)',
-          backdropFilter: 'blur(48px) saturate(2)',
-          WebkitBackdropFilter: 'blur(48px) saturate(2)',
-          border: '1px solid rgba(255, 255, 255, 0.12)',
+          width: isMobile ? 'calc(100% - 24px)' : '95%',
+          maxWidth: isMobile ? '480px' : '1320px',
+          height: isMobile ? '52px' : '64px',
+          padding: isMobile ? '0 8px 0 10px' : '0 12px 0 20px',
+          background: '#ffffff',
+          border: '1px solid var(--border-subtle)',
           borderRadius: '9999px',
-          boxShadow:
-            '0 16px 56px -12px rgba(0, 0, 0, 0.7), ' +
-            '0 4px 16px -4px rgba(0, 0, 0, 0.4), ' +
-            'inset 0 1px 0 rgba(255, 255, 255, 0.1), ' +
-            '0 0 0 1px rgba(59, 130, 246, 0.04)',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.10)',
           pointerEvents: 'auto',
           overflow: 'visible',
-          transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-          transform: isScrolled && !isMobile ? 'scale(0.98)' : 'scale(1)',
+          boxSizing: 'border-box',
         }}
       >
-        {/* Aurora Background — clipped to pill shape */}
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          borderRadius: 'inherit',
-          overflow: 'hidden',
-          pointerEvents: 'none',
-          opacity: 0.5,
-          zIndex: 0,
-        }}>
-          <Aurora colorStops={['#5227FF', '#7cff67', '#5227FF']} blend={0.5} amplitude={1.0} speed={0.4} />
-        </div>
 
-        {/* Inner top highlight */}
-        <div style={{
-          position: 'absolute', top: 0, left: 0, right: 0, height: '40%',
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.10) 0%, transparent 100%)',
-          borderRadius: 'inherit',
-          pointerEvents: 'none',
-          opacity: 0.5,
-          zIndex: 1,
-        }} />
-
-        {/* Logo */}
-        <div onClick={() => onNavigate('landing')} style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '8px' : '10px', cursor: 'pointer', marginRight: isMobile ? 'auto' : '24px', flexShrink: 0, zIndex: 2 }}>
+        {/* Logo — fixed compact width on mobile */}
+        <div
+          onClick={() => onNavigate('landing')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: isMobile ? '7px' : '10px',
+            cursor: 'pointer',
+            flexShrink: 0,
+            zIndex: 2,
+            minWidth: 0,
+          }}
+        >
           <div style={{
-            background: 'linear-gradient(135deg, var(--primary), var(--ai-purple))',
-            width: '36px',
-            height: '36px',
-            borderRadius: '10px',
+            background: 'var(--primary)',
+            width: isMobile ? '32px' : '36px',
+            height: isMobile ? '32px' : '36px',
+            borderRadius: '8px',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 16px rgba(59,130,246,0.4), inset 0 1px 0 rgba(255,255,255,0.2)',
-            transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+            flexShrink: 0,
           }}>
-            <Sparkles size={isMobile ? 16 : 18} color="white" />
+            <Sparkles size={isMobile ? 15 : 18} color="white" />
           </div>
           <span style={{
-            fontSize: isMobile ? '1.05rem' : '1.25rem',
+            fontSize: isMobile ? '0.92rem' : '1.1rem',
             fontWeight: 800,
             fontFamily: 'var(--font-display)',
-            letterSpacing: '-0.03em',
-            color: 'white',
+            letterSpacing: '-0.01em',
+            color: 'var(--primary)',
+            whiteSpace: 'nowrap',
           }}>
-            CivicSolve <span style={{ color: 'var(--primary)' }}>AI</span>
+            JanSetu <span style={{ color: 'var(--accent)' }}>AI</span>
           </span>
+          {!isMobile && (
+            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 500, letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>
+              Government Innovation Portal
+            </span>
+          )}
         </div>
 
         {/* Desktop Navigation Items */}
         {!isMobile && (
-          <div style={{ display: 'flex', flex: 1, justifyContent: 'center', gap: '4px', position: 'relative', zIndex: 1 }}>
+          <div style={{ display: 'flex', flex: 1, justifyContent: 'center', gap: '2px', position: 'relative', zIndex: 1 }}>
             {NAV_ITEMS.map((item, idx) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
@@ -826,34 +826,27 @@ function AppHeader({
                     key={item.id}
                     onClick={() => onSelectTab(item.id)}
                     style={{
-                      position: 'relative',
-                      zIndex: 1,
-                      width: '42px',
-                      height: '42px',
-                      borderRadius: '50%',
-                      background: 'linear-gradient(135deg, rgba(99,102,241,0.9), rgba(139,92,246,0.9))',
-                      backdropFilter: 'blur(10px)',
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      color: '#fff',
-                      cursor: 'pointer',
-                      boxShadow: '0 8px 32px rgba(99,102,241,0.45), inset 0 1px 0 rgba(255,255,255,0.2)',
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                      flexShrink: 0,
-                      margin: '0 8px',
+                      gap: '6px',
+                      padding: '9px 18px',
+                      borderRadius: '9999px',
+                      border: '2px solid var(--accent)',
+                      background: 'var(--accent)',
+                      color: '#fff',
+                      cursor: 'pointer',
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      fontFamily: 'var(--font-body)',
+                      whiteSpace: 'nowrap',
+                      margin: '0 6px',
+                      transition: 'background 0.15s ease',
                     }}
-                    onMouseEnter={e => {
-                      e.currentTarget.style.transform = 'scale(1.1) translateY(-2px)';
-                      e.currentTarget.style.boxShadow = '0 12px 40px rgba(99,102,241,0.6), inset 0 1px 0 rgba(255,255,255,0.3)';
-                    }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.transform = 'scale(1) translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 8px 32px rgba(99,102,241,0.45), inset 0 1px 0 rgba(255,255,255,0.2)';
-                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#cc4e00'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'var(--accent)'; }}
                   >
-                    <Plus size={20} strokeWidth={2.5} />
+                    <Plus size={15} strokeWidth={2.5} />
+                    Report
                   </button>
                 );
               }
@@ -863,147 +856,177 @@ function AppHeader({
                   key={item.id}
                   onClick={() => onSelectTab(item.id)}
                   style={{
-                    position: 'relative',
-                    zIndex: 1,
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '7px',
-                    padding: '10px 16px',
+                    gap: '6px',
+                    padding: '9px 14px',
                     borderRadius: '9999px',
-                    border: 'none',
-                    background: isActive ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+                    border: isActive ? '1px solid var(--primary)' : '1px solid transparent',
+                    background: isActive ? 'var(--primary)' : 'transparent',
                     cursor: 'pointer',
-                    color: isActive ? '#ffffff' : 'rgba(255,255,255,0.55)',
-                    fontSize: '0.85rem',
+                    color: isActive ? '#ffffff' : 'var(--text-secondary)',
+                    fontSize: '0.82rem',
                     fontWeight: isActive ? 700 : 500,
                     fontFamily: 'var(--font-body)',
                     whiteSpace: 'nowrap',
-                    transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                    WebkitTapHighlightColor: 'transparent',
-                    minHeight: '44px',
+                    transition: 'all 0.15s ease',
+                    minHeight: '40px',
                   }}
                   onMouseEnter={e => {
                     if (!isActive) {
-                      e.currentTarget.style.color = '#ffffff';
-                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
-                      e.currentTarget.style.transform = 'scale(1.03) translateY(-1px)';
+                      e.currentTarget.style.background = 'var(--primary-light)';
+                      e.currentTarget.style.color = 'var(--primary)';
+                      e.currentTarget.style.borderColor = 'rgba(0,48,135,0.2)';
                     }
                   }}
                   onMouseLeave={e => {
                     if (!isActive) {
-                      e.currentTarget.style.color = 'rgba(255,255,255,0.55)';
                       e.currentTarget.style.background = 'transparent';
-                      e.currentTarget.style.transform = 'scale(1) translateY(0)';
+                      e.currentTarget.style.color = 'var(--text-secondary)';
+                      e.currentTarget.style.borderColor = 'transparent';
                     }
                   }}
                 >
-                  <Icon
-                    size={17}
-                    strokeWidth={isActive ? 2.5 : 1.8}
-                    style={{
-                      color: isActive ? 'rgba(255,255,255,1)' : 'inherit',
-                      transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                      transform: isActive ? 'scale(1.1)' : 'scale(1)',
-                      filter: isActive ? 'drop-shadow(0 0 8px rgba(255,255,255,0.3))' : 'none',
-                    }}
-                  />
-                  <span style={{ letterSpacing: '0.01em' }}>{item.label}</span>
+                  <Icon size={15} strokeWidth={isActive ? 2.5 : 2} />
+                  <span>{item.label}</span>
                 </button>
               );
             })}
           </div>
         )}
 
+        {/* Spacer — pushes right section to edge on mobile */}
+        {isMobile && <div style={{ flex: 1 }} />}
+
         {/* Right Section */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '6px' : '8px', marginLeft: isMobile ? '0' : '24px', zIndex: 2, flexShrink: 0 }}>
-          {/* Search Button — Glass Pill */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: isMobile ? '6px' : '8px',
+          marginLeft: isMobile ? '0' : 'auto',
+          zIndex: 2,
+          flexShrink: 0,
+        }}>
+          {/* Voice AI Trigger — always visible, compact circle on mobile */}
           <button
-            onClick={() => setIsCommandOpen(true)}
+            onClick={onOpenVoice}
+            title="Open JanSetu Voice AI Engine"
             style={{
               display: 'flex', alignItems: 'center', gap: '6px',
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.08)',
+              background: 'var(--accent)',
+              border: 'none',
               borderRadius: '9999px',
-              padding: isMobile ? '10px' : '7px 10px',
-              width: isMobile ? '38px' : 'auto',
-              height: isMobile ? '38px' : 'auto',
+              padding: isMobile ? '0' : '7px 14px',
+              width: isMobile ? '36px' : 'auto',
+              height: isMobile ? '36px' : 'auto',
               justifyContent: 'center',
-              fontSize: '0.75rem',
-              color: 'var(--text-secondary)',
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              color: '#ffffff',
               cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              backdropFilter: 'blur(8px)',
+              flexShrink: 0,
+              boxShadow: '0 2px 8px rgba(255,98,0,0.35)',
             }}
           >
-            <Search size={isMobile ? 16 : 14} />
-            {!isMobile && (
-              <kbd style={{
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                padding: '1px 5px',
-                borderRadius: '4px',
-                fontSize: '0.62rem',
-                fontFamily: 'var(--font-body)',
-              }}>Ctrl+K</kbd>
-            )}
+            <Mic size={16} />
+            {!isMobile && <span>Voice AI</span>}
           </button>
 
-          {/* Notifications — Glass Pill */}
+          {/* Search — desktop only */}
+          {!isMobile && (
+            <button
+              onClick={() => setIsCommandOpen(true)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                background: 'var(--bg-primary)',
+                border: '1px solid var(--border-medium)',
+                borderRadius: '9999px',
+                padding: '7px 12px',
+                fontSize: '0.75rem',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                transition: 'border-color 0.15s ease',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.color = 'var(--primary)'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-medium)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
+            >
+              <Search size={14} />
+              <kbd style={{
+                background: '#f0f0f0',
+                border: '1px solid var(--border-medium)',
+                padding: '1px 5px',
+                borderRadius: '3px',
+                fontSize: '0.62rem',
+                fontFamily: 'var(--font-body)',
+                color: 'var(--text-muted)',
+              }}>Ctrl+K</kbd>
+            </button>
+          )}
+
+          {/* Notifications — desktop only */}
+          {!isMobile && (
           <div data-dropdown style={{ position: 'relative' }}>
             <button
               onClick={() => { setIsNotifOpen(!isNotifOpen); setIsUserMenuOpen(false); }}
               style={{
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                padding: isMobile ? '10px' : '8px',
-                width: isMobile ? '38px' : 'auto',
-                height: isMobile ? '38px' : 'auto',
+                background: 'var(--bg-primary)',
+                border: '1px solid var(--border-medium)',
+                padding: '9px',
+                width: '38px',
+                height: '38px',
                 borderRadius: '9999px',
                 cursor: 'pointer',
-                color: activeUnreadCount > 0 ? 'white' : 'var(--text-secondary)',
+                color: activeUnreadCount > 0 ? 'var(--primary)' : 'var(--text-secondary)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 position: 'relative',
-                transition: 'all 0.15s ease',
+                transition: 'border-color 0.15s ease',
               }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--primary)'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-medium)'; }}
             >
-              <Bell size={isMobile ? 17 : 16} />
+              <Bell size={16} />
               {activeUnreadCount > 0 && (
                 <span style={{
-                  position: 'absolute', top: isMobile ? '2px' : '-3px', right: isMobile ? '2px' : '-3px',
+                  position: 'absolute', top: '-2px', right: '-2px',
                   background: 'var(--danger)', color: 'white',
                   fontSize: '0.58rem', fontWeight: 800,
                   width: '15px', height: '15px', borderRadius: '50%',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  border: '2px solid var(--bg-primary)',
                 }}>{activeUnreadCount}</span>
               )}
             </button>
             {isNotifOpen && (
-              <div className="slide-down glass-l4" data-dropdown style={{
-                position: 'absolute', top: '42px', right: 0, width: '300px',
+              <div className="slide-down" data-dropdown style={{
+                position: 'absolute', top: '46px', right: 0, width: '300px',
                 padding: '8px', zIndex: 1000,
+                background: '#ffffff', border: '1px solid var(--border-medium)',
+                borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)',
               }}>
-                <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', padding: '8px 10px', borderBottom: '1px solid var(--border-subtle)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>Notifications</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', padding: '8px 10px', borderBottom: '1px solid var(--border-subtle)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>Notifications</div>
+                {notifications.length === 0 && (
+                  <div style={{ padding: '16px 10px', color: 'var(--text-muted)', fontSize: '0.82rem', textAlign: 'center' }}>No new notifications</div>
+                )}
                 {notifications.map(n => (
                   <div key={n.id} onClick={() => { setNotifications(notifications.map(x => x.id === n.id ? { ...x, read: true } : x)); setIsNotifOpen(false); }}
-                    style={{ padding: '10px', borderRadius: '10px', cursor: 'pointer', background: n.read ? 'transparent' : 'rgba(59,130,246,0.06)', marginBottom: '4px', transition: 'background 0.15s ease' }}
+                    style={{ padding: '10px', borderRadius: 'var(--radius-sm)', cursor: 'pointer', background: n.read ? 'transparent' : 'var(--primary-light)', marginBottom: '4px', transition: 'background 0.15s ease', borderLeft: n.read ? 'none' : '3px solid var(--primary)' }}
                   >
-                    <strong style={{ color: 'white', fontSize: '0.8rem', display: 'block' }}>{n.title}</strong>
-                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.74rem', lineHeight: 1.4 }}>{n.text}</span>
+                    <strong style={{ color: 'var(--text-primary)', fontSize: '0.82rem', display: 'block' }}>{n.title}</strong>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.76rem', lineHeight: 1.4 }}>{n.text}</span>
                   </div>
                 ))}
                 <button onClick={() => { setNotifications([]); setIsNotifOpen(false); }}
-                  style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.7rem', cursor: 'pointer', padding: '8px', borderRadius: '6px', transition: 'color 0.15s ease' }}
+                  style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--primary)', fontSize: '0.76rem', cursor: 'pointer', padding: '8px', borderRadius: 'var(--radius-sm)', fontWeight: 600, fontFamily: 'inherit' }}
                 >
                   Clear All
                 </button>
               </div>
             )}
           </div>
+          )} {/* end !isMobile notifications */}
 
-          {/* User Auth state — Glass Pill */}
+          {/* User Auth state */}
           {!currentUser ? (
-            <button onClick={onLoginClick} className="btn btn-primary" style={{ padding: isMobile ? '8px 18px' : '10px 22px', fontSize: '0.82rem', borderRadius: '9999px', fontWeight: 700, flexShrink: 0, whiteSpace: 'nowrap' }}>
+            <button onClick={onLoginClick} className="btn btn-primary" style={{ padding: isMobile ? '7px 12px' : '8px 20px', fontSize: isMobile ? '0.78rem' : '0.82rem', borderRadius: '9999px', fontWeight: 700, flexShrink: 0, whiteSpace: 'nowrap' }}>
               Sign In
             </button>
           ) : (
@@ -1012,54 +1035,56 @@ function AppHeader({
                 onClick={() => { setIsUserMenuOpen(!isUserMenuOpen); setIsNotifOpen(false); }}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '7px',
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: '10px',
-                  padding: '6px 8px',
+                  background: 'var(--primary-light)',
+                  border: '1px solid rgba(0,48,135,0.2)',
+                  borderRadius: '9999px',
+                  padding: '6px 12px 6px 6px',
                   cursor: 'pointer',
-                  transition: 'all 0.15s ease',
+                  transition: 'background 0.15s ease',
                 }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,48,135,0.12)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'var(--primary-light)'}
               >
                 <div style={{
-                  width: '26px', height: '26px', borderRadius: '50%',
-                  background: `${getSectorColor(currentUser.sector)}18`,
-                  border: `1px solid ${getSectorColor(currentUser.sector)}40`,
+                  width: '28px', height: '28px', borderRadius: '50%',
+                  background: 'var(--primary)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '13px',
+                  fontSize: '13px', color: '#fff', fontWeight: 700,
                 }}>
-                  {currentUser.avatar || '👤'}
+                  {(currentUser.name || currentUser.email || 'U')[0].toUpperCase()}
                 </div>
                 {!isMobile && (
                   <div style={{ textAlign: 'left' }}>
-                    <div style={{ fontSize: '0.76rem', fontWeight: 700, color: 'white', lineHeight: 1.2 }}>{(currentUser.name || currentUser.email).split(' ')[0]}</div>
-                    <div style={{ fontSize: '0.62rem', color: getSectorColor(currentUser.sector), lineHeight: 1.2 }}>{currentUser.role}</div>
+                    <div style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--primary)', lineHeight: 1.2 }}>{(currentUser.name || currentUser.email).split(' ')[0]}</div>
+                    <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', lineHeight: 1.2 }}>{currentUser.role}</div>
                   </div>
                 )}
                 <ChevronDown size={12} color="var(--text-muted)" />
               </button>
 
               {isUserMenuOpen && (
-                <div className="slide-down glass-l4" data-dropdown style={{
-                  position: 'absolute', top: '44px', right: 0, width: '230px',
+                <div className="slide-down" data-dropdown style={{
+                  position: 'absolute', top: '46px', right: 0, width: '240px',
                   padding: '8px', zIndex: 1000,
+                  background: '#fff', border: '1px solid var(--border-medium)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)',
                 }}>
-                  <div style={{ padding: '12px', borderBottom: '1px solid var(--border-subtle)', marginBottom: '6px' }}>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'white' }}>{currentUser.name || 'User'}</div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>{currentUser.email}</div>
+                  <div style={{ padding: '12px', borderBottom: '1px solid var(--border-subtle)', marginBottom: '6px', borderLeft: '3px solid var(--primary)', paddingLeft: '12px' }}>
+                    <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>{currentUser.name || 'User'}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{currentUser.email}</div>
                   </div>
                   <button onClick={() => { onNavigate('dashboard'); setIsUserMenuOpen(false); }}
-                    style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', padding: '10px', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.82rem', borderRadius: '8px', transition: 'all 0.15s ease', textAlign: 'left' }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
+                    style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', padding: '10px 12px', cursor: 'pointer', color: 'var(--text-primary)', fontSize: '0.85rem', borderRadius: 'var(--radius-sm)', transition: 'background 0.15s ease', textAlign: 'left', fontFamily: 'inherit' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--primary-light)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'none'}
                   >
-                    <User size={14} /> My Dashboard
+                    <User size={15} color="var(--primary)" /> My Dashboard
                   </button>
                   <button onClick={onLogout}
-                    style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', padding: '10px', cursor: 'pointer', color: '#f87171', fontSize: '0.82rem', borderRadius: '8px', transition: 'all 0.15s ease', textAlign: 'left' }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.06)'}
+                    style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', padding: '10px 12px', cursor: 'pointer', color: 'var(--danger)', fontSize: '0.85rem', borderRadius: 'var(--radius-sm)', transition: 'background 0.15s ease', textAlign: 'left', fontFamily: 'inherit' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--danger-light)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'none'}
                   >
-                    <LogOut size={14} /> Sign Out
+                    <LogOut size={15} /> Sign Out
                   </button>
                 </div>
               )}
@@ -1102,6 +1127,9 @@ const ROUTE_LABELS = {
   'enterprise':      { label: 'Enterprise Control',      icon: '🛡️' },
   'digital-twin':    { label: 'Digital Twin',           icon: '🏙️' },
   'field-ops':       { label: 'Field Operations',       icon: '📋' },
+  'emerging-problems': { label: 'Emerging Problems Radar', icon: '📡' },
+  'demo':            { label: 'SIH Judge & Guided Journey Mode', icon: '🏆' },
+  'district-scorecard': { label: 'District Scorecard & Impact Ledger', icon: '📊' },
 };
 
 function BackButton({ onBack, canGoBack, currentRoute, onNavigate, isMobile }) {
@@ -1114,69 +1142,51 @@ function BackButton({ onBack, canGoBack, currentRoute, onNavigate, isMobile }) {
       gap: '12px',
       marginBottom: isMobile ? '16px' : '20px',
       flexWrap: 'wrap',
+      padding: '8px 0',
+      borderBottom: '1px solid var(--border-subtle)',
     }}>
-      {/* Back Button — Glass Pill */}
+      {/* Back Button — Gov Style */}
       <button
         onClick={onBack}
         style={{
-          display: 'flex', alignItems: 'center', gap: '7px',
-          background: 'rgba(255,255,255,0.04)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: '100px',
-          padding: isMobile ? '8px 14px' : '9px 18px',
-          color: 'var(--text-secondary)',
-          fontSize: isMobile ? '0.8rem' : '0.85rem',
+          display: 'flex', alignItems: 'center', gap: '6px',
+          background: '#ffffff',
+          border: '1px solid var(--border-medium)',
+          borderRadius: '4px',
+          padding: isMobile ? '6px 12px' : '7px 14px',
+          color: 'var(--primary)',
+          fontSize: isMobile ? '0.8rem' : '0.84rem',
           fontWeight: 600,
           cursor: 'pointer',
-          transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
+          transition: 'background 0.15s ease',
           flexShrink: 0,
-          position: 'relative',
-          overflow: 'hidden',
+          fontFamily: 'inherit',
         }}
-        onMouseEnter={e => {
-          e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
-          e.currentTarget.style.color = '#fff';
-          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
-          e.currentTarget.style.transform = 'translateY(-1px)';
-        }}
-        onMouseLeave={e => {
-          e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
-          e.currentTarget.style.color = 'var(--text-secondary)';
-          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
-          e.currentTarget.style.transform = 'translateY(0)';
-        }}
+        onMouseEnter={e => { e.currentTarget.style.background = 'var(--primary-light)'; }}
+        onMouseLeave={e => { e.currentTarget.style.background = '#ffffff'; }}
       >
-        <ArrowLeft size={15} />
+        <ArrowLeft size={14} />
         {canGoBack ? 'Back' : 'Home'}
       </button>
 
-      {/* Breadcrumb */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: '6px',
-        fontSize: isMobile ? '0.75rem' : '0.8rem',
-        color: 'var(--text-muted)',
-        overflow: 'hidden',
-        flexShrink: 1, minWidth: 0,
-      }}>
+      {/* Breadcrumb — Gov Style */}
+      <nav className="gov-breadcrumb">
         <button
           onClick={() => onNavigate('landing')}
-          style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 'inherit', padding: '0', display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0, transition: 'color 0.15s ease' }}
-          onMouseEnter={e => e.currentTarget.style.color = '#fff'}
-          onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+          style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.82rem', padding: '0', display: 'flex', alignItems: 'center', gap: '4px', fontFamily: 'inherit' }}
         >
-          <Home size={13} />
+          <Home size={12} />
           {!isMobile && <span>Home</span>}
         </button>
-        <span style={{ opacity: 0.4 }}>/</span>
+        <span style={{ color: 'var(--text-muted)' }}>/</span>
         <span style={{
-          color: '#fff', fontWeight: 700,
+          color: 'var(--text-primary)', fontWeight: 600,
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          fontSize: '0.82rem',
         }}>
-          {current.icon} {current.label}
+          {current.label}
         </span>
-      </div>
+      </nav>
     </div>
   );
 }

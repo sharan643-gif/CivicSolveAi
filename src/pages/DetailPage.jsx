@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Users, Heart, Share2, Brain, Code, UserCheck, Wrench, Shield, CheckSquare, Plus, MessageSquare } from 'lucide-react';
+import { MapPin, Users, Heart, Share2, Brain, Code, UserCheck, Wrench, Shield, CheckSquare, Plus, MessageSquare, Award } from 'lucide-react';
 import { getChallenges, getTeams, getChallengeById, updateChallenge } from '../services/supabaseService';
+import JanSetuLoop from '../components/JanSetuLoop';
+import ProblemDnaCard from '../components/ProblemDnaCard';
+import CapabilityGapCard from '../components/CapabilityGapCard';
+import DeploymentReadinessCard from '../components/DeploymentReadinessCard';
+import SolutionDnaCard from '../components/SolutionDnaCard';
+import CollaborationGraph from '../components/CollaborationGraph';
+import ImpactCertificateModal from '../components/ImpactCertificateModal';
 
 export default function DetailPage({ challengeId, onNavigate, currentUserRole }) {
   const [challenges, setChallenges] = useState([]);
@@ -8,6 +15,7 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
   const [collaborations, setCollaborations] = useState([]);
   const [mentors, setMentors] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showCertModal, setShowCertModal] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -161,15 +169,15 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
             </span>
           </div>
           
-          <h1 style={{ fontSize: '2rem', color: '#fff' }}>{challenge.title}</h1>
+          <h1 style={{ fontSize: '2rem', color: 'var(--text-primary)', fontWeight: 800 }}>{challenge.title}</h1>
           
           <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               <MapPin size={14} />
               <span>{challenge.location}</span>
             </div>
-            <div>Affected: <strong style={{ color: 'white' }}>{challenge.affected_population.toLocaleString()} residents</strong></div>
-            <div>Reports: <strong style={{ color: 'white' }}>{challenge.reports_count} files</strong></div>
+            <div>Affected: <strong style={{ color: 'var(--text-primary)' }}>{challenge.affected_population.toLocaleString()} residents</strong></div>
+            <div>Reports: <strong style={{ color: 'var(--text-primary)' }}>{challenge.reports_count} files</strong></div>
           </div>
         </div>
 
@@ -187,6 +195,10 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
               <Heart size={14} fill="white" />
               Support ({challenge.support_count})
             </button>
+            <button onClick={() => setShowCertModal(true)} className="btn btn-secondary" style={{ padding: '8px 12px', fontSize: '0.8rem', background: '#FF6200', color: '#ffffff', border: 'none', fontWeight: 700 }}>
+              <Award size={14} />
+              Impact Certificate
+            </button>
             <button className="btn btn-secondary" style={{ padding: '8px 12px', fontSize: '0.8rem' }}>
               <Share2 size={14} />
               Share
@@ -195,12 +207,15 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
         </div>
       </div>
 
+      {/* JanSetu Lifecycle Loop Signature */}
+      <JanSetuLoop activeStage={challenge.status === 'prototype' ? 'BUILD' : challenge.status === 'pilot' ? 'VALIDATE' : challenge.status === 'implemented' ? 'MEASURE' : 'UNDERSTAND'} />
+
       {/* Tabs selectors */}
       <div className="reveal mobile-scroll-tabs" style={{ display: 'flex', gap: '12px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '2px', overflowX: 'auto' }}>
         {[
-          { id: 'overview', label: 'Overview & Reports', icon: Shield },
-          { id: 'ai', label: 'AI Forensics Engine', icon: Brain },
-          { id: 'team', label: team ? 'Team Workspace' : 'University Matching', icon: Code }
+          { id: 'overview', label: 'Problem DNA & Overview', icon: Shield },
+          { id: 'ai', label: 'AI Forensics & Capability', icon: Brain },
+          { id: 'team', label: team ? 'Team & Solution DNA' : 'University Matching', icon: Code }
         ].map(t => {
           const IconComp = t.icon;
           const isSelected = tab === t.id;
@@ -210,13 +225,14 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
               onClick={() => setTab(t.id)}
               className="btn"
               style={{
-                background: isSelected ? 'rgba(59,130,246,0.1)' : 'transparent',
+                background: isSelected ? 'var(--primary-light)' : 'transparent',
                 borderColor: isSelected ? 'var(--primary)' : 'transparent',
-                color: isSelected ? 'white' : 'var(--text-secondary)',
+                color: isSelected ? 'var(--primary)' : 'var(--text-secondary)',
                 fontSize: '0.85rem',
                 padding: '10px 16px',
                 borderRadius: '6px 6px 0 0',
-                whiteSpace: 'nowrap'
+                whiteSpace: 'nowrap',
+                fontWeight: isSelected ? 700 : 500
               }}
             >
               <IconComp size={14} />
@@ -228,21 +244,23 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
 
       {/* TAB CONTENT: 1. Overview */}
       {tab === 'overview' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '24px' }} className="responsive-grid">
-          <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <h3 style={{ fontSize: '1.2rem', color: 'white' }}>Problem Description</h3>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: '1.6' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <ProblemDnaCard challenge={challenge} />
+
+          <div style={{ background: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '20px' }}>
+            <h3 style={{ fontSize: '1.05rem', color: 'var(--text-primary)', fontWeight: 700, marginBottom: '8px' }}>Problem Description</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: '1.6', margin: 0 }}>
               {challenge.description}
             </p>
 
             {challenge.evidence && challenge.evidence.length > 0 && (
-              <div style={{ marginTop: '20px' }}>
-                <h4 style={{ fontSize: '0.95rem', color: 'white', marginBottom: '10px' }}>Submitted Photographic Evidence</h4>
+              <div style={{ marginTop: '16px' }}>
+                <h4 style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 700, marginBottom: '10px' }}>Submitted Photographic Evidence</h4>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px' }}>
                   {challenge.evidence.map(ev => (
-                    <div key={ev.id} style={{ borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
+                    <div key={ev.id} style={{ borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
                       <img src={ev.url} alt={ev.name} style={{ width: '100%', height: '140px', objectFit: 'cover' }} />
-                      <div style={{ padding: '8px', fontSize: '0.75rem', color: 'var(--text-secondary)', background: 'rgba(0,0,0,0.2)' }}>
+                      <div style={{ padding: '8px', fontSize: '0.75rem', color: 'var(--text-secondary)', background: 'var(--bg-primary)' }}>
                         📎 {ev.name}
                       </div>
                     </div>
@@ -252,62 +270,13 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
             )}
           </div>
 
-          {/* Right sidebar: Stages and Comments */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* Lifecyle stage widget */}
-            <div className="glass-card" style={{ padding: '20px' }}>
-              <h3 style={{ fontSize: '1rem', color: 'white', marginBottom: '16px' }}>Challenge Lifecycle</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', position: 'relative', paddingLeft: '20px' }}>
-                <div style={{ position: 'absolute', left: '4px', top: '6px', bottom: '6px', width: '2px', background: 'rgba(255,255,255,0.06)' }}></div>
-                
-                {/* Simplified timeline */}
-                {[
-                  { label: 'Reported & AI Analyzed', active: true },
-                  { label: 'Feasibility Validated', active: challenge.status !== 'reported' && challenge.status !== 'under_review' },
-                  { label: 'Published & Matching Open', active: !['reported', 'under_review', 'validated'].includes(challenge.status) },
-                  { label: 'Team Formed & Coding', active: !['reported', 'under_review', 'validated', 'published', 'team_formation'].includes(challenge.status) },
-                  { label: 'Pilot Field Testing', active: ['pilot', 'implemented', 'resolved'].includes(challenge.status) },
-                  { label: 'Implemented & Social Impact measured', active: ['implemented', 'resolved'].includes(challenge.status) }
-                ].map((st, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.8rem' }}>
-                    <div style={{
-                      width: '10px',
-                      height: '10px',
-                      borderRadius: '50%',
-                      background: st.active ? 'var(--success)' : 'rgba(255,255,255,0.1)',
-                      border: st.active ? '2px solid white' : 'none',
-                      position: 'absolute',
-                      left: '0px',
-                      boxShadow: st.active ? '0 0 8px var(--success)' : 'none'
-                    }}></div>
-                    <span style={{ color: st.active ? 'white' : 'var(--text-muted)' }}>{st.label}</span>
-                  </div>
-                ))}
-              </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '24px' }} className="responsive-grid">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <CapabilityGapCard challenge={challenge} />
+              <SolutionDnaCard />
             </div>
-
-            {/* Support list comment simulator */}
-            <div className="glass-card" style={{ padding: '20px' }}>
-              <h3 style={{ fontSize: '1rem', color: 'white', marginBottom: '12px' }}>Discussion Hub</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '180px', overflowY: 'auto', marginBottom: '12px' }}>
-                {challenge.comments && challenge.comments.length > 0 ? (
-                  challenge.comments.map(c => (
-                    <div key={c.id} style={{ background: 'rgba(255,255,255,0.02)', padding: '8px 10px', borderRadius: '6px', fontSize: '0.78rem' }}>
-                      <strong style={{ color: 'white', display: 'block', marginBottom: '2px' }}>{c.user}</strong>
-                      <span style={{ color: 'var(--text-secondary)' }}>{c.text}</span>
-                    </div>
-                  ))
-                ) : (
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', padding: '20px 0' }}>
-                    No comments yet. Support this challenge to begin thread.
-                  </div>
-                )}
-              </div>
-              
-              <div style={{ display: 'flex', gap: '6px' }} className="discussion-input-row">
-                <input type="text" placeholder="Add to the conversation..." className="form-input" style={{ padding: '6px 8px', fontSize: '0.75rem', flex: 1 }} />
-                <button className="btn btn-primary" style={{ padding: '6px 10px', fontSize: '0.75rem', flexShrink: 0 }}>Send</button>
-              </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <DeploymentReadinessCard challenge={challenge} />
             </div>
           </div>
         </div>
@@ -319,19 +288,19 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
           
           {/* Forensics card */}
           <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--ai-purple)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary)' }}>
               <Brain size={20} />
-              <h3 style={{ fontSize: '1.1rem', color: 'white' }}>AI-Generated Structural Diagnostics</h3>
+              <h3 style={{ fontSize: '1.1rem', color: 'var(--text-primary)', fontWeight: 700 }}>AI-Generated Structural Diagnostics</h3>
             </div>
             
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '16px' }}>
               <div>
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>Identified Subcategory</span>
-                <span style={{ fontSize: '0.9rem', color: 'white', fontWeight: 600 }}>{challenge.ai_analysis.subcategory || 'Urban Engineering'}</span>
+                <span style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 700 }}>{challenge.ai_analysis.subcategory || 'Urban Engineering'}</span>
               </div>
               <div>
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>Affected Estimate</span>
-                <span style={{ fontSize: '0.9rem', color: 'white', fontWeight: 600 }}>{challenge.ai_analysis.affected_population_estimate || challenge.affected_population} residents</span>
+                <span style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 700 }}>{challenge.ai_analysis.affected_population_estimate || challenge.affected_population} residents</span>
               </div>
             </div>
 
@@ -348,7 +317,7 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
               <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '8px', fontWeight: 600 }}>Recommended Technologies</span>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {(challenge.ai_analysis.suggested_technologies || ["GIS Platforms", "IoT telemetry"]).map((tech, idx) => (
-                  <div key={idx} style={{ fontSize: '0.8rem', padding: '6px 10px', background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.12)', borderRadius: '6px', color: '#fff' }}>
+                  <div key={idx} style={{ fontSize: '0.8rem', padding: '6px 10px', background: 'var(--primary-light)', border: '1px solid var(--border-subtle)', borderRadius: '6px', color: 'var(--primary)', fontWeight: 600 }}>
                     🛠 {tech}
                   </div>
                 ))}
@@ -358,10 +327,10 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
 
           {/* Sidebar alignment matches */}
           <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <h3 style={{ fontSize: '1rem', color: 'white' }}>Skill Alignment</h3>
+            <h3 style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 700 }}>Skill Alignment</h3>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
               {challenge.skills_required.map((skill, idx) => (
-                <span key={idx} style={{ fontSize: '0.75rem', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-subtle)', padding: '4px 8px', borderRadius: '4px', color: 'white' }}>
+                <span key={idx} style={{ fontSize: '0.75rem', background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', padding: '4px 8px', borderRadius: '4px', color: 'var(--text-secondary)' }}>
                   {skill}
                 </span>
               ))}
@@ -369,10 +338,10 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
 
             <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '16px', marginTop: '10px' }}>
               <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '10px', fontWeight: 600 }}>Recommended Stakeholders</span>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.8rem' }}>
-                <div>🎓 <strong style={{ color: 'white' }}>University:</strong> Technical Institutes offering Geotechnical / Computer Science branches.</div>
-                <div>🏢 <strong style={{ color: 'white' }}>Industry:</strong> GIS platforms, IoT fabrication labs, local cement agencies.</div>
-                <div>🏛 <strong style={{ color: 'white' }}>Government:</strong> Rural Development Department, Municipal Water Supply Authority.</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                <div>🎓 <strong style={{ color: 'var(--text-primary)' }}>University:</strong> Technical Institutes offering Geotechnical / Computer Science branches.</div>
+                <div>🏢 <strong style={{ color: 'var(--text-primary)' }}>Industry:</strong> GIS platforms, IoT fabrication labs, local cement agencies.</div>
+                <div>🏛 <strong style={{ color: 'var(--text-primary)' }}>Government:</strong> Rural Development Department, Municipal Water Supply Authority.</div>
               </div>
             </div>
           </div>
@@ -390,7 +359,7 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
               <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <h3 style={{ fontSize: '1.2rem', color: 'white' }}>{team.name}</h3>
+                    <h3 style={{ fontSize: '1.2rem', color: 'var(--text-primary)', fontWeight: 700 }}>{team.name}</h3>
                     <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Registered to {team.university}</p>
                   </div>
                   
@@ -405,7 +374,7 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
 
                 {/* Interactive Tasks checklist */}
                 <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '16px' }}>
-                  <h4 style={{ fontSize: '0.95rem', color: 'white', marginBottom: '12px' }}>Sprint Tasks checklist</h4>
+                  <h4 style={{ fontSize: '0.95rem', color: 'var(--text-primary)', fontWeight: 700, marginBottom: '12px' }}>Sprint Tasks checklist</h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {team.tasks.map(task => (
                       <div 
@@ -416,14 +385,14 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
                           alignItems: 'center',
                           gap: '12px',
                           padding: '10px 12px',
-                          background: 'rgba(255,255,255,0.01)',
+                          background: '#ffffff',
                           border: '1px solid var(--border-subtle)',
                           borderRadius: '6px',
                           cursor: 'pointer',
                           transition: 'all 0.15s ease'
                         }}
-                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
-                        onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.01)'}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
+                        onMouseLeave={e => e.currentTarget.style.background = '#ffffff'}
                       >
                         <input 
                           type="checkbox" 
@@ -433,7 +402,8 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
                         />
                         <span style={{ 
                           fontSize: '0.82rem', 
-                          color: task.status === 'completed' ? 'var(--text-muted)' : 'white',
+                          color: task.status === 'completed' ? 'var(--text-muted)' : 'var(--text-primary)',
+                          fontWeight: task.status === 'completed' ? 400 : 600,
                           textDecoration: task.status === 'completed' ? 'line-through' : 'none',
                           flexGrow: 1
                         }}>
@@ -449,12 +419,12 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
 
                 {/* Milestones list */}
                 <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '16px' }}>
-                  <h4 style={{ fontSize: '0.95rem', color: 'white', marginBottom: '10px' }}>Milestone Deadlines</h4>
+                  <h4 style={{ fontSize: '0.95rem', color: 'var(--text-primary)', fontWeight: 700, marginBottom: '10px' }}>Milestone Deadlines</h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {team.milestones.map(m => (
-                      <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', padding: '6px 8px', background: 'rgba(255,255,255,0.01)', borderRadius: '4px' }}>
-                        <span style={{ color: 'white' }}>{m.title}</span>
-                        <span style={{ color: m.status === 'completed' ? 'var(--success)' : 'var(--warning)' }}>
+                      <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', padding: '6px 8px', background: 'var(--bg-primary)', borderRadius: '4px' }}>
+                        <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{m.title}</span>
+                        <span style={{ color: m.status === 'completed' ? 'var(--success)' : 'var(--warning)', fontWeight: 700 }}>
                           {m.status === 'completed' ? '✓ Completed' : `⏳ ${m.date}`}
                         </span>
                       </div>
@@ -469,12 +439,12 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
                 {collab && (
                   <div className="glass-card" style={{ padding: '20px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                      <h4 style={{ fontSize: '0.9rem', color: 'white' }}>Corporate Sponsor</h4>
-                      <span className="badge" style={{ background: 'var(--success-glow)', color: 'var(--success)' }}>
+                      <h4 style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 700 }}>Corporate Sponsor</h4>
+                      <span className="badge" style={{ background: 'var(--success-light)', color: 'var(--success)', fontWeight: 700 }}>
                         Active Collab
                       </span>
                     </div>
-                    <h3 style={{ fontSize: '1.1rem', color: '#fff', marginBottom: '4px' }}>{collab.company_name}</h3>
+                    <h3 style={{ fontSize: '1.1rem', color: 'var(--text-primary)', fontWeight: 700, marginBottom: '4px' }}>{collab.company_name}</h3>
                     <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '12px' }}>
                       <strong>Contribution:</strong> {collab.contribution}
                     </p>
@@ -556,7 +526,6 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
           )}
         </div>
       )}
-      
     </div>
   );
 }

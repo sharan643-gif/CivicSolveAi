@@ -26,7 +26,7 @@ export default function FundingPage() {
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)', padding: '4px 10px', borderRadius: '100px', fontSize: '0.75rem', color: '#f59e0b', marginBottom: '8px' }}>
             <DollarSign size={12} /> CSR & Project Capital Ecosystem
           </div>
-          <h1 style={{ fontSize: '2rem', fontFamily: 'var(--font-display)', fontWeight: 800, color: '#fff' }}>
+          <h1 style={{ fontSize: '2rem', fontFamily: 'var(--font-display)', fontWeight: 800, color: 'var(--text-primary)' }}>
             CSR Grants & Project Funding
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
@@ -35,13 +35,13 @@ export default function FundingPage() {
         </div>
 
         <div className="glass-l1" style={{ display: 'flex', gap: '6px', padding: '4px', borderRadius: '10px' }}>
-          <button onClick={() => setActiveTab('projects')} style={{ padding: '6px 14px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, background: activeTab === 'projects' ? 'rgba(245,158,11,0.15)' : 'transparent', color: activeTab === 'projects' ? '#f59e0b' : 'var(--text-secondary)' }}>
+          <button onClick={() => setActiveTab('projects')} style={{ padding: '6px 14px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700, background: activeTab === 'projects' ? 'var(--primary-light)' : 'transparent', color: activeTab === 'projects' ? 'var(--primary)' : 'var(--text-secondary)' }}>
             Active Projects ({fundedProjects.length})
           </button>
-          <button onClick={() => setActiveTab('grant-workflow')} style={{ padding: '6px 14px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, background: activeTab === 'grant-workflow' ? 'rgba(59,130,246,0.15)' : 'transparent', color: activeTab === 'grant-workflow' ? '#60a5fa' : 'var(--text-secondary)' }}>
+          <button onClick={() => setActiveTab('grant-workflow')} style={{ padding: '6px 14px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700, background: activeTab === 'grant-workflow' ? 'var(--primary-light)' : 'transparent', color: activeTab === 'grant-workflow' ? 'var(--primary)' : 'var(--text-secondary)' }}>
             Grant Application Workflow
           </button>
-          <button onClick={() => setActiveTab('cost-estimator')} style={{ padding: '6px 14px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, background: activeTab === 'cost-estimator' ? 'rgba(139,92,246,0.15)' : 'transparent', color: activeTab === 'cost-estimator' ? '#a78bfa' : 'var(--text-secondary)' }}>
+          <button onClick={() => setActiveTab('cost-estimator')} style={{ padding: '6px 14px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700, background: activeTab === 'cost-estimator' ? 'var(--primary-light)' : 'transparent', color: activeTab === 'cost-estimator' ? 'var(--primary)' : 'var(--text-secondary)' }}>
             ✨ AI Cost Estimator
           </button>
         </div>
@@ -56,13 +56,13 @@ export default function FundingPage() {
               <div key={i} className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <span style={{ fontSize: '0.68rem', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)', color: '#f59e0b', padding: '2px 8px', borderRadius: '100px', fontWeight: 700 }}>
+                    <span style={{ fontSize: '0.68rem', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)', color: '#b45309', padding: '2px 8px', borderRadius: '100px', fontWeight: 700 }}>
                       {p.status}
                     </span>
-                    <span style={{ fontSize: '0.78rem', color: '#10b981', fontWeight: 800 }}>{pct}% Funded</span>
+                    <span style={{ fontSize: '0.78rem', color: '#15803d', fontWeight: 800 }}>{pct}% Funded</span>
                   </div>
 
-                  <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#fff', marginBottom: '6px' }}>{p.title}</h3>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>{p.title}</h3>
                   <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '16px' }}>Challenge: {p.challenge}</p>
 
                   {/* Progress Bar */}
@@ -71,13 +71,13 @@ export default function FundingPage() {
                       <span>Raised: ₹{p.received.toLocaleString()}</span>
                       <span>Target: ₹{p.required.toLocaleString()}</span>
                     </div>
-                    <div style={{ height: '6px', background: 'rgba(255,255,255,0.06)', borderRadius: '3px', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${pct}%`, background: pct === 100 ? '#10b981' : '#f59e0b', borderRadius: '3px' }} />
+                    <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${pct}%`, background: pct === 100 ? '#16a34a' : '#ea580c', borderRadius: '3px' }} />
                     </div>
                   </div>
 
                   <div style={{ fontSize: '0.73rem', color: 'var(--text-muted)' }}>
-                    Sponsors: <strong style={{ color: '#fff' }}>{p.sponsors.join(', ')}</strong>
+                    Sponsors: <strong style={{ color: 'var(--text-primary)' }}>{p.sponsors.join(', ')}</strong>
                   </div>
                 </div>
 
@@ -93,7 +93,7 @@ export default function FundingPage() {
       {/* Grant Application Workflow View */}
       {activeTab === 'grant-workflow' && (
         <div className="glass-l2" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff', position: 'relative' }}>National Innovation Grant Pipeline Workflow</h3>
+          <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', position: 'relative' }}>National Innovation Grant Pipeline Workflow</h3>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '10px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '20px' }}>
             {[
@@ -104,8 +104,8 @@ export default function FundingPage() {
               { step: '5. Fund Release', status: 'pending' },
               { step: '6. Milestone Audit', status: 'pending' },
             ].map((s, idx) => (
-              <div key={idx} style={{ background: s.status === 'done' ? 'rgba(16,185,129,0.1)' : s.status === 'current' ? 'rgba(59,130,246,0.15)' : 'var(--bg-elevated)', border: `1px solid ${s.status === 'done' ? 'rgba(16,185,129,0.3)' : s.status === 'current' ? '#3b82f6' : 'var(--border-subtle)'}`, padding: '10px', borderRadius: '8px', textAlign: 'center' }}>
-                <div style={{ fontSize: '0.72rem', fontWeight: 700, color: s.status === 'done' ? '#10b981' : s.status === 'current' ? '#60a5fa' : 'var(--text-muted)' }}>{s.step}</div>
+              <div key={idx} style={{ background: s.status === 'done' ? 'rgba(16,185,129,0.1)' : s.status === 'current' ? 'var(--primary-light)' : 'var(--bg-elevated)', border: `1px solid ${s.status === 'done' ? 'rgba(16,185,129,0.3)' : s.status === 'current' ? 'var(--primary)' : 'var(--border-subtle)'}`, padding: '10px', borderRadius: '8px', textAlign: 'center' }}>
+                <div style={{ fontSize: '0.72rem', fontWeight: 700, color: s.status === 'done' ? '#15803d' : s.status === 'current' ? 'var(--primary)' : 'var(--text-muted)' }}>{s.step}</div>
                 <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', marginTop: '2px' }}>
                   {s.status === 'done' ? '✓ Passed' : s.status === 'current' ? '● In Progress' : 'Pending'}
                 </div>
@@ -115,7 +115,7 @@ export default function FundingPage() {
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#fff' }}>Grant Application #GR-2026-042</div>
+              <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>Grant Application #GR-2026-042</div>
               <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '2px' }}>Applied by Team InnoVators (BIT Mesra) · Requested: ₹5,00,000</div>
             </div>
             <button onClick={() => alert('Grant approved! Moved to Step 5: Fund Release.')} className="btn btn-primary" style={{ padding: '10px 20px', fontSize: '0.85rem' }}>
@@ -127,11 +127,11 @@ export default function FundingPage() {
 
       {/* AI Cost Estimator View */}
       {activeTab === 'cost-estimator' && (
-        <div className="glass-l2" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '20px', borderColor: 'rgba(139,92,246,0.25)' }}>
+        <div className="glass-l2" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '20px', borderColor: 'var(--border-medium)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Sparkles size={20} color="#8b5cf6" />
+            <Sparkles size={20} color="var(--primary)" />
             <div>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff' }}>AI Solution Budget & Cost Estimator</h3>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>AI Solution Budget & Cost Estimator</h3>
               <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Indicative automated budget generated based on hardware, deployment & software requirements.</p>
             </div>
           </div>
