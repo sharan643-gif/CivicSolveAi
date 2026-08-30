@@ -1007,9 +1007,36 @@ function AppHeader({
           zIndex: 2,
           flexShrink: 0,
         }}>
+          {/* Voice AI Trigger — Desktop only */}
 
+          {!isMobile && (
+            <button
+              onClick={onOpenVoice}
+              title="Open JanSetu Voice AI Engine"
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                background: 'var(--accent)',
+                border: 'none',
+                borderRadius: '9999px',
+                padding: '8px 14px',
+                fontSize: '0.8rem',
+                fontWeight: 700,
+                color: '#ffffff',
+                cursor: 'pointer',
+                flexShrink: 0,
+                boxShadow: '0 2px 8px rgba(255,98,0,0.35)',
+                transition: 'background 0.15s ease',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#cc4e00'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'var(--accent)'; }}
+            >
+              <Mic size={16} />
+              <span>Voice AI</span>
+            </button>
+          )}
 
           {/* Search — desktop only */}
+
           {!isMobile && (
             <button
               onClick={() => setIsCommandOpen(true)}
