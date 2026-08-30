@@ -1,38 +1,57 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Mic, MicOff, Volume2, X, ArrowRight, CheckCircle2, AlertCircle, RefreshCw, Bot, User, FileText } from 'lucide-react';
-import { groqService } from '../services/groqClientService';
+import { Mic, MicOff, Volume2, X, ArrowRight, CheckCircle2, AlertCircle, RefreshCw, Bot, User, FileText, Sparkles } from 'lucide-react';
+import { geminiService } from '../services/geminiClientService';
 
-// ─── Interview Steps ─────────────────────────────────────────────────────────
+// District coordinate database for Jharkhand
+const DISTRICT_COORDS = {
+  'ranchi': { lat: '23.3441', lng: '85.3090' },
+  'dumka': { lat: '24.2686', lng: '87.2486' },
+  'dhanbad': { lat: '23.7957', lng: '86.4304' },
+  'east singhbhum': { lat: '22.8046', lng: '86.2029' },
+  'jamshedpur': { lat: '22.8046', lng: '86.2029' },
+  'bokaro': { lat: '23.6693', lng: '86.1511' },
+  'deoghar': { lat: '24.4826', lng: '86.7003' },
+  'hazaribagh': { lat: '23.9966', lng: '85.3637' },
+  'giridih': { lat: '24.1856', lng: '86.3094' },
+  'palamu': { lat: '24.0374', lng: '84.0725' },
+  'west singhbhum': { lat: '22.5516', lng: '85.8083' },
+  'chaibasa': { lat: '22.5516', lng: '85.8083' },
+  'godda': { lat: '24.8327', lng: '87.2144' },
+  'sahebganj': { lat: '25.2425', lng: '87.6433' },
+  'pakur': { lat: '24.6340', lng: '87.8491' },
+  'jamtara': { lat: '23.9629', lng: '86.8029' },
+  'ramgarh': { lat: '23.6332', lng: '85.5149' },
+  'lohardaga': { lat: '23.4354', lng: '84.6803' },
+  'gumla': { lat: '23.0436', lng: '84.5414' },
+  'simdega': { lat: '22.6167', lng: '84.5000' },
+  'latehar': { lat: '23.7436', lng: '84.4983' },
+  'garhwa': { lat: '24.1611', lng: '83.8119' },
+  'koderma': { lat: '24.4674', lng: '85.5939' },
+  'chatra': { lat: '24.2092', lng: '84.8711' },
+  'khunti': { lat: '23.0723', lng: '85.2798' },
+};
+
+// ─── Conversational Interview Questions ───────────────────────────────────────
 const INTERVIEW_STEPS = [
   {
     id: 'greeting',
-    question: "Hello! I'm JanSetu AI, your civic issue reporter. I'll ask you a few questions to understand the problem and create a report for you. Are you ready? Just say yes to start.",
-    field: null,
+    question: "Hello! I'm JanSetu Voice Assistant. Please tell me about the civic problem in your area — what is happening, where is it located, and who is affected? Speak naturally!",
+    field: 'raw_problem',
     isGreeting: true,
   },
   {
-    id: 'problem',
-    question: "Great! First, please describe the problem you're seeing. What's happening and where is it?",
-    field: 'description',
-  },
-  {
     id: 'location',
-    question: "Where exactly is this problem located? Please tell me the district name and any specific area or landmark.",
+    question: "Got it. Could you tell me the exact district, block, or nearby landmark for this issue?",
     field: 'location',
   },
   {
     id: 'who_affected',
-    question: "Who is affected by this problem? For example: local students, commuters, farmers, residents.",
+    question: "Who is most affected by this, and roughly how many people or families are facing difficulty?",
     field: 'who_affected',
   },
   {
-    id: 'population',
-    question: "How many people do you think are affected? An approximate number is fine.",
-    field: 'affected_population',
-  },
-  {
     id: 'duration',
-    question: "How long has this problem existed? For example: 2 weeks, 1 month, 6 months.",
+    question: "How long has this issue been going on, and how severe is the danger or disruption?",
     field: 'duration',
   },
 ];
@@ -40,33 +59,23 @@ const INTERVIEW_STEPS = [
 const HI_STEPS = [
   {
     id: 'greeting',
-    question: "नमस्ते! मैं जनसेतु AI हूँ। मैं आपसे कुछ सवाल पूछूँगा। क्या आप तैयार हैं?",
-    field: null,
+    question: "नमस्ते! मैं जनसेतु वॉयस असिस्टेंट हूँ। आप अपने इलाके की नागरिक समस्या के बारे में बताइए — क्या परेशानी है, कहाँ पर है, और कौन प्रभावित है? आप खुलकर बताइए!",
+    field: 'raw_problem',
     isGreeting: true,
   },
   {
-    id: 'problem',
-    question: "बढ़िया! कृपया बताएं कि आपको क्या समस्या दिख रही है। क्या हो रहा है और कहाँ है?",
-    field: 'description',
-  },
-  {
     id: 'location',
-    question: "यह समस्या कहाँ स्थित है? जिले का नाम और स्थान बताएं।",
+    question: "समझ गया। कृपया अपना जिला, प्रखंड (Block) या नजदीकी लैंडमार्क बताएं।",
     field: 'location',
   },
   {
     id: 'who_affected',
-    question: "इस समस्या से कौन प्रभावित है?",
+    question: "इस समस्या से मुख्य रूप से कौन प्रभावित हैं और लगभग कितने लोग या परिवार परेशान हैं?",
     field: 'who_affected',
   },
   {
-    id: 'population',
-    question: "कितने लोग इससे प्रभावित हैं?",
-    field: 'affected_population',
-  },
-  {
     id: 'duration',
-    question: "यह समस्या कितने समय से है?",
+    question: "यह समस्या कितने समय से चल रही है, और स्थिति कितनी गंभीर है?",
     field: 'duration',
   },
 ];
@@ -82,18 +91,32 @@ export default function JanSetuVoiceAgent({ isOpen, onClose, onNavigate, onAutoF
   // Interview state
   const [currentStep, setCurrentStep] = useState(0);
   const [conversationLog, setConversationLog] = useState([]);
-  const [phase, setPhase] = useState('intro');
+  const [phase, setPhase] = useState('intro'); // 'intro' | 'questioning' | 'summary'
   const [generatedData, setGeneratedData] = useState(null);
-  const [detectedLang, setDetectedLang] = useState(null); // null = not yet detected
+  const [detectedLang, setDetectedLang] = useState(null);
 
-  // ─── Refs for stable access in async flows ────────────────────────────────
+  // ─── Refs for stable async execution ──────────────────────────────────────
   const answersRef = useRef({});
   const recognitionRef = useRef(null);
   const stepsRef = useRef(INTERVIEW_STEPS);
   const abortRef = useRef(false);
+  const isRunningRef = useRef(false);
 
   const steps = selectedLanguage === 'hi-IN' ? HI_STEPS : INTERVIEW_STEPS;
   stepsRef.current = steps;
+
+  // ─── Language Detection ───────────────────────────────────────────────────
+  const detectLanguage = (text) => {
+    if (!text) return null;
+    const lower = text.toLowerCase();
+    const hindiWords = ['namaste', 'paani', 'sadak', 'bijli', 'kachra', 'nala', 'gao', 'jila', 'bhaiya', 'nahi', 'karo', 'hai', 'kripya', 'madad', 'ganda', 'toot', 'problem'];
+    const hasDevanagari = /[\u0900-\u097F]/.test(text);
+    const hasHindiKeywords = hindiWords.some(w => lower.includes(w));
+    if (hasDevanagari || hasHindiKeywords) {
+      return 'hi-IN';
+    }
+    return 'en-IN';
+  };
 
   // ─── Speech Recognition Setup ──────────────────────────────────────────────
   useEffect(() => {
@@ -104,7 +127,9 @@ export default function JanSetuVoiceAgent({ isOpen, onClose, onNavigate, onAutoF
       recognition.interimResults = true;
       recognition.lang = selectedLanguage;
 
-      recognition.onstart = () => setIsListening(true);
+      recognition.onstart = () => {
+        setIsListening(true);
+      };
 
       recognition.onresult = (event) => {
         let interim = '';
@@ -119,17 +144,20 @@ export default function JanSetuVoiceAgent({ isOpen, onClose, onNavigate, onAutoF
       recognition.onerror = (event) => {
         console.warn('[VoiceAgent] Recognition error:', event.error);
         if (event.error === 'not-allowed') {
-          setErrorMsg('Microphone access denied. Please allow microphone permissions.');
+          setErrorMsg('Microphone access denied. Please enable microphone permissions in your browser.');
         } else if (event.error === 'network') {
-          setErrorMsg('Network issue with speech recognition.');
+          setErrorMsg('Network connectivity issue with voice recognition.');
         }
         setIsListening(false);
       };
 
-      recognition.onend = () => setIsListening(false);
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
       recognitionRef.current = recognition;
     } else {
-      setErrorMsg('Speech recognition not supported. Please try Chrome or Edge.');
+      setErrorMsg('Speech recognition not supported in this browser. Please use Chrome or Edge.');
     }
 
     return () => {
@@ -140,18 +168,41 @@ export default function JanSetuVoiceAgent({ isOpen, onClose, onNavigate, onAutoF
     };
   }, [selectedLanguage]);
 
-  // ─── Text-to-Speech ────────────────────────────────────────────────────────
+  // ─── Natural Text-to-Speech Engine ─────────────────────────────────────────
   const speak = useCallback((text) => {
     return new Promise((resolve) => {
-      if (!window.speechSynthesis) { resolve(); return; }
+      if (!window.speechSynthesis || !text) {
+        resolve();
+        return;
+      }
+
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
+      
+      // Conversational audio tuning: slightly warm pitch & human cadence
+      utterance.rate = 1.02;
+      utterance.pitch = 1.05;
       utterance.lang = selectedLanguage === 'hi-IN' ? 'hi-IN' : 'en-IN';
+
+      // Pick natural human voice if available
+      const voices = window.speechSynthesis.getVoices() || [];
+      if (voices.length > 0) {
+        if (selectedLanguage === 'hi-IN') {
+          const hiVoice = voices.find(v => v.lang.includes('hi') || v.name.toLowerCase().includes('hindi') || v.name.includes('Swara') || v.name.includes('Kalpana'));
+          if (hiVoice) utterance.voice = hiVoice;
+        } else {
+          const naturalVoice = voices.find(v => 
+            (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Online') || v.name.includes('Samantha') || v.name.includes('Aria') || v.name.includes('Zira')) &&
+            (v.lang.startsWith('en'))
+          ) || voices.find(v => v.lang.startsWith('en'));
+          if (naturalVoice) utterance.voice = naturalVoice;
+        }
+      }
+
       utterance.onstart = () => setIsSpeaking(true);
       utterance.onend = () => { setIsSpeaking(false); resolve(); };
       utterance.onerror = () => { setIsSpeaking(false); resolve(); };
+
       window.speechSynthesis.speak(utterance);
     });
   }, [selectedLanguage]);
@@ -164,19 +215,25 @@ export default function JanSetuVoiceAgent({ isOpen, onClose, onNavigate, onAutoF
       recognitionRef.current.start();
       setIsListening(true);
     } catch (e) {
-      console.warn('[VoiceAgent] Start error:', e);
+      console.warn('[VoiceAgent] Start listening warning:', e.message);
     }
   }, [selectedLanguage]);
 
   const stopListening = useCallback(() => {
     if (!recognitionRef.current) return;
-    try { recognitionRef.current.stop(); setIsListening(false); } catch (e) {}
+    try {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    } catch (e) {}
   }, []);
 
-  // ─── Collect Final Transcript from Recognition ─────────────────────────────
+  // ─── Collect Final Transcript from Speech Recognition ──────────────────────
   const collectTranscript = useCallback(() => {
     return new Promise((resolve) => {
-      if (!recognitionRef.current) { resolve(''); return; }
+      if (!recognitionRef.current) {
+        resolve('');
+        return;
+      }
       const finalParts = [];
       let resolved = false;
 
@@ -200,7 +257,7 @@ export default function JanSetuVoiceAgent({ isOpen, onClose, onNavigate, onAutoF
       recognitionRef.current?.addEventListener('result', onResult);
       recognitionRef.current?.addEventListener('end', onEnd);
 
-      // Fallback timeout
+      // Auto resolve if quiet for 12 seconds
       setTimeout(() => {
         if (!resolved) {
           resolved = true;
@@ -209,710 +266,248 @@ export default function JanSetuVoiceAgent({ isOpen, onClose, onNavigate, onAutoF
           try { recognitionRef.current?.stop(); } catch (e) {}
           resolve(finalParts.join(' ').trim());
         }
-      }, 15000);
+      }, 12000);
     });
   }, []);
 
-  // ─── Category Detection: weighted keyword scoring (English + Hindi) ─────────
-  // Format: [keyword, weight] — higher weight = more specific/important
-  const detectCategory = (text) => {
-    const lower = (text || '').toLowerCase();
-    const rules = [
-      {
-        category: 'Water Management',
-        keywords: [
-          // English
-          ['water leak',3],['pipe leak',3],['drainage',3],['waterlogging',3],['sewage',3],['borewell',3],
-          ['pipe',2],['pipeline',2],['leak',2],['leakage',2],['drain',2],['flood',2],['flooded',2],
-          ['toilet',2],['latrine',2],['septic',2],['irrigation',2],['groundwater',2],
-          ['water',1],['well',1],['tank',1],['reservoir',1],['rainwater',1],['monsoon',1],
-          ['drought',1],['dry',1],['tap',1],['faucet',1],
-          // Hindi — single words
-          ['paani',2],['paip',2],['nal',2],['nala',2],['naali',2],
-          ['baadh',3],['baarish',2],['jal',1],['kuwa',2],['tubewell',2],
-          ['shouchalay',2],['gilne wala',2],
-          // Hindi — natural phrases people actually speak
-          ['paani nahi aa raha',3],['paani nahi hai',3],['paani ruk gaya',3],
-          ['ganda paani',3],['paani ganda hai',3],['paani black hai',3],
-          ['nal toot gaya',3],['nal band hai',3],['nala band hai',3],
-          ['naali saaf karo',3],['drainage band',3],['nali blocked hai',3],
-          ['baadh aa gayi',3],['paani bhar gaya',3],['lood aaya hai',3],
-          ['toilet nahi hai',2],['shauchalay ganda hai',2],
-        ],
-      },
-      {
-        category: 'Infrastructure',
-        keywords: [
-          // English
-          ['pothole',3],['broken road',3],['damaged road',3],['flyover',3],['culvert',3],
-          ['bridge',2],['pavement',2],['sidewalk',2],['footpath',2],['highway',2],
-          ['tarring',2],['asphalt',2],['cement',2],
-          ['road',1],['street',1],['lane',1],['alley',1],['construction',1],
-          ['building',1],['wall',1],['fence',1],['gate',1],['public property',1],['infrastructure',1],
-          // Hindi — single words
-          ['sadak',2],['gaddha',3],['pul',2],['paththar',1],
-          ['nirmaan',1],['imarat',1],['deewar',1],['chhat',1],
-          // Hindi — natural phrases
-          ['sadak kharab hai',3],['sadak toot gayi',3],['gaddha hai sadak mein',3],
-          ['road kharaab hai',3],['sadak mein gaddha',3],
-          ['pul toot gaya',3],['pul kharab hai',3],
-          ['buildin gir gayi',3],['deewar gir gayi',3],
-          ['nirmaan ho raha hai',2],['raasta band hai',2],
-        ],
-      },
-      {
-        category: 'Agriculture & Rural',
-        keywords: [
-          // English
-          ['farming',3],['crop',3],['harvest',3],['fertilizer',3],['cold storage',3],
-          ['tractor',2],['agriculture',2],['farmer',2],['livestock',2],['cattle',2],
-          ['dairy',2],['poultry',2],['fishery',2],['mandi',2],
-          ['farm',1],['seed',1],['rural',1],['village',1],['fish',1],['pond',1],
-          ['market',1],['warehouse',1],
-          // Hindi — single words
-          ['kheti',2],['fasal',3],['kisan',2],['khad',2],
-          ['beej',2],['paudha',1],['gaon',1],['pashu',2],['maweshi',2],
-          ['machhli',2],['taalab',1],
-          ['khet',1],['zameen',1],
-          // Hindi — natural phrases
-          ['fasal kharab ho gayi',3],['fasal barbaad',3],
-          ['kisan pareshan hai',2],['khet sookh gaya',3],
-          ['paani ki kami hai',3],['sichai nahi hai',3],
-          ['gaon mein paani nahi',3],['gaon ki sadak kharab',2],
-          ['maweshi mar gaye',3],['pashu bimaar hai',2],
-        ],
-      },
-      {
-        category: 'Healthcare & Sanitation',
-        keywords: [
-          // English
-          ['hospital',3],['clinic',3],['ambulance',3],['epidemic',3],['outbreak',3],
-          ['dispensary',3],['vaccine',3],['immunization',3],
-          ['doctor',2],['medicine',2],['pharmacy',2],['disease',2],
-          ['sanitation',2],['garbage',2],['waste',2],['trash',2],['dustbin',2],
-          ['maternal',2],['pregnant',2],
-          ['health',1],['refuse',1],['decompose',1],
-          // Hindi — single words
-          ['aspatal',3],['davakhana',3],['mahamari',3],
-          ['dawa',2],['dawai',2],['bimari',2],['rog',2],
-          ['kachra',2],['kuda',2],['safai',2],
-          ['prasav',2],['garbhwati',2],
-          // Hindi — natural phrases
-          ['aspatal mein dawa nahi',3],['dawai nahi mil rahi',3],
-          ['ambulance nahi aa rahi',3],['doctor nahi hai',2],
-          ['kachra pada hai',3],['kachra utha lo',3],
-          ['safai nahi ho rahi',3],['ganda lag raha hai',2],
-          ['bimari phail rahi hai',3],['mahamari lag gayi',3],
-          ['garbhwati ko dawa chahiye',3],
-        ],
-      },
-      {
-        category: 'Education & Literacy',
-        keywords: [
-          // English
-          ['school',3],['college',3],['university',3],['classroom',3],
-          ['anganwadi',3],['midday meal',3],['scholarship',3],
-          ['student',2],['teacher',2],['education',2],['literacy',2],
-          ['library',2],['laboratory',2],['textbook',2],
-          ['study',1],['exam',1],['computer',1],['internet',1],['uniform',1],
-          // Hindi — single words
-          ['vidyalaya',3],['pathshala',3],
-          ['vidhyarthi',2],['shikshak',2],
-          ['padhai',2],['shiksha',2],['kitab',1],['pariksha',1],
-          ['pustakalaya',2],
-          // Hindi — natural phrases
-          ['school band hai',3],['school nahi khula',3],
-          ['teacher nahi aa rahe',3],['padhai nahi ho rahi',3],
-          ['bachche padh nahi rahe',2],['midday meal nahi mil raha',3],
-          ['kitab nahi mili',2],['uniform nahi hai',2],
-          ['school mein paani nahi',3],
-        ],
-      },
-      {
-        category: 'Energy & Power',
-        keywords: [
-          // English
-          ['transformer',3],['electricity',3],['outage',3],['blackout',3],
-          ['streetlight',3],['power cut',3],
-          ['electric',2],['power',2],['voltage',2],['grid',2],
-          ['solar',2],['wire',2],['cable',2],['meter',2],
-          ['light',1],['lamp',1],['panel',1],['connection',1],
-          ['bill',1],['battery',1],['renewable',1],['wind',1],['current',1],
-          // Hindi — single words
-          ['bijli',3],['vidyut',2],['taar',2],
-          ['generator',2],['ups',2],
-          // Hindi — natural phrases
-          ['bijli nahi hai',3],['bijli chali gayi',3],['bijli nahi aa rahi',3],
-          ['bijli ka katav',3],['light nahi hai',3],
-          ['transformer phata',3],['transformer jal gaya',3],
-          ['bijli bahut kam aa rahi',3],['voltage low hai',3],
-          ['street light band hai',3],['light nahi jal rahi',3],
-          ['bijli ka bill zyada',2],['meter kharab hai',2],
-        ],
-      },
-      {
-        category: 'Urban Transport & Traffic',
-        keywords: [
-          // English
-          ['traffic jam',3],['traffic signal',3],['road rage',3],
-          ['traffic',2],['congestion',2],['commute',2],
-          ['bus',1],['auto',1],['rickshaw',1],['taxi',1],['cab',1],
-          ['train',1],['railway',1],['airport',1],['parking',1],
-          ['signal',1],['jam',1],['route',1],['accident',1],
-          ['helmet',1],['speed',1],['transport',1],
-          // Hindi — single words
-          ['riksha',1],
-          ['bhid',2],['raasta',1],['marg',1],
-          // Hindi — natural phrases
-          ['traffic jam hai',3],['traffic bahut hai',3],
-          ['sadak durghatna',3],['accident ho gaya',3],
-          ['bhid lag gayi',2],['raasta band hai',2],
-          ['bus nahi aa rahi',2],['auto nahi mil raha',2],
-          ['train late hai',2],['parking nahi hai',2],
-          ['signal kaam nahi kar raha',3],
-        ],
-      },
-      {
-        category: 'Environment & Pollution',
-        keywords: [
-          // English
-          ['air pollution',3],['noise pollution',3],['water pollution',3],
-          ['deforestation',3],['contamination',3],
-          ['pollution',2],['emission',2],['factory',2],['industrial',2],
-          ['chemical',2],['smog',2],['wildlife',2],
-          ['environment',1],['air',1],['smoke',1],['noise',1],['sound',1],
-          ['plastic',1],['tree',1],['green',1],['forest',1],
-          ['animal',1],['bird',1],['climate',1],['warming',1],
-          // Hindi — single words
-          ['pradushan',3],['dhuan',2],['shor',2],['awaaz',2],
-          ['udhog',2],['rasayn',2],
-          ['ped',1],['jungle',1],['van',1],
-          ['hawa',1],['aawaz',2],
-          // Hindi — natural phrases
-          ['pradushan bahut hai',3],['hawa gandi hai',3],
-          ['dhuan aa raha hai',3],['factory se dhuan',3],
-          ['shor bahut hai',3],['awaaz aa rahi hai',2],
-          ['ped kaat diye',3],['jungle khatam ho raha',3],
-          ['plastic pada hai',2],['ganda lag raha hai',2],
-        ],
-      },
-      {
-        category: 'Public Safety & Disaster',
-        keywords: [
-          // English
-          ['earthquake',3],['cyclone',3],['flood disaster',3],
-          ['crime',2],['theft',2],['robbery',2],['violence',2],
-          ['murder',2],['assault',2],['harassment',2],
-          ['disaster',2],['rescue',2],['emergency',2],
-          ['fire',1],['storm',1],['fraud',1],['scam',1],
-          ['safety',1],['police',1],['patrol',1],
-          ['warning',1],['alert',1],['station',1],
-          // Hindi — single words
-          ['bhukamp',3],['toofan',3],['aafat',3],
-          ['chori',2],['lut',2],['hinsa',2],['atyachar',2],
-          ['aatank',2],['thana',1],
-          ['bachav',2],
-          // Hindi — natural phrases
-          ['bhukamp aaya',3],['dharti hili',3],
-          ['aag lag gayi',3],['aag bahut hai',3],
-          ['chori ho gayi',3],['chori hui hai',3],
-          ['hinsa ho rahi hai',3],['police bulaao',2],
-          ['toofan aa raha hai',3],['aafat aa gayi',3],
-          ['rescue karo',2],['bachao',2],
-        ],
-      },
-      {
-        category: 'Digital Services & Governance',
-        keywords: [
-          // English
-          ['aadhaar',3],['ration card',3],['pension scheme',3],
-          ['certificate',2],['license',2],['permit',2],
-          ['registration',2],['grievance',2],['rti',2],
-          ['digital',1],['online',1],['website',1],['app',1],['portal',1],
-          ['ration',1],['pension',1],['welfare',1],['scheme',1],
-          ['government',1],['service',1],['bpl',1],
-          ['complaint',1],
-          // Hindi — single words
-          ['praman patra',2],['ijazatnama',2],
-          ['panjikaran',2],['shikayat',2],['sarkar',1],
-          ['yojana',1],['seva',1],
-          // Hindi — natural phrases
-          ['aadhaar nahi ban raha',3],['aadhaar update nahi ho raha',3],
-          ['ration card nahi mil raha',3],['ration band hai',3],
-          ['pension nahi aa rahi',3],['certificate nahi mil raha',3],
-          ['online kaam nahi kar raha',2],['website down hai',2],
-          ['sarkari kaam nahi ho raha',2],['registration ruk gaya',2],
-          ['shikayat darj karo',2],['grievance file karo',2],
-        ],
-      },
-    ];
-
-    let bestCategory = 'Infrastructure';
-    let bestScore = 0;
-    let bestMaxWeight = 0;
-    let bestMatched = [];
-
-    for (const rule of rules) {
-      let score = 0;
-      let maxWeight = 0;
-      let matched = [];
-      for (const [kw, weight] of rule.keywords) {
-        if (lower.includes(kw)) {
-          score += weight;
-          matched.push(kw);
-          if (weight > maxWeight) maxWeight = weight;
-        }
-      }
-      if (score > bestScore ||
-          (score === bestScore && score > 0 && maxWeight > bestMaxWeight) ||
-          (score === bestScore && score > 0 && maxWeight === bestMaxWeight && maxWeight >= 3)) {
-        bestScore = score;
-        bestMaxWeight = maxWeight;
-        bestCategory = rule.category;
-        bestMatched = matched;
-      }
+  // ─── Fallback Local Extractor ──────────────────────────────────────────────
+  const extractLocalReport = (combinedText) => {
+    const text = (combinedText || '').toLowerCase();
+    
+    // Category mapping
+    let category = 'Infrastructure';
+    if (text.includes('water') || text.includes('pipe') || text.includes('leak') || text.includes('drain') || text.includes('paani') || text.includes('nal')) {
+      category = 'Water Management';
+    } else if (text.includes('garbage') || text.includes('waste') || text.includes('trash') || text.includes('kachra') || text.includes('dump')) {
+      category = 'Waste Management';
+    } else if (text.includes('light') || text.includes('electric') || text.includes('wire') || text.includes('bijli') || text.includes('power')) {
+      category = 'Energy & Power';
+    } else if (text.includes('health') || text.includes('hospital') || text.includes('clinic') || text.includes('doctor') || text.includes('disease')) {
+      category = 'Healthcare & Sanitation';
+    } else if (text.includes('school') || text.includes('teacher') || text.includes('student') || text.includes('college') || text.includes('padhai')) {
+      category = 'Education & Literacy';
+    } else if (text.includes('farm') || text.includes('crop') || text.includes('kisan') || text.includes('soil') || text.includes('irrigation')) {
+      category = 'Agriculture & Rural';
+    } else if (text.includes('traffic') || text.includes('bus') || text.includes('transport') || text.includes('auto') || text.includes('road')) {
+      category = 'Urban Transport & Traffic';
     }
 
-    // Confidence: based on score and max keyword weight
-    // score 1-2 = low, 3-4 = medium, 5+ = high
-    // maxWeight 3 = boost confidence
-    let confidence = 'low';
-    if (bestScore >= 5 || (bestScore >= 3 && bestMaxWeight >= 3)) {
-      confidence = 'high';
-    } else if (bestScore >= 2 || (bestScore >= 1 && bestMaxWeight >= 3)) {
-      confidence = 'medium';
+    // Severity mapping
+    let severity = 'medium';
+    if (text.includes('emergency') || text.includes('critical') || text.includes('death') || text.includes('fatal') || text.includes('accident') || text.includes('collapse')) {
+      severity = 'critical';
+    } else if (text.includes('urgent') || text.includes('severe') || text.includes('heavy') || text.includes('blocked') || text.includes('hazard')) {
+      severity = 'high';
     }
-    // No keywords matched at all
-    if (bestScore === 0) confidence = 'low';
 
-    return { category: bestCategory, confidence, matchedKeywords: bestMatched, score: bestScore };
-  };
-
-  // ─── Severity Detection: keyword-based mapping ─────────────────────────────
-  const detectSeverity = (text) => {
-    const lower = (text || '').toLowerCase();
-    if (lower.match(/\b(urgent|emergency|critical|severe|dangerous|accident|death|fatal|collapsed|flooding|fire|explosion|urgent|critical|dangerous|emergency)\b/) ||
-        lower.match(/\b(aafat|bhayankar|jaanleva|emergency|maut|accident|aatish|dhamaka)\b/)) return 'critical';
-    if (lower.match(/\b(high|serious|major|broken|damaged|risk|hazard|unsafe|alarming)\b/) ||
-        lower.match(/\b(gambhir|kharab|toota|bigda|khatra|unsafe)\b/)) return 'high';
-    if (lower.match(/\b(medium|moderate|concern|issue|problem|needs|fix|repair)\b/) ||
-        lower.match(/\b(samasya|pareshani|theek|sudhar|dikkat)\b/)) return 'medium';
-    return 'low';
-  };
-
-  // ─── Auto Language Detection ────────────────────────────────────────────────
-  const detectLanguage = (text) => {
-    if (!text) return null;
-    // 1. Devanagari Unicode range (Hindi script)
-    const devanagari = text.match(/[\u0900-\u097F]/g);
-    if (devanagari && devanagari.length >= 2) return 'hi-IN';
-
-    // 2. Common Hinglish words (Roman Hindi)
-    const hinglishWords = [
-      'hai','hain','ho','tha','the','thi','nahi','na','aur','mein','mai','se','ko','ka','ki','ke',
-      'kya','kab','kahan','kyun','kaun','kitna','kitne','bahut','zyada','kam','thoda','abhi',
-      'paani','bijli','sadak','gaddha','kharab','band','toot','phata','gayi','gaya',
-      'school','hospital','aspatal','doctor','dawa','kachra','safai','traffic','signal',
-      'transformer','pipe','nal','nala','drainage','flood','baadh','baarish',
-      'kisan','fasal','kheti','gaon','pashu','maweshi',
-      'police','thana','chori','aag','bhukamp','toofan',
-      'aadhaar','ration','pension','certificate','sarkar','yojana',
-      'pradushan','dhuan','shor','awaaz','ped','jungle',
-      'nahi hai','nahi aa raha','nahi mil raha','ho gaya','ho raha','lag gaya',
-    ];
-    const lower = text.toLowerCase();
-    const words = lower.split(/\s+/);
-    let hinglishCount = 0;
-    for (const word of words) {
-      if (hinglishWords.includes(word)) hinglishCount++;
-    }
-    // If 30%+ of words are Hinglish, treat as Hindi
-    if (words.length >= 2 && hinglishCount / words.length >= 0.3) return 'hi-IN';
-
-    return 'en-IN'; // default English
-  };
-
-  // ─── Field Parsers: clean raw voice answers into proper values ─────────────
-  const parsePopulation = (raw) => {
-    if (!raw) return 500;
-    const text = raw.toLowerCase().replace(/[^\d\w\s]/g, ' ').trim();
-    // Extract numbers from patterns like 'around 1000 people', 'approximately 500', 'about 2000 residents'
-    const numbers = text.match(/\d[\d,]*\.?\d*/g);
-    if (numbers && numbers.length > 0) {
-      // Take the largest number found (likely the population count)
-      const parsed = numbers.map(n => parseInt(n.replace(/,/g, ''), 10)).filter(n => !isNaN(n));
-      if (parsed.length > 0) return Math.max(...parsed);
-    }
-    // Word-to-number fallback (English + Hindi)
-    const wordNums = {
-      'one':1,'two':2,'three':3,'four':4,'five':5,'six':6,'seven':7,'eight':8,'nine':9,'ten':10,
-      'eleven':11,'twelve':12,'thirteen':13,'fourteen':14,'fifteen':15,'sixteen':16,'seventeen':17,'eighteen':18,'nineteen':19,'twenty':20,
-      'thirty':30,'forty':40,'fifty':50,'sixty':60,'seventy':70,'eighty':80,'ninety':90,'hundred':100,'thousand':1000,'lakh':100000,'million':1000000,
-      // Hindi numbers
-      'ek':1,'do':2,'teen':3,'chaar':4,'paanch':5,'chhe':6,'saat':7,'aath':8,'nau':9,'dus':10,
-      'gyarah':11,'barah':12,'terah':13,'chaudah':14,'pandrah':15,'solah':16,'satrah':17,'atharah':18,'unnis':19,'bees':20,
-      'tees':30,'chalees':40,'pachas':50,'saath':60,'sattar':70,'assi':80,'nabbe':90,'sau':100,'hazaar':1000,'lakh':100000,'crore':10000000,
-    };
-    let total = 0;
-    let current = 0;
-    for (const word of text.split(/\s+/)) {
-      if (wordNums[word] !== undefined) {
-        const val = wordNums[word];
-        if (val === 100 || val === 1000 || val === 100000 || val === 1000000) {
-          current = current === 0 ? val : current * val;
-          total += current;
-          current = 0;
-        } else {
-          current += val;
-        }
-      }
-    }
-    total += current;
-    if (total > 0) return total;
-    return 500; // default
-  };
-
-  const parseDuration = (raw) => {
-    if (!raw) return 'Unknown';
-    const text = raw.toLowerCase().trim();
-    // Match patterns like '3 months', '2 weeks', '6 months', 'one year'
-    const match = text.match(/(\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|half|quarter|several|few|many)?\s*(day|week|month|year|monsoon|season|hour)s?/i);
-    if (match) {
-      let num = match[1];
-      const wordMap = {
-        'one':'1','two':'2','three':'3','four':'4','five':'5','six':'6','seven':'7','eight':'8','nine':'9','ten':'10',
-        'eleven':'11','twelve':'12','half':'0.5','quarter':'0.25','several':'6','few':'3','many':'12',
-        // Hindi
-        'ek':'1','do':'2','teen':'3','chaar':'4','paanch':'5','chhe':'6','saat':'7','aath':'8','nau':'9','dus':'10',
-        'gyarah':'11','barah':'12','adha':'0.5','aadha':'0.5',
-      };
-      if (wordMap[num]) num = wordMap[num];
-      if (!num) num = '1';
-      return `${num} ${match[2]}s`;
-    }
-    // Handle 'since last monsoon', 'since 2024', etc.
-    if (text.includes('monsoon') || text.includes('rain') || text.includes('baarish')) return 'Since last monsoon';
-    if (text.includes('year') || text.includes('saal') || text.includes('varsh')) return '1 year';
-    if (text.includes('month') || text.includes('mahina') || text.includes('mahine')) return '3 months';
-    if (text.includes('week') || text.includes('hafta') || text.includes('hafte')) return '2 weeks';
-    if (text.includes('day') || text.includes('din') || text.includes('dinon')) return '3 days';
-    // Return cleaned original
-    return raw.charAt(0).toUpperCase() + raw.slice(1);
-  };
-
-  const parseLocation = (raw) => {
-    if (!raw) return { district: 'Ranchi', location: 'Reported via Voice' };
-    const districts = ['ranchi','dumka','dhanbad','jamshedpur','east singhbhum','west singhbhum','bokaro','hazaribagh','deoghar','giridih','palamu','latehar','simdega','khunti','lohardaga','gumla','saraikela','chaibasa','pakur','godda','sahebganj','mandar','ranchi','dumka','dhanbad','bokaro','hazaribagh','deoghar','giridih','koderma','chatra','lotwa','mobile'];
-    const lower = raw.toLowerCase();
-    let district = '';
-    for (const d of districts) {
-      if (lower.includes(d)) {
-        district = d.charAt(0).toUpperCase() + d.slice(1);
+    // District detection
+    let district = 'Ranchi';
+    let lat = '23.3441';
+    let lng = '85.3090';
+    for (const [dName, coords] of Object.entries(DISTRICT_COORDS)) {
+      if (text.includes(dName)) {
+        district = dName.charAt(0).toUpperCase() + dName.slice(1);
+        lat = coords.lat;
+        lng = coords.lng;
         break;
       }
     }
-    // Clean location: remove filler phrases
-    let cleaned = raw
-      .replace(/\b(it is happening|i think|i believe|it is located|the problem is)\b/gi, '')
-      .replace(/\b(near|close to|next to|beside|besides|in front of|behind|opposite to|around|at the|in the|on the)\b/gi, '')
-      .replace(/\s+/g, ' ')
-      .trim();
-    // Capitalize first letter
-    if (cleaned.length > 0) cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
-    if (cleaned.length > 80) cleaned = cleaned.slice(0, 80);
-    return { district: district || 'Ranchi', location: cleaned || raw };
-  };
 
-  const parseWhoAffected = (raw) => {
-    if (!raw) return 'Local residents';
-    // Clean filler words but keep descriptive text
-    let cleaned = raw.replace(/\b(people|persons|who are|that are|which are|are being)\b/gi, '').trim();
-    cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
-    if (cleaned.length > 100) cleaned = cleaned.slice(0, 100);
-    return cleaned || 'Local residents';
-  };
-
-  // ─── Build the TTS readout text from generated data ────────────────────────
-  const buildReportReadout = useCallback((data) => {
-    const lang = selectedLanguage === 'hi-IN' ? 'hi' : 'en';
-    if (lang === 'hi') {
-      return `आपकी रिपोर्ट तैयार है।
-      शीर्षक: ${data.title}.
-      श्रेणी: ${data.category}.
-      जिला: ${data.district}.
-      स्थान: ${data.location}.
-      गंभीरता: ${data.severity}.
-      प्रभावित लोग: ${data.who_affected}.
-      अनुमानित जनसंख्या: ${data.affected_population}.
-      अवधि: ${data.duration}.
-      विवरण: ${data.description}.
-      क्या आप इस रिपोर्ट को सबमिट करना चाहेंगे?`;
+    // Population estimation
+    let affectedPop = 1500;
+    const popMatch = text.match(/(\d[\d,]*)\s*(people|person|citizen|family|household|village|student)/);
+    if (popMatch) {
+      affectedPop = parseInt(popMatch[1].replace(/,/g, '')) || 1500;
+    } else if (text.includes('village') || text.includes('gao')) {
+      affectedPop = 2500;
     }
-    const confText = data.categoryConfidence === 'high' ? ' with high confidence' : data.categoryConfidence === 'medium' ? '' : '. Note, the category may need verification';
-    return `Your report is ready. Here's a summary.
-    Title: ${data.title}.
-    Category: ${data.category}${confText}.
-    District: ${data.district}.
-    Location: ${data.location}.
-    Severity: ${data.severity}.
-    Affected group: ${data.who_affected}.
-    Estimated population: ${data.affected_population}.
-    Duration: ${data.duration}.
-    Description: ${data.description}.
-    Would you like to submit this report?`;
-  }, [selectedLanguage]);
 
-  // ─── Generate Report from collected answers (uses answersRef) ──────────────
+    // Duration
+    let duration = '2 months';
+    if (text.includes('week') || text.includes('din') || text.includes('day')) duration = '2 weeks';
+    else if (text.includes('month') || text.includes('mahine')) duration = '3 months';
+    else if (text.includes('year') || text.includes('saal')) duration = '1 year';
+
+    return {
+      title: combinedText.slice(0, 55) || 'Civic Infrastructure Grievance',
+      description: combinedText || 'Civic problem reported via JanSetu Voice Assistant.',
+      category,
+      subcategory: 'Public Utility Maintenance',
+      district,
+      location: `${district} Ward / Block Area`,
+      lat,
+      lng,
+      severity,
+      affected_population: affectedPop,
+      who_affected: 'Local community residents & daily commuters',
+      duration,
+      spoken_summary: `I have drafted your grievance report for ${category} in ${district}. It is ready for submission.`
+    };
+  };
+
+  // ─── Generate Structured Report with Gemini AI ─────────────────────────────
   const generateReport = useCallback(async () => {
     setIsProcessing(true);
     setPhase('summary');
+    stopListening();
 
-    try {
-      // Read directly from ref — always has latest answers
-      const a = answersRef.current;
-      const rawDescription = a.description || '';
-      const rawLocation = a.location || '';
-      const rawWhoAffected = a.who_affected || '';
-      const rawPopulation = a.affected_population || '';
-      const rawDuration = a.duration || '';
+    const answers = answersRef.current;
+    const allText = Object.values(answers).filter(Boolean).join(' ');
 
-      // Parse and clean each field
-      const description = rawDescription;
-      const locationResult = parseLocation(rawLocation);
-      const location = locationResult.location;
-      const district = locationResult.district;
-      const whoAffected = parseWhoAffected(rawWhoAffected);
-      const population = parsePopulation(rawPopulation);
-      const duration = parseDuration(rawDuration);
+    const prompt = `You are the JanSetu Civic Voice AI Parser.
+A citizen has spoken the following answers regarding their civic issue:
+${JSON.stringify(answers, null, 2)}
 
-      const prompt = `You are a civic issue report assistant. Based on the following conversation answers, extract and return a valid JSON object ONLY with no surrounding text or markdown ticks:
+Combined Citizen Voice Transcript:
+"${allText}"
 
-User's answers:
-- Problem description: "${description}"
-- Location: "${location}"
-- Who is affected: "${whoAffected}"
-- Affected population: "${population}"
-- Duration: "${duration}"
-
-Return JSON:
+Extract and return a valid JSON object matching the exact schema below:
 {
-  "title": "Clear concise 5-8 word problem title",
-  "description": "Well-structured 2-3 sentence problem statement",
-  "category": "Infrastructure" | "Water Management" | "Agriculture & Rural" | "Healthcare & Sanitation" | "Education & Literacy" | "Energy & Power" | "Environment & Pollution" | "Public Safety & Disaster" | "Digital Services & Governance" | "Urban Transport & Traffic",
-  "district": "Extract district name or use Ranchi",
-  "location": "Specific location details",
-  "severity": "critical" | "high" | "medium" | "low",
-  "affected_population": "Extracted number as integer",
-  "who_affected": "Who is affected",
-  "duration": "Duration of problem",
-  "spoken_summary": "Short friendly confirmation"
+  "title": "Concise professional 5-8 word problem title (e.g. Monsoon Rural Road Washout & Bridge Collapse)",
+  "description": "Clear, detailed 2-3 sentence problem statement describing what is happening, why, and civic impact",
+  "category": "Water Management | Infrastructure | Agriculture & Rural | Healthcare & Sanitation | Education & Literacy | Energy & Power | Environment & Pollution | Public Safety & Disaster | Digital Services & Governance | Urban Transport & Traffic",
+  "subcategory": "Specific sub-sector (e.g. Road Connectivity, Water Pipeline, Solid Waste Collection)",
+  "district": "Extracted Jharkhand district name (e.g. Ranchi, Dumka, Dhanbad, Jamshedpur, Bokaro, Deoghar, Hazaribagh, etc.)",
+  "location": "Specific street, village, block, ward or landmark",
+  "lat": "Approximate latitude string (e.g. 24.2686 for Dumka, 23.3441 for Ranchi)",
+  "lng": "Approximate longitude string (e.g. 87.2486 for Dumka, 85.3090 for Ranchi)",
+  "severity": "low | medium | high | critical",
+  "affected_population": number (e.g. 1800),
+  "who_affected": "Who is affected (e.g. Local school students, 10 farming villages, daily commuters)",
+  "duration": "Duration (e.g. 3 months, 2 weeks, 6 months)",
+  "spoken_summary": "Warm, lively 1-sentence confirmation for the citizen explaining what report was prepared"
 }`;
 
-      let parsedData = null;
-      try {
-        const rawAi = await groqService.generateCivicResponse([
-          { role: 'system', content: 'You are JanSetu Voice AI parser. Output strict JSON only.' },
-          { role: 'user', content: prompt }
-        ]);
-        const jsonMatch = rawAi.match(/\{[\s\S]*\}/);
-        if (jsonMatch) parsedData = JSON.parse(jsonMatch[0]);
-      } catch (err) {
-        console.warn('[VoiceAgent] AI parsing fallback:', err);
+    let parsedData = null;
+    try {
+      const rawAi = await geminiService.generateCivicResponse([
+        { role: 'system', content: 'You are JanSetu Voice AI parser. Output strict JSON only matching the schema.' },
+        { role: 'user', content: prompt }
+      ]);
+
+      const jsonMatch = rawAi.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        parsedData = JSON.parse(jsonMatch[0]);
       }
-
-      // Fallback if AI failed
-      if (!parsedData || !parsedData.title) {
-        const catResult = detectCategory(description + ' ' + whoAffected);
-        parsedData = {
-          title: description.slice(0, 60) || 'Civic Issue Report',
-          description: description || 'Issue reported via voice.',
-          category: catResult.category,
-          categoryConfidence: catResult.confidence,
-          categoryKeywords: catResult.matchedKeywords,
-          district: district,
-          location: location,
-          severity: detectSeverity(description),
-          affected_population: population,
-          who_affected: whoAffected || 'Local residents',
-          duration: duration,
-          spoken_summary: 'Your report is ready.'
-        };
-      }
-
-      // Validate category matches available options
-      const validCategories = ['Infrastructure','Water Management','Agriculture & Rural','Healthcare & Sanitation','Education & Literacy','Energy & Power','Environment & Pollution','Public Safety & Disaster','Digital Services & Governance','Urban Transport & Traffic'];
-      if (!validCategories.includes(parsedData.category)) {
-        const catResult = detectCategory(description + ' ' + (parsedData.category || ''));
-        parsedData.category = catResult.category;
-        parsedData.categoryConfidence = catResult.confidence;
-        parsedData.categoryKeywords = catResult.matchedKeywords;
-      }
-
-      // Validate severity
-      const validSeverities = ['critical','high','medium','low'];
-      if (!validSeverities.includes(parsedData.severity)) {
-        parsedData.severity = detectSeverity(description);
-      }
-
-      // Ensure all fields are present and cleaned
-      parsedData.who_affected = whoAffected || parsedData.who_affected || 'Local residents';
-      parsedData.duration = duration;
-      parsedData.description = description || parsedData.description || 'Issue reported via voice.';
-      parsedData.affected_population = population;
-      parsedData.location = location || parsedData.location || 'Reported via Voice';
-      parsedData.district = district || parsedData.district || 'Ranchi';
-
-      // Category confidence — run detection on final category for score
-      if (!parsedData.categoryConfidence) {
-        const catResult = detectCategory(parsedData.category + ' ' + description + ' ' + whoAffected);
-        parsedData.categoryConfidence = catResult.confidence;
-        parsedData.categoryKeywords = catResult.matchedKeywords;
-      }
-
-      // Final sanitization: ensure affected_population is always a clean integer
-      if (typeof parsedData.affected_population === 'string') {
-        parsedData.affected_population = parsePopulation(parsedData.affected_population);
-      }
-      if (!parsedData.affected_population || isNaN(parsedData.affected_population)) {
-        parsedData.affected_population = 500;
-      }
-
-      setGeneratedData(parsedData);
-      triggerHaptic([100, 50, 100]); // success pattern
-
-      // Add summary to conversation
-      const confLabel = parsedData.categoryConfidence === 'high' ? '\n✅ High confidence match' : parsedData.categoryConfidence === 'medium' ? '\n⚡ Medium confidence — verify category' : '\n⚠️ Low confidence — please verify category';
-      const summaryMsg = `Here's your drafted report:\n📌 ${parsedData.title}\n📂 ${parsedData.category}${confLabel}\n📍 District: ${parsedData.district}\n📌 Location: ${parsedData.location}\n⚠️ Severity: ${parsedData.severity}\n👥 ${parsedData.who_affected} · ~${parsedData.affected_population} people\n⏱️ Duration: ${parsedData.duration}`;
-      setConversationLog(prev => [...prev, { role: 'agent', text: summaryMsg }]);
-
-      // TTS: Read the full report aloud
-      const readoutText = buildReportReadout(parsedData);
-      await speak(readoutText);
-
-    } catch (e) {
-      console.error('[VoiceAgent] Report generation error:', e);
-      setErrorMsg('Failed to generate report. Please try again.');
-    } finally {
-      setIsProcessing(false);
+    } catch (err) {
+      console.warn('[VoiceAgent] Gemini AI parsing error:', err);
     }
-  }, [speak, buildReportReadout]);
 
-  // ─── Run Interview (non-recursive, uses refs) ─────────────────────────────
+    if (!parsedData || !parsedData.title) {
+      parsedData = extractLocalReport(allText);
+    }
+
+    // Auto-fill district coordinates if missing
+    const distKey = (parsedData.district || '').toLowerCase().trim();
+    if (DISTRICT_COORDS[distKey]) {
+      if (!parsedData.lat) parsedData.lat = DISTRICT_COORDS[distKey].lat;
+      if (!parsedData.lng) parsedData.lng = DISTRICT_COORDS[distKey].lng;
+    } else {
+      if (!parsedData.lat) parsedData.lat = '23.3441';
+      if (!parsedData.lng) parsedData.lng = '85.3090';
+    }
+
+    // Validate category
+    const validCats = [
+      'Water Management', 'Infrastructure', 'Agriculture & Rural', 'Healthcare & Sanitation',
+      'Education & Literacy', 'Energy & Power', 'Environment & Pollution', 'Public Safety & Disaster',
+      'Digital Services & Governance', 'Urban Transport & Traffic'
+    ];
+    if (!validCats.includes(parsedData.category)) {
+      parsedData.category = 'Infrastructure';
+    }
+
+    setGeneratedData(parsedData);
+    setIsProcessing(false);
+
+    // Add summary message to conversation
+    const summaryMsg = `✨ Report Prepared Successfully!\n📌 Title: ${parsedData.title}\n📂 Category: ${parsedData.category}\n📍 Location: ${parsedData.location} (${parsedData.district})\n👥 Affected: ${parsedData.who_affected} (~${parsedData.affected_population} people)\n⚠️ Severity: ${parsedData.severity.toUpperCase()}\n⏱️ Duration: ${parsedData.duration}\n\n👉 Click 'Auto-Fill Report' below to populate all form fields instantly!`;
+    
+    setConversationLog(prev => [...prev, { role: 'agent', text: summaryMsg }]);
+
+    // Speak warm confirmation readout
+    const confirmationSpeech = parsedData.spoken_summary || `I have drafted your grievance for ${parsedData.title} in ${parsedData.district}. Please review and tap Auto-Fill to submit.`;
+    await speak(confirmationSpeech);
+
+  }, [speak]);
+
+  // ─── Main Interview Conversation Loop ──────────────────────────────────────
   const runInterview = useCallback(async () => {
+    if (isRunningRef.current) return;
+    isRunningRef.current = true;
     abortRef.current = false;
     answersRef.current = {};
 
-    for (let stepIdx = 0; stepIdx < stepsRef.current.length; stepIdx++) {
-      if (abortRef.current) return;
+    const activeSteps = stepsRef.current;
 
-      const step = stepsRef.current[stepIdx];
+    for (let stepIdx = 0; stepIdx < activeSteps.length; stepIdx++) {
+      if (abortRef.current) break;
+
+      const step = activeSteps[stepIdx];
       setCurrentStep(stepIdx);
-
-      if (step.isGreeting) {
-        // Ask greeting
-        setConversationLog(prev => [...prev, { role: 'agent', text: step.question }]);
-        setPhase('questioning');
-        stopListening();
-        await speak(step.question);
-        if (abortRef.current) return;
-
-        // Listen for user response
-        startListening();
-        const answer = await collectTranscript();
-        stopListening();
-        setInterimText('');
-
-        // Auto-detect language from greeting answer
-        const detected = detectLanguage(answer);
-        if (detected && detected !== selectedLanguage) {
-          setDetectedLang(detected);
-          setSelectedLanguage(detected);
-          // Re-speak greeting in detected language if different
-          const newSteps = detected === 'hi-IN' ? HI_STEPS : INTERVIEW_STEPS;
-          stepsRef.current = newSteps;
-        }
-
-        setConversationLog(prev => [...prev, { role: 'user', text: answer || 'Yes' }]);
-        continue; // Move to first real question
-      }
-
-      // Regular question
-      setConversationLog(prev => [...prev, { role: 'agent', text: step.question }]);
       setPhase('questioning');
+
+      // 1. Post and Speak Question
+      setConversationLog(prev => [...prev, { role: 'agent', text: step.question }]);
       stopListening();
       await speak(step.question);
-      if (abortRef.current) return;
+      if (abortRef.current) break;
 
-      // Listen for answer
+      // 2. Start Listening
       startListening();
       const answer = await collectTranscript();
       stopListening();
       setInterimText('');
 
-      // Auto-detect language from first real answer (if not yet detected)
-      if (!detectedLang && stepIdx === 1) {
+      if (abortRef.current) break;
+
+      // Language Auto-Detection on first turn
+      if (stepIdx === 0 && answer.trim()) {
         const detected = detectLanguage(answer);
         if (detected && detected !== selectedLanguage) {
           setDetectedLang(detected);
           setSelectedLanguage(detected);
           stepsRef.current = detected === 'hi-IN' ? HI_STEPS : INTERVIEW_STEPS;
-          // Notify user
-          const switchMsg = detected === 'hi-IN'
-            ? '🔄 Hindi detected! Switching to Hindi mode...'
-            : '🔄 English detected! Switching to English mode...';
-          setConversationLog(prev => [...prev, { role: 'agent', text: switchMsg }]);
-        } else if (detected) {
-          setDetectedLang(detected);
         }
       }
 
-      if (!answer.trim()) {
-        // Retry once
-        const retryMsg = selectedLanguage === 'hi-IN'
-          ? "मैं नहीं सुन पाई। कृपया फिर से बताएं।"
-          : "I didn't catch that. Could you please repeat?";
-        setConversationLog(prev => [...prev, { role: 'agent', text: retryMsg }]);
-        await speak(retryMsg);
-        if (abortRef.current) return;
+      if (answer.trim()) {
+        setConversationLog(prev => [...prev, { role: 'user', text: answer }]);
+        answersRef.current[step.field] = answer;
 
-        startListening();
-        const retryAnswer = await collectTranscript();
-        stopListening();
-        setInterimText('');
-
-        if (retryAnswer.trim()) {
-          setConversationLog(prev => [...prev, { role: 'user', text: retryAnswer }]);
-          answersRef.current[step.field] = retryAnswer;
+        // If the user provided a rich explanation on step 0 (more than 18 words), we can synthesize early!
+        const wordCount = answer.trim().split(/\s+/).length;
+        if (stepIdx === 0 && wordCount >= 16) {
+          const acknowledgeMsg = selectedLanguage === 'hi-IN'
+            ? "बहुत बढ़िया! मुझे सारी मुख्य जानकारी मिल गई है। मैं आपकी रिपोर्ट तैयार कर रही हूँ..."
+            : "Thank you! I have captured your complete issue details. Preparing your structured report now...";
+          
+          setConversationLog(prev => [...prev, { role: 'agent', text: acknowledgeMsg }]);
+          await speak(acknowledgeMsg);
+          break;
+        }
+      } else {
+        // If empty on greeting, record default acknowledgement
+        if (step.isGreeting) {
+          setConversationLog(prev => [...prev, { role: 'user', text: 'Yes, please start.' }]);
+          answersRef.current[step.field] = 'User agreed to report';
         } else {
           setConversationLog(prev => [...prev, { role: 'user', text: '(skipped)' }]);
           answersRef.current[step.field] = '';
         }
-      } else {
-        setConversationLog(prev => [...prev, { role: 'user', text: answer }]);
-        answersRef.current[step.field] = answer;
       }
     }
 
-    // All questions done — generate report
+    // Finished questions — generate complete report
     if (!abortRef.current) {
       await generateReport();
     }
+    isRunningRef.current = false;
   }, [selectedLanguage, speak, startListening, stopListening, collectTranscript, generateReport]);
 
-  // ─── Haptic Feedback (mobile vibration) ─────────────────────────────────────
-  const triggerHaptic = (pattern) => {
-    if (navigator.vibrate) {
-      navigator.vibrate(pattern || [50, 30, 50]);
-    }
-  };
-
-  // ─── Start / Stop Interview on Open ────────────────────────────────────────
+  // ─── Modal Open / Close Lifecycle ──────────────────────────────────────────
   useEffect(() => {
     if (isOpen) {
-      // Haptic feedback on open
-      triggerHaptic();
-
-      // Reset everything
       answersRef.current = {};
       setConversationLog([]);
       setCurrentStep(0);
@@ -922,16 +517,22 @@ Return JSON:
       setErrorMsg('');
       setDetectedLang(null);
       abortRef.current = false;
+      isRunningRef.current = false;
 
-      const timer = setTimeout(() => runInterview(), 500);
+      const timer = setTimeout(() => {
+        runInterview();
+      }, 400);
+
       return () => {
         clearTimeout(timer);
         abortRef.current = true;
+        isRunningRef.current = false;
         stopListening();
         if (window.speechSynthesis) window.speechSynthesis.cancel();
       };
     } else {
       abortRef.current = true;
+      isRunningRef.current = false;
       stopListening();
       if (window.speechSynthesis) window.speechSynthesis.cancel();
     }
@@ -940,14 +541,13 @@ Return JSON:
   // ─── Handle Apply to Form ──────────────────────────────────────────────────
   const handleApplyToForm = () => {
     if (generatedData && onAutoFillReport) {
-      triggerHaptic([30, 20, 30, 20, 50]); // confirmation pattern
       onAutoFillReport(generatedData);
       onClose();
       onNavigate('report');
     }
   };
 
-  // ─── Handle Skip / End Early ───────────────────────────────────────────────
+  // ─── Skip to End Early ─────────────────────────────────────────────────────
   const handleSkipToEnd = () => {
     abortRef.current = true;
     stopListening();
@@ -957,314 +557,356 @@ Return JSON:
 
   if (!isOpen) return null;
 
-  // Current question text
-  const currentQuestion = phase === 'questioning' && currentStep < steps.length
-    ? steps[currentStep]?.question : '';
-
-  // Progress
-  const progress = phase === 'summary' ? 100 : Math.round((currentStep / steps.length) * 100);
+  const progress = phase === 'summary' ? 100 : Math.round(((currentStep + 1) / steps.length) * 100);
 
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 1100,
-      background: 'rgba(0, 24, 68, 0.45)', backdropFilter: 'blur(12px)',
+      background: 'rgba(2, 11, 25, 0.75)', backdropFilter: 'blur(16px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: '20px', fontFamily: 'var(--font-body)',
-      animation: 'fadeIn 0.2s ease forwards',
+      padding: '10px', fontFamily: 'var(--font-body)',
+      animation: 'fadeIn 0.25s ease forwards',
     }}>
+      {/* Main HUD Window */}
       <div style={{
-        background: '#ffffff', border: '1px solid var(--border-medium)',
-        borderRadius: '16px', width: '100%', maxWidth: '540px',
-        boxShadow: '0 20px 60px rgba(0, 48, 135, 0.3)',
-        overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '90vh',
+        background: '#ffffff',
+        border: '1px solid rgba(56, 189, 248, 0.3)',
+        borderRadius: '16px', width: '100%', maxWidth: '580px',
+        boxShadow: '0 25px 70px rgba(0, 15, 45, 0.6), 0 0 30px rgba(56, 189, 248, 0.15)',
+        overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '94vh',
+        position: 'relative',
       }}>
 
-        {/* Header */}
+        {/* National Flag Accent Strip */}
         <div style={{
-          background: 'linear-gradient(135deg, #003087 0%, #001d5a 100%)',
-          borderBottom: '4px solid #FF6200',
-          padding: '14px 18px', display: 'flex',
+          height: '4px', width: '100%',
+          background: 'linear-gradient(90deg, #FF9933 0%, #FFFFFF 50%, #128807 100%)',
+        }} />
+
+        {/* Futuristic Responsive Header */}
+        <div style={{
+          background: 'linear-gradient(135deg, #051630 0%, #020b18 100%)',
+          borderBottom: '1px solid rgba(56, 189, 248, 0.2)',
+          padding: '12px 14px', display: 'flex',
           justifyContent: 'space-between', alignItems: 'center', color: '#ffffff',
+          gap: '8px', flexWrap: 'wrap',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
+            {/* Glowing Avatar */}
             <div style={{
-              width: '36px', height: '36px', borderRadius: '50%',
-              background: isListening ? '#FF6200' : isSpeaking ? '#10b981' : 'rgba(255,255,255,0.15)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: isListening ? '0 0 16px rgba(255,98,0,0.8)' : isSpeaking ? '0 0 16px rgba(16,185,129,0.6)' : 'none',
+              width: '36px', height: '36px', borderRadius: '10px',
+              background: isListening 
+                ? 'linear-gradient(135deg, #FF6200 0%, #dc2626 100%)' 
+                : isSpeaking 
+                ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' 
+                : 'linear-gradient(135deg, #003087 0%, #0284c7 100%)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              boxShadow: isListening 
+                ? '0 0 16px rgba(255,98,0,0.8)' 
+                : isSpeaking 
+                ? '0 0 16px rgba(16,185,129,0.7)' 
+                : '0 0 12px rgba(2,132,199,0.4)',
               transition: 'all 0.3s ease',
+              border: '1px solid rgba(255,255,255,0.2)',
             }}>
-              {isListening ? <Mic size={18} color="#fff" /> : <Bot size={18} color="#fff" />}
+              {isListening ? <Mic size={18} color="#ffffff" /> : <Bot size={18} color="#ffffff" />}
             </div>
-            <div>
-              <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0 }}>JanSetu Voice AI</h3>
-              <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.7)' }}>
-                {isListening ? '🎙️ Listening...' : isSpeaking ? '🔊 Speaking...' : phase === 'summary' ? '✨ Report Ready' : detectedLang === 'hi-IN' ? '🗣️ Hindi Mode — Interview' : detectedLang === 'en-IN' ? '🗣️ English Mode — Interview' : 'Conversational Interview Mode'}
-              </span>
+
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
+                <span style={{
+                  fontSize: '0.58rem', letterSpacing: '0.04em', textTransform: 'uppercase',
+                  color: '#38bdf8', fontWeight: 800, background: 'rgba(56, 189, 248, 0.12)',
+                  padding: '1px 6px', borderRadius: '4px', border: '1px solid rgba(56, 189, 248, 0.25)',
+                  whiteSpace: 'nowrap'
+                }}>
+                  Govt of India · JanSetu AI
+                </span>
+                <span style={{
+                  fontSize: '0.58rem', background: 'linear-gradient(135deg, #FF6200, #d97706)',
+                  color: '#ffffff', padding: '1px 6px', borderRadius: '8px', fontWeight: 800,
+                  boxShadow: '0 2px 5px rgba(255,98,0,0.4)', whiteSpace: 'nowrap'
+                }}>
+                  Gemini AI
+                </span>
+              </div>
+              <h3 style={{ fontSize: 'clamp(0.9rem, 3.6vw, 1.05rem)', fontWeight: 800, margin: '2px 0 0 0', color: '#ffffff', letterSpacing: '-0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                JanSetu Voice Assistant
+              </h3>
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
             <select
               value={selectedLanguage}
               onChange={e => setSelectedLanguage(e.target.value)}
               style={{
-                background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)',
-                borderRadius: '6px', color: '#fff', fontSize: '0.72rem',
-                padding: '4px 8px', outline: 'none', cursor: 'pointer', fontWeight: 600,
+                background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.25)',
+                borderRadius: '6px', color: '#ffffff', fontSize: '0.72rem',
+                padding: '5px 7px', outline: 'none', cursor: 'pointer', fontWeight: 700,
+                backdropFilter: 'blur(4px)',
               }}
             >
-              <option value="en-IN" style={{ color: '#000' }}>English</option>
-              <option value="hi-IN" style={{ color: '#000' }}>हिन्दी</option>
+              <option value="en-IN" style={{ color: '#0f172a', background: '#ffffff' }}>English</option>
+              <option value="hi-IN" style={{ color: '#0f172a', background: '#ffffff' }}>हिन्दी</option>
             </select>
-            {detectedLang && (
-              <span style={{
-                fontSize: '0.55rem',
-                background: 'rgba(16,185,129,0.2)',
-                color: '#6ee7b7',
-                padding: '2px 6px',
-                borderRadius: '9999px',
-                fontWeight: 700,
-                whiteSpace: 'nowrap',
-              }}>
-                Auto
-              </span>
-            )}
-            <button onClick={onClose} style={{
-              background: 'rgba(255,255,255,0.15)', border: 'none',
-              borderRadius: '6px', color: '#fff', padding: '6px',
-              cursor: 'pointer', display: 'flex', alignItems: 'center',
+            <button onClick={onClose} title="Close HUD" style={{
+              background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)',
+              borderRadius: '6px', color: '#ffffff', padding: '6px',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <X size={16} />
+              <X size={15} />
             </button>
           </div>
         </div>
 
-        {/* Progress Bar */}
-        <div style={{ background: '#f0f4f8' }}>
-          <div style={{ height: '3px', background: '#e2e8f0', overflow: 'hidden' }}>
+
+        {/* Futuristic Status Bar & Telemetry */}
+        <div style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', padding: '10px 20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{
+                width: '8px', height: '8px', borderRadius: '50%',
+                background: isListening ? '#FF6200' : isSpeaking ? '#10b981' : '#0284c7',
+                boxShadow: isListening ? '0 0 10px #FF6200' : isSpeaking ? '0 0 10px #10b981' : 'none',
+                display: 'inline-block',
+              }} />
+              <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1e293b' }}>
+                {isListening ? '🎙️ Live Audio Input Active — Speak Now' : isSpeaking ? '🔊 JanSetu AI Speaking...' : phase === 'summary' ? '✨ Structured Grievance Ready' : 'Conversational Intake'}
+              </span>
+            </div>
+            <span style={{ fontSize: '0.74rem', color: '#003087', fontWeight: 800 }}>
+              {phase === 'summary' ? '100% Complete' : `Step ${Math.min(currentStep + 1, steps.length)} of ${steps.length} (${progress}%)`}
+            </span>
+          </div>
+
+          {/* Saffron Glowing Progress Track */}
+          <div style={{ height: '5px', background: '#e2e8f0', borderRadius: '10px', overflow: 'hidden' }}>
             <div style={{
               height: '100%', width: `${progress}%`,
-              background: phase === 'summary' ? 'var(--success)' : 'var(--accent)',
-              transition: 'width 0.5s ease',
+              background: phase === 'summary' 
+                ? 'linear-gradient(90deg, #10b981, #059669)' 
+                : 'linear-gradient(90deg, #FF6200, #d97706)',
+              borderRadius: '10px',
+              transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+              boxShadow: '0 0 8px rgba(255,98,0,0.5)',
             }} />
-          </div>
-          <div style={{
-            display: 'flex', justifyContent: 'space-between',
-            padding: '6px 18px', fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600,
-          }}>
-            <span>Step {Math.min(currentStep + 1, steps.length)} of {steps.length}</span>
-            <span>{progress}% complete</span>
           </div>
         </div>
 
-        {/* Conversation Area */}
+        {/* Conversation Log Feed */}
         <div style={{
-          flex: 1, overflowY: 'auto', padding: '16px 18px',
-          display: 'flex', flexDirection: 'column', gap: '10px',
-          maxHeight: '320px', background: '#fafbfc',
+          flex: 1, overflowY: 'auto', padding: '20px',
+          display: 'flex', flexDirection: 'column', gap: '14px',
+          minHeight: '260px', maxHeight: '360px', background: '#f1f5f9',
+          backgroundImage: 'radial-gradient(rgba(0, 48, 135, 0.03) 1px, transparent 1px)',
+          backgroundSize: '16px 16px',
         }}>
           {conversationLog.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '32px 16px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-              <Bot size={32} style={{ margin: '0 auto 10px', opacity: 0.3 }} />
-              <p>Starting conversation...</p>
+            <div style={{ textAlign: 'center', padding: '40px 20px', color: '#64748b' }}>
+              <div style={{
+                width: '56px', height: '56px', borderRadius: '50%',
+                background: 'rgba(0, 48, 135, 0.08)', display: 'flex',
+                alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px',
+                border: '1px solid rgba(0, 48, 135, 0.15)',
+              }}>
+                <Bot size={28} color="#003087" />
+              </div>
+              <p style={{ margin: 0, fontWeight: 700, color: '#0f172a', fontSize: '0.95rem' }}>Initializing JanSetu Voice Assistant...</p>
+              <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: '#64748b' }}>State Public Grievance AI Intake Portal</p>
             </div>
           )}
 
           {conversationLog.map((msg, idx) => (
             <div key={idx} style={{
               display: 'flex', justifyContent: msg.role === 'agent' ? 'flex-start' : 'flex-end',
-              gap: '8px', animation: 'fadeIn 0.2s ease',
+              gap: '10px', animation: 'fadeIn 0.2s ease',
             }}>
               {msg.role === 'agent' && (
                 <div style={{
-                  width: '28px', height: '28px', borderRadius: '50%',
-                  background: 'var(--primary)', flexShrink: 0,
+                  width: '32px', height: '32px', borderRadius: '10px',
+                  background: 'linear-gradient(135deg, #003087 0%, #001d5a 100%)', flexShrink: 0,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 2px 8px rgba(0,48,135,0.2)',
+                  border: '1px solid rgba(255,255,255,0.2)',
                 }}>
-                  <Bot size={14} color="#fff" />
+                  <Bot size={17} color="#ffffff" />
                 </div>
               )}
               <div style={{
-                maxWidth: '80%', padding: '10px 14px',
-                borderRadius: msg.role === 'agent' ? '4px 14px 14px 14px' : '14px 4px 14px 14px',
-                background: msg.role === 'agent' ? '#ffffff' : 'var(--primary)',
-                color: msg.role === 'agent' ? 'var(--text-primary)' : '#ffffff',
-                fontSize: '0.84rem', lineHeight: 1.5,
-                border: msg.role === 'agent' ? '1px solid var(--border-subtle)' : 'none',
-                boxShadow: msg.role === 'agent' ? '0 1px 4px rgba(0,0,0,0.06)' : '0 2px 8px rgba(0,48,135,0.2)',
+                maxWidth: '85%', padding: '13px 17px',
+                borderRadius: msg.role === 'agent' ? '4px 16px 16px 16px' : '16px 4px 16px 16px',
+                background: msg.role === 'agent' ? '#ffffff' : 'linear-gradient(135deg, #003087 0%, #002266 100%)',
+                color: msg.role === 'agent' ? '#0f172a' : '#ffffff',
+                fontSize: '0.88rem', lineHeight: 1.55, fontWeight: 500,
+                border: msg.role === 'agent' ? '1px solid #cbd5e1' : '1px solid rgba(56,189,248,0.3)',
+                boxShadow: msg.role === 'agent' ? '0 2px 10px rgba(0,0,0,0.06)' : '0 4px 16px rgba(0,48,135,0.25)',
                 whiteSpace: 'pre-line',
               }}>
                 {msg.text}
               </div>
               {msg.role === 'user' && (
                 <div style={{
-                  width: '28px', height: '28px', borderRadius: '50%',
-                  background: 'var(--accent)', flexShrink: 0,
+                  width: '32px', height: '32px', borderRadius: '10px',
+                  background: 'linear-gradient(135deg, #FF6200 0%, #c2410c 100%)', flexShrink: 0,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 2px 8px rgba(255,98,0,0.3)',
                 }}>
-                  <User size={14} color="#fff" />
+                  <User size={17} color="#ffffff" />
                 </div>
               )}
             </div>
           ))}
 
-          {/* Current question bubble */}
-          {phase === 'questioning' && currentQuestion && (
-            <div style={{ display: 'flex', gap: '8px', animation: 'fadeIn 0.3s ease' }}>
-              <div style={{
-                width: '28px', height: '28px', borderRadius: '50%',
-                background: 'var(--primary)', flexShrink: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <Bot size={14} color="#fff" />
-              </div>
-              <div style={{
-                padding: '10px 14px', borderRadius: '4px 14px 14px 14px',
-                background: '#ffffff', border: '1px solid var(--border-subtle)',
-                fontSize: '0.84rem', lineHeight: 1.5,
-                color: 'var(--text-primary)', maxWidth: '80%',
-                boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-              }}>
-                {currentQuestion}
-              </div>
-            </div>
-          )}
-
-          {/* Interim transcript */}
+          {/* Interim speech transcript */}
           {isListening && interimText && (
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
               <div style={{
-                padding: '8px 14px', borderRadius: '14px 4px 14px 14px',
-                background: 'rgba(255,98,0,0.1)', border: '1px dashed rgba(255,98,0,0.3)',
-                fontSize: '0.82rem', color: 'var(--text-secondary)',
-                fontStyle: 'italic', maxWidth: '80%',
+                padding: '11px 16px', borderRadius: '16px 4px 16px 16px',
+                background: 'rgba(255,98,0,0.1)', border: '1px dashed rgba(255,98,0,0.5)',
+                fontSize: '0.86rem', color: '#c2410c', fontWeight: 600,
+                fontStyle: 'italic', maxWidth: '85%',
               }}>
-                {interimText}...
+                🗣️ "{interimText}..."
               </div>
             </div>
           )}
 
-          {/* Summary data preview */}
+          {/* Generated Structured Report Card */}
           {phase === 'summary' && generatedData && (
             <div style={{
-              background: '#ffffff', border: '1px solid var(--border-medium)',
-              borderRadius: '12px', padding: '14px',
-              display: 'flex', flexDirection: 'column', gap: '8px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+              background: '#ffffff', border: '2px solid #003087',
+              borderRadius: '16px', padding: '18px',
+              display: 'flex', flexDirection: 'column', gap: '12px',
+              boxShadow: '0 8px 24px rgba(0,48,135,0.15)',
+              position: 'relative', overflow: 'hidden',
             }}>
               <div style={{
-                display: 'flex', alignItems: 'center', gap: '6px',
-                color: 'var(--success)', fontWeight: 700, fontSize: '0.8rem',
+                position: 'absolute', top: 0, left: 0, right: 0, height: '4px',
+                background: 'linear-gradient(90deg, #10b981, #0284c7)',
+              }} />
+
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                borderBottom: '1px solid #e2e8f0', paddingBottom: '10px',
               }}>
-                <CheckCircle2 size={16} />
-                <span>Report Drafted Successfully</span>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', fontSize: '0.76rem' }}>
-                <div><strong>Title:</strong> <span style={{ color: 'var(--text-secondary)' }}>{generatedData.title}</span></div>
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <strong>Category:</strong> <span style={{ color: 'var(--text-secondary)' }}>{generatedData.category}</span>
-                  {generatedData.categoryConfidence && (
-                    <span style={{
-                      display: 'inline-block',
-                      marginLeft: '6px',
-                      padding: '1px 7px',
-                      borderRadius: '9999px',
-                      fontSize: '0.62rem',
-                      fontWeight: 700,
-                      verticalAlign: 'middle',
-                      background: generatedData.categoryConfidence === 'high' ? '#dcfce7' : generatedData.categoryConfidence === 'medium' ? '#fef3c7' : '#fee2e2',
-                      color: generatedData.categoryConfidence === 'high' ? '#166534' : generatedData.categoryConfidence === 'medium' ? '#92400e' : '#991b1b',
-                      border: `1px solid ${generatedData.categoryConfidence === 'high' ? '#bbf7d0' : generatedData.categoryConfidence === 'medium' ? '#fde68a' : '#fecaca'}`,
-                    }}>
-                      {generatedData.categoryConfidence === 'high' ? 'High confidence' : generatedData.categoryConfidence === 'medium' ? 'Medium confidence' : 'Low confidence'}
-                    </span>
-                  )}
-                  {generatedData.categoryKeywords && generatedData.categoryKeywords.length > 0 && (
-                    <div style={{ marginTop: '3px', fontSize: '0.65rem', color: 'var(--text-muted)' }}>
-                      Matched: {generatedData.categoryKeywords.slice(0, 5).join(', ')}
-                    </div>
-                  )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#166534', fontWeight: 800, fontSize: '0.92rem' }}>
+                  <CheckCircle2 size={20} color="#16a34a" />
+                  <span>Structured Grievance Report Ready</span>
                 </div>
-                <div><strong>District:</strong> <span style={{ color: 'var(--text-secondary)' }}>{generatedData.district}</span></div>
-                <div><strong>Severity:</strong> <span style={{ color: '#ea580c', fontWeight: 700, textTransform: 'capitalize' }}>{generatedData.severity}</span></div>
-                <div style={{ gridColumn: '1 / -1' }}><strong>Location:</strong> <span style={{ color: 'var(--text-secondary)' }}>{generatedData.location}</span></div>
-                <div><strong>Affected:</strong> <span style={{ color: 'var(--text-secondary)' }}>{generatedData.who_affected}</span></div>
-                <div><strong>Population:</strong> <span style={{ color: 'var(--text-secondary)' }}>{generatedData.affected_population}</span></div>
-                <div style={{ gridColumn: '1 / -1' }}><strong>Duration:</strong> <span style={{ color: 'var(--text-secondary)' }}>{generatedData.duration}</span></div>
+                <span style={{
+                  fontSize: '0.72rem', background: 'rgba(2, 132, 199, 0.1)', color: '#0284c7',
+                  padding: '3px 10px', borderRadius: '100px', fontWeight: 800, border: '1px solid rgba(2, 132, 199, 0.2)',
+                }}>
+                  Verified by Gemini AI
+                </span>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '0.8rem' }}>
                 <div style={{ gridColumn: '1 / -1' }}>
-                  <strong>Description:</strong>
-                  <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0', fontSize: '0.74rem', lineHeight: 1.4 }}>{generatedData.description}</p>
+                  <span style={{ color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>Title</span>
+                  <div style={{ color: '#0f172a', fontWeight: 800, fontSize: '0.92rem', marginTop: '2px' }}>{generatedData.title}</div>
+                </div>
+                <div>
+                  <span style={{ color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>Category</span>
+                  <div style={{ color: '#003087', fontWeight: 700, marginTop: '2px' }}>{generatedData.category}</div>
+                </div>
+                <div>
+                  <span style={{ color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>District / Location</span>
+                  <div style={{ color: '#0f172a', fontWeight: 700, marginTop: '2px' }}>{generatedData.district} ({generatedData.location})</div>
+                </div>
+                <div>
+                  <span style={{ color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>Affected Population</span>
+                  <div style={{ color: '#0f172a', fontWeight: 700, marginTop: '2px' }}>~{generatedData.affected_population} residents</div>
+                </div>
+                <div>
+                  <span style={{ color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>Severity Level</span>
+                  <div style={{ color: '#dc2626', fontWeight: 800, textTransform: 'uppercase', marginTop: '2px' }}>{generatedData.severity}</div>
+                </div>
+                <div style={{ gridColumn: '1 / -1', background: '#f8fafc', padding: '10px 12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <span style={{ color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, display: 'block', marginBottom: '4px' }}>Draft Summary Statement</span>
+                  <p style={{ margin: 0, color: '#1e293b', fontSize: '0.8rem', lineHeight: 1.5 }}>{generatedData.description}</p>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Processing spinner */}
+          {/* Processing Indicator */}
           {isProcessing && (
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              gap: '8px', padding: '12px',
-              color: 'var(--primary)', fontSize: '0.82rem', fontWeight: 600,
+              gap: '10px', padding: '18px',
+              color: '#003087', fontSize: '0.88rem', fontWeight: 800,
+              background: '#ffffff', borderRadius: '12px', border: '1px solid #cbd5e1',
             }}>
-              <RefreshCw size={16} className="spin" />
-              <span>Drafting your report with AI...</span>
+              <RefreshCw size={20} className="spin" color="#FF6200" />
+              <span>Analyzing spoken responses & structuring official grievance...</span>
             </div>
           )}
         </div>
 
-        {/* Error Banner */}
+        {/* Error Alert */}
         {errorMsg && (
           <div style={{
             display: 'flex', alignItems: 'center', gap: '8px',
-            padding: '10px 18px', background: 'var(--danger-light)',
-            borderTop: '1px solid rgba(192,57,43,0.2)',
-            color: 'var(--danger)', fontSize: '0.8rem',
+            padding: '12px 20px', background: '#fef2f2',
+            borderTop: '1px solid #fecaca',
+            color: '#dc2626', fontSize: '0.82rem', fontWeight: 700,
           }}>
-            <AlertCircle size={15} />
+            <AlertCircle size={16} />
             <span>{errorMsg}</span>
           </div>
         )}
 
-        {/* Mic Indicator */}
+        {/* Futuristic Mic Controller HUD Bar */}
         {phase === 'questioning' && (
           <div style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center',
-            padding: '12px 18px',
-            background: isListening ? 'rgba(255,98,0,0.04)' : '#f8fafc',
-            borderTop: '1px solid var(--border-subtle)',
+            padding: '16px 20px',
+            background: isListening ? 'linear-gradient(180deg, #fff7ed 0%, #fff 100%)' : '#ffffff',
+            borderTop: '1px solid #e2e8f0',
             transition: 'all 0.3s ease',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               <button
                 onClick={isListening ? stopListening : startListening}
                 style={{
-                  width: '44px', height: '44px', borderRadius: '50%',
-                  background: isListening ? '#FF6200' : 'var(--primary)',
-                  border: '3px solid #ffffff', color: '#ffffff',
+                  width: '56px', height: '56px', borderRadius: '50%',
+                  background: isListening 
+                    ? 'linear-gradient(135deg, #FF6200 0%, #dc2626 100%)' 
+                    : 'linear-gradient(135deg, #003087 0%, #001d5a 100%)',
+                  border: '4px solid #ffffff', color: '#ffffff',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: isListening ? '0 0 20px rgba(255,98,0,0.5)' : '0 4px 12px rgba(0,48,135,0.3)',
+                  boxShadow: isListening 
+                    ? '0 0 30px rgba(255,98,0,0.7), 0 0 10px rgba(255,98,0,0.4)' 
+                    : '0 6px 20px rgba(0,48,135,0.3)',
                   cursor: 'pointer',
                   transform: isListening ? 'scale(1.08)' : 'scale(1)',
                   transition: 'all 0.25s ease',
                 }}
               >
-                {isListening ? <Mic size={20} /> : <MicOff size={18} />}
+                {isListening ? <Mic size={26} color="#fff" /> : <MicOff size={24} color="#fff" />}
               </button>
+
               <div>
-                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: isListening ? '#FF6200' : 'var(--text-primary)' }}>
-                  {isListening ? 'Listening... speak now' : 'Tap mic to speak'}
+                <div style={{ fontSize: '0.9rem', fontWeight: 800, color: isListening ? '#FF6200' : '#0f172a' }}>
+                  {isListening ? 'Listening... Speak Now' : 'Tap Microphone to Speak'}
                 </div>
-                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
-                  {isSpeaking ? 'Please wait...' : 'Your answer will be captured'}
+                <div style={{ fontSize: '0.74rem', color: '#64748b', marginTop: '2px' }}>
+                  {isSpeaking ? '🔊 JanSetu AI is speaking...' : 'Speech is transcribed live in real time'}
                 </div>
               </div>
             </div>
+
+            {/* Audio Waveform Animation */}
             {isListening && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '3px', marginTop: '8px', height: '18px' }}>
-                {[10, 18, 14, 22, 12, 20, 16, 24, 10, 18].map((h, idx) => (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '12px', height: '24px' }}>
+                {[12, 22, 16, 26, 14, 24, 18, 28, 12, 22, 16, 24, 14, 20].map((h, idx) => (
                   <div key={idx} style={{
-                    width: '3px', height: `${h}px`, background: 'var(--accent)',
-                    borderRadius: '2px', animation: `pulse 0.6s infinite alternate ease-in-out ${idx * 0.08}s`,
+                    width: '4px', height: `${h}px`,
+                    background: 'linear-gradient(180deg, #FF6200, #d97706)',
+                    borderRadius: '3px',
+                    animation: `pulse 0.5s infinite alternate ease-in-out ${idx * 0.06}s`,
                   }} />
                 ))}
               </div>
@@ -1272,54 +914,60 @@ Return JSON:
           </div>
         )}
 
-        {/* Footer */}
+        {/* Footer Actions */}
         <div style={{
-          padding: '12px 18px', background: '#f8fafc',
-          borderTop: '1px solid var(--border-subtle)',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px',
+          padding: '14px 20px', background: '#f8fafc',
+          borderTop: '1px solid #e2e8f0',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px',
         }}>
           <button onClick={onClose} style={{
-            padding: '8px 14px', borderRadius: '6px',
-            border: '1px solid var(--border-medium)', background: '#fff',
-            color: 'var(--text-secondary)', fontSize: '0.8rem', fontWeight: 600,
+            padding: '10px 18px', borderRadius: '8px',
+            border: '1px solid #cbd5e1', background: '#ffffff',
+            color: '#334155', fontSize: '0.85rem', fontWeight: 700,
             cursor: 'pointer', fontFamily: 'inherit',
+            transition: 'all 0.2s ease',
           }}>
             Cancel
           </button>
 
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '10px' }}>
             {phase === 'questioning' && currentStep > 0 && !generatedData && (
               <button onClick={handleSkipToEnd} style={{
-                padding: '8px 14px', borderRadius: '6px',
-                border: '1px solid var(--border-medium)', background: '#fff',
-                color: 'var(--text-muted)', fontSize: '0.78rem', fontWeight: 600,
+                padding: '10px 18px', borderRadius: '8px',
+                border: '1px solid #cbd5e1', background: '#ffffff',
+                color: '#475569', fontSize: '0.82rem', fontWeight: 700,
                 cursor: 'pointer', fontFamily: 'inherit',
               }}>
-                Skip to End
+                Skip & Analyze with AI
               </button>
             )}
 
             {phase === 'summary' && generatedData && (
               <>
-                <button onClick={generateReport} style={{
-                  padding: '8px 14px', borderRadius: '6px',
-                  border: '1px solid var(--border-medium)', background: '#fff',
-                  color: 'var(--primary)', fontSize: '0.78rem', fontWeight: 600,
+                <button onClick={() => {
+                  const speech = generatedData.spoken_summary || `Report prepared for ${generatedData.title}.`;
+                  speak(speech);
+                }} style={{
+                  padding: '10px 16px', borderRadius: '8px',
+                  border: '1px solid #003087', background: 'rgba(0,48,135,0.06)',
+                  color: '#003087', fontSize: '0.84rem', fontWeight: 700,
                   cursor: 'pointer', fontFamily: 'inherit',
-                  display: 'flex', alignItems: 'center', gap: '4px',
-                }}>
-                  <Volume2 size={13} /> Read Again
-                </button>
-                <button onClick={handleApplyToForm} style={{
-                  padding: '9px 18px', borderRadius: '6px',
-                  background: '#FF6200', color: '#fff', border: 'none',
-                  fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer',
                   display: 'flex', alignItems: 'center', gap: '6px',
-                  boxShadow: '0 2px 8px rgba(255,98,0,0.4)',
                 }}>
-                  <FileText size={14} />
-                  <span>Auto-Fill Report</span>
-                  <ArrowRight size={14} />
+                  <Volume2 size={16} /> Speak Summary
+                </button>
+                
+                <button onClick={handleApplyToForm} style={{
+                  padding: '11px 22px', borderRadius: '8px',
+                  background: 'linear-gradient(135deg, #FF6200 0%, #ea580c 100%)',
+                  color: '#ffffff', border: 'none',
+                  fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                  boxShadow: '0 4px 14px rgba(255,98,0,0.4)',
+                }}>
+                  <FileText size={16} />
+                  <span>Auto-Fill Official Report</span>
+                  <ArrowRight size={16} />
                 </button>
               </>
             )}
@@ -1330,3 +978,4 @@ Return JSON:
     </div>
   );
 }
+

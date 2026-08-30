@@ -7,7 +7,7 @@ export default function AiControlCenter() {
   const [priorityScoring, setPriorityScoring] = useState(true);
   const [teamMatching, setTeamMatching] = useState(true);
   const [threshold, setThreshold] = useState(75);
-  const [model, setModel] = useState('google/gemini-2.5-flash');
+  const [model, setModel] = useState('gemini-3.1-flash-lite');
 
   return (
     <div className="glass-l2" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -18,7 +18,7 @@ export default function AiControlCenter() {
             <h3 style={{ fontSize: '1.1rem', fontFamily: 'var(--font-display)', fontWeight: 800, color: '#fff' }}>
               Super Admin AI Operations & Control Center
             </h3>
-            <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Model Configuration, Request Performance & Feature Threshold Tuning</p>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Google Gemini Free-Tier Model Configuration & Feature Threshold Tuning</p>
           </div>
         </div>
         <span style={{ fontSize: '0.72rem', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.25)', color: '#10b981', padding: '4px 10px', borderRadius: '100px', fontWeight: 700 }}>
@@ -35,7 +35,7 @@ export default function AiControlCenter() {
         </div>
         <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: '10px', padding: '14px', textAlign: 'center' }}>
           <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Avg Latency</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#60a5fa', margin: '2px 0' }}>312 ms</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#60a5fa', margin: '2px 0' }}>290 ms</div>
           <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Edge Cached</div>
         </div>
         <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: '10px', padding: '14px', textAlign: 'center' }}>
@@ -46,7 +46,7 @@ export default function AiControlCenter() {
         <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: '10px', padding: '14px', textAlign: 'center' }}>
           <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Token Consumption</div>
           <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#a78bfa', margin: '2px 0' }}>342.9K</div>
-          <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>OpenRouter Gemini</div>
+          <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Google Gemini</div>
         </div>
       </div>
 
@@ -81,9 +81,9 @@ export default function AiControlCenter() {
           <div>
             <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Selected Model Architecture</label>
             <select value={model} onChange={e => setModel(e.target.value)} className="form-select" style={{ marginTop: '4px', fontSize: '0.78rem' }}>
-              <option value="google/gemini-2.5-flash">Google Gemini 2.5 Flash (Fast, Recommended)</option>
-              <option value="google/gemini-2.5-pro">Google Gemini 2.5 Pro (Deep Reasoning)</option>
-              <option value="meta-llama/llama-3-70b-instruct">Meta Llama 3 70B Instruct</option>
+              <option value="gemini-3.1-flash-lite">Google Gemini 3.1 Flash-Lite (Default Free-Tier, Fast)</option>
+              <option value="gemini-2.5-flash-lite">Google Gemini 2.5 Flash-Lite (Fallback Model)</option>
+              <option value="gemini-3.5-flash-lite">Google Gemini 3.5 Flash-Lite (High Performance)</option>
             </select>
           </div>
         </div>

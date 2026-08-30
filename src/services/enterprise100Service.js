@@ -327,7 +327,7 @@ export const PLATFORM_HEALTH = {
   api: { status: 'healthy', latency: 45, uptime: 99.9 },
   database: { status: 'healthy', connections: 12, uptime: 99.95 },
   auth: { status: 'healthy', providers: ['Supabase Auth'], uptime: 99.99 },
-  ai: { status: 'healthy', provider: 'Groq', model: 'compound', avgLatency: 1200 },
+  ai: { status: 'healthy', provider: 'Google Gemini', model: 'gemini-3.1-flash-lite', avgLatency: 290 },
   storage: { status: 'healthy', usage: '2.4 GB', limit: '10 GB' },
   notifications: { status: 'healthy', provider: 'In-App', queue: 0 },
 };
@@ -335,16 +335,16 @@ export const PLATFORM_HEALTH = {
 export const AI_USAGE = {
   totalRequests: 12450,
   totalTokens: 8900000,
-  avgLatency: 1180,
-  errorRate: 0.3,
+  avgLatency: 290,
+  errorRate: 0.1,
   dailyUsage: [
     { date: 'Aug 18', requests: 890 }, { date: 'Aug 19', requests: 920 },
     { date: 'Aug 20', requests: 1050 }, { date: 'Aug 21', requests: 1180 },
     { date: 'Aug 22', requests: 1340 }, { date: 'Aug 23', requests: 1120 },
   ],
   providers: [
-    { name: 'Groq', model: 'compound', requests: 8900, avgLatency: 1100, errorRate: 0.2 },
-    { name: 'Groq', model: 'llama-3.3-70b', requests: 3550, avgLatency: 1350, errorRate: 0.5 },
+    { name: 'Google Gemini', model: 'gemini-3.1-flash-lite', requests: 9400, avgLatency: 280, errorRate: 0.1 },
+    { name: 'Google Gemini', model: 'gemini-2.5-flash-lite', requests: 3050, avgLatency: 310, errorRate: 0.2 },
   ],
 };
 

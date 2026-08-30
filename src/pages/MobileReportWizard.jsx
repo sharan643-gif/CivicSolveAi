@@ -69,6 +69,14 @@ export default function MobileReportWizard({ onSubmit, onBack, preFillData = nul
   };
 
   const handleSubmitFinal = () => {
+    const evidenceItems = uploadedFiles.map(f => ({
+      id: f.id,
+      name: f.name,
+      type: f.type,
+      size: f.size,
+      url: f.preview || f.url || ''
+    }));
+
     const newChallenge = {
       id: `ch-m-${Date.now()}`,
       title: title.trim(),
@@ -81,7 +89,11 @@ export default function MobileReportWizard({ onSubmit, onBack, preFillData = nul
       status: 'reported',
       created_at: new Date().toISOString(),
       skills_required: [],
-      evidence_files: uploadedFiles.map(f => ({ name: f.name, type: f.type, size: f.size })),
+      evidence: evidenceItems,
+      evidence_files: evidenceItems,
+      ai_analysis: {
+        evidence: evidenceItems
+      },
       _rawFiles: uploadedFiles.map(f => f.raw)
     };
     onSubmit(newChallenge);
@@ -193,18 +205,27 @@ export default function MobileReportWizard({ onSubmit, onBack, preFillData = nul
               multiple
               style={{ display: 'none' }}
               onChange={(e) => {
-                const files = Array.from(e.target.files);
-                if (files.length > 0) {
-                  const newFiles = files.map(file => ({
-                    id: `file-${Date.now()}-${Math.random()}`,
-                    name: file.name,
-                    size: file.size,
-                    type: file.type,
-                    preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : null,
-                    raw: file
-                  }));
-                  setUploadedFiles(prev => [...prev, ...newFiles]);
-                }
+                const files = Array.from(e.target.files || []);
+                const valid = files.filter(f => f.size <= 10 * 1024 * 1024);
+                valid.forEach(file => {
+                  const id = `file-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+                  if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                      const dataUrl = ev.target.result;
+                      setUploadedFiles(prev => [
+                        ...prev,
+                        { id, name: file.name, size: file.size, type: file.type, raw: file, preview: dataUrl, url: dataUrl }
+                      ]);
+                    };
+                    reader.readAsDataURL(file);
+                  } else {
+                    setUploadedFiles(prev => [
+                      ...prev,
+                      { id, name: file.name, size: file.size, type: file.type, raw: file, preview: null, url: '' }
+                    ]);
+                  }
+                });
               }}
             />
             <button

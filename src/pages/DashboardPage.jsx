@@ -5,10 +5,16 @@ import {
   Globe, Award, Zap, Bell, Activity, TrendingUp, Eye, PlusCircle,
   Clock, Star, MessageSquare, MapPin, Search, Filter, ChevronRight,
   AlertTriangle, DollarSign, Briefcase, FlaskConical, Heart, LogOut,
-  UserCheck, Database, Flag, Target, Lock, Cpu, Users2, FolderKanban, Brain, Trophy
+  UserCheck, Database, Flag, Target, Lock, Cpu, Users2, FolderKanban, Brain, Trophy,
+  Send, Radio, CheckCircle2, ShieldCheck, Wrench, Sparkles
 } from 'lucide-react';
+
 import { db } from '../services/mockData';
 import { getProfiles, getAuditLogs, updateProfileVerification } from '../services/supabaseService';
+import { accountabilityService } from '../services/accountabilityService';
+import GovOfficerResolveModal from '../components/GovOfficerResolveModal';
+
+
 
 // ─── Sidebar Definitions per Sector ──────────────────────────────────────────
 const SIDEBAR_CONFIG = {
@@ -189,10 +195,11 @@ const SIDEBAR_CONFIG = {
 };
 
 // ─── Section Content per Sector ────────────────────────────────────────────
-function DashboardOverview({ currentUser, challenges, sectorConfig, isMobile }) {
+function DashboardOverview({ currentUser, challenges, sectorConfig, isMobile, onOpenResolveModal, onNavigate }) {
   const color = sectorConfig?.color || '#003087';
   const sector = currentUser?.sector || 'citizen';
   const role = currentUser?.role || 'Citizen';
+  const isGovOrAdmin = sector === 'government' || sector === 'super_admin' || role.toLowerCase().includes('officer') || role.toLowerCase().includes('admin');
 
   const quickStats = getQuickStats(sector, challenges);
   const recentActivity = getRecentActivity(sector, challenges);
@@ -249,21 +256,37 @@ function DashboardOverview({ currentUser, challenges, sectorConfig, isMobile }) 
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {priorityChallenges.map(c => (
-              <div key={c.id} style={{ display: 'flex', gap: '12px', padding: '12px', background: 'var(--bg-primary)', border: '1px solid var(--border-subtle)', borderRadius: '4px', alignItems: 'center' }}>
+              <div key={c.id} style={{ display: 'flex', gap: '12px', padding: '12px', background: 'var(--bg-primary)', border: '1px solid var(--border-subtle)', borderRadius: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
                 <div style={{ width: '36px', height: '36px', background: 'var(--primary-light)', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>
                   {c.sector_icon || '📋'}
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ flex: 1, minWidth: '180px' }}>
                   <div style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.title}</div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>{c.location} · {c.status_label || c.status}</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>{c.location} · <strong style={{ color: '#003087' }}>{c.status_label || c.status}</strong></div>
                 </div>
-                <div style={{ fontSize: '0.82rem', fontWeight: 800, color: c.priority_score > 80 ? 'var(--danger)' : c.priority_score > 60 ? 'var(--warning)' : 'var(--success)' }}>
-                  {c.priority_score}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 800, color: c.priority_score > 80 ? 'var(--danger)' : c.priority_score > 60 ? 'var(--warning)' : 'var(--success)' }}>
+                    {c.priority_score}
+                  </div>
+                  {isGovOrAdmin && (
+                    <button
+                      onClick={() => onOpenResolveModal(c)}
+                      style={{
+                        background: '#003087', color: '#ffffff', border: 'none',
+                        borderRadius: '6px', padding: '5px 10px', fontSize: '0.72rem',
+                        fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
+                        boxShadow: '0 2px 6px rgba(0,48,135,0.2)'
+                      }}
+                    >
+                      <Wrench size={12} /> Solve
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         </div>
+
 
         {/* Activity Feed */}
         <div style={{ background: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '20px', boxShadow: 'var(--shadow-xs)' }}>
@@ -288,17 +311,18 @@ function DashboardOverview({ currentUser, challenges, sectorConfig, isMobile }) 
 }
 
 function SuperAdminOverview({ challenges, isMobile }) {
-  const [users, setUsers] = React.useState([]);
-  const [auditLogs, setAuditLogs] = React.useState([]);
-  const [loadingUsers, setLoadingUsers] = React.useState(true);
+  const [users, setUsers] = useState([]);
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
 
-  React.useEffect(() => {
+  useEffect(() => {
     Promise.all([getProfiles(), getAuditLogs(50)]).then(([u, logs]) => {
       setUsers(u);
       setAuditLogs(logs);
       setLoadingUsers(false);
     });
   }, []);
+
 
   const handleApprove = async (userId) => {
     await updateProfileVerification(userId, 'verified');
@@ -750,10 +774,234 @@ function CitizenNotificationsSection({ challenges, isMobile }) {
   );
 }
 
+// ─── Government Portal: Department Challenge Resolution Hub ─────────────────
+function GovDepartmentChallengesSection({ challenges, onOpenResolveModal, onNavigate, isMobile }) {
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedDeptId, setSelectedDeptId] = useState('all');
+  const [search, setSearch] = useState('');
+
+  const DEPT_OPTIONS = [
+    { id: 'all', name: 'All Organizations (AI Classified)', icon: '🏛️' },
+    { id: 'pwd_roads', name: 'PWD Roads & Bridges', icon: '🛣️' },
+    { id: 'water_board', name: 'Water Supply & Sewerage', icon: '🚰' },
+    { id: 'electricity_board', name: 'JBVNL Electricity Board', icon: '⚡' },
+    { id: 'sanitation_swm', name: 'Sanitation & Solid Waste', icon: '🧹' },
+    { id: 'rural_dev', name: 'Agriculture & Rural Dev', icon: '🌾' },
+    { id: 'health_dept', name: 'Health & Family Welfare', icon: '🏥' },
+    { id: 'education_dept', name: 'School Education Dept', icon: '📚' },
+    { id: 'disaster_mgmt', name: 'Disaster Emergency Relief', icon: '🚨' },
+  ];
+
+  const filtered = challenges.filter(c => {
+    // Status filter
+    if (statusFilter === 'pending' && (c.status === 'resolved' || c.status === 'implemented')) return false;
+    if (statusFilter === 'in_progress' && c.status !== 'in_progress' && c.status !== 'pilot') return false;
+    if (statusFilter === 'resolved' && c.status !== 'resolved' && c.status !== 'implemented') return false;
+
+    // AI Department / Domain match
+    if (selectedDeptId !== 'all') {
+      const matchedDeptId = c.department_id || accountabilityService.matchDepartment(c.category, c.title, c.description).id;
+      if (matchedDeptId !== selectedDeptId) return false;
+    }
+
+    // Search query
+    if (search && !c.title?.toLowerCase().includes(search.toLowerCase()) && !c.location?.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      {/* Title */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <div>
+          <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+            🏛️ Official Department Issue Resolution Hub
+          </h3>
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>
+            AI automatically routes citizen issues to the specific organization. Inspect submissions and broadcast progress live.
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          {['all', 'pending', 'in_progress', 'resolved'].map(f => (
+            <button
+              key={f}
+              onClick={() => setStatusFilter(f)}
+              style={{
+                padding: '6px 14px', borderRadius: '100px', fontSize: '0.78rem', fontWeight: 700,
+                border: statusFilter === f ? '1px solid #003087' : '1px solid #cbd5e1',
+                background: statusFilter === f ? '#003087' : '#ffffff',
+                color: statusFilter === f ? '#ffffff' : '#475569',
+                cursor: 'pointer', textTransform: 'capitalize'
+              }}
+            >
+              {f.replace('_', ' ')}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* AI Organization & Department Filter Bar */}
+      <div style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '12px 16px' }}>
+        <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#0f172a', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <Sparkles size={14} color="#FF6200" />
+          <span>Select Organization / Domain (AI Separated Complaints):</span>
+        </div>
+        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
+          {DEPT_OPTIONS.map(d => {
+            const isSel = selectedDeptId === d.id;
+            return (
+              <button
+                key={d.id}
+                onClick={() => setSelectedDeptId(d.id)}
+                style={{
+                  padding: '7px 12px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 700,
+                  border: isSel ? '1px solid #003087' : '1px solid #e2e8f0',
+                  background: isSel ? 'rgba(0, 48, 135, 0.08)' : '#f8fafc',
+                  color: isSel ? '#003087' : '#475569',
+                  cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '6px',
+                }}
+              >
+                <span>{d.icon}</span>
+                <span>{d.name}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Search Input */}
+      <div style={{ display: 'flex', gap: '12px' }}>
+        <input
+          type="text"
+          placeholder="Search by issue title or district location..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{
+            flex: 1, padding: '10px 14px', borderRadius: '8px',
+            border: '1px solid #cbd5e1', fontSize: '0.85rem', outline: 'none'
+          }}
+        />
+      </div>
+
+      {/* List of Filtered Issues */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {filtered.length === 0 ? (
+          <div style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '40px', textAlign: 'center', color: '#64748b' }}>
+            <p style={{ margin: 0, fontWeight: 700 }}>No issues found matching selected department filter.</p>
+          </div>
+        ) : (
+          filtered.map(c => {
+            const matchedDept = accountabilityService.getDepartmentById(
+              c.department_id || accountabilityService.matchDepartment(c.category, c.title, c.description).id
+            );
+
+            return (
+              <div
+                key={c.id}
+                style={{
+                  background: '#ffffff', border: '1px solid var(--border-subtle)',
+                  borderRadius: '12px', padding: isMobile ? '12px 14px' : '16px 20px', boxShadow: 'var(--shadow-xs)',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  flexWrap: 'wrap', gap: '12px'
+                }}
+              >
+                <div style={{ flex: 1, minWidth: 0, width: '100%' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '0.68rem', fontFamily: 'monospace', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', color: '#64748b' }}>
+                      #{c.id?.slice(0, 10)}
+                    </span>
+                    <span style={{
+                      padding: '2px 8px', borderRadius: '100px', fontSize: '0.65rem', fontWeight: 800,
+                      background: c.status === 'resolved' || c.status === 'implemented' ? '#dcfce7' : c.status === 'in_progress' ? '#fef3c7' : '#e0f2fe',
+                      color: c.status === 'resolved' || c.status === 'implemented' ? '#059669' : c.status === 'in_progress' ? '#d97706' : '#0284c7',
+                    }}>
+                      {c.status_label || c.status?.replace('_', ' ')}
+                    </span>
+                    {/* AI Department Routing Badge */}
+                    <span style={{
+                      fontSize: '0.65rem', background: 'rgba(0,48,135,0.07)', border: '1px solid rgba(0,48,135,0.2)',
+                      color: '#003087', padding: '2px 6px', borderRadius: '4px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px'
+                    }}>
+                      <Brain size={11} color="#FF6200" /> AI Routed: {matchedDept.shortName}
+                    </span>
+                  </div>
+
+                  <h4
+                    onClick={() => onNavigate(`challenge/${c.id}`)}
+                    style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 6px 0', cursor: 'pointer', lineHeight: 1.3 }}
+                  >
+                    {c.title}
+                  </h4>
+
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '0 0 8px 0', lineHeight: 1.45 }}>
+                    {c.description?.slice(0, 140)}...
+                  </p>
+
+                  {c.official_remark && (
+                    <div style={{ background: '#f8fafc', borderLeft: '3px solid #003087', padding: '6px 10px', fontSize: '0.75rem', color: '#0f172a', borderRadius: '0 6px 6px 0', marginBottom: '6px' }}>
+                      <strong>Official Dept Note:</strong> {c.official_remark}
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', gap: '12px', fontSize: '0.74rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
+                    <span>📍 {c.location || c.district}</span>
+                    <span>👥 {c.affected_population?.toLocaleString() || '—'} residents</span>
+                    <span style={{ color: c.priority_score > 75 ? '#dc2626' : '#d97706', fontWeight: 700 }}>Priority: {c.priority_score}/100</span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px', flexShrink: 0, width: isMobile ? '100%' : 'auto', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => onOpenResolveModal(c)}
+                    style={{
+                      flex: isMobile ? 1 : 'none',
+                      background: 'linear-gradient(135deg, #003087 0%, #001d5a 100%)',
+                      color: '#ffffff', border: 'none', borderRadius: '8px',
+                      padding: '9px 14px', fontSize: '0.8rem', fontWeight: 800,
+                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                      boxShadow: '0 3px 10px rgba(0,48,135,0.25)'
+                    }}
+                  >
+                    <Wrench size={14} />
+                    <span>Solve & Broadcast</span>
+                  </button>
+
+                  <button
+                    onClick={() => onNavigate(`challenge/${c.id}`)}
+                    style={{
+                      flex: isMobile ? 1 : 'none',
+                      background: '#ffffff', border: '1px solid #cbd5e1',
+                      color: '#475569', borderRadius: '8px',
+                      padding: '8px 12px', fontSize: '0.78rem', fontWeight: 700,
+                      cursor: 'pointer', textAlign: 'center'
+                    }}
+                  >
+                    Tracking →
+                  </button>
+                </div>
+              </div>
+
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
+
 // ─── Main Dashboard Page Component ──────────────────────────────────────────
 export default function DashboardPage({ activeRole, currentUser, onNavigate, onLogout, challenges: propChallenges = [] }) {
   const [activeSection, setActiveSection] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [resolveModalChallenge, setResolveModalChallenge] = useState(null);
+  const [isResolveModalOpen, setIsResolveModalOpen] = useState(false);
+
+  const handleOpenResolveModal = (ch) => {
+    setResolveModalChallenge(ch);
+    setIsResolveModalOpen(true);
+  };
 
   // Mobile viewport detection
   const checkMobile = () => window.innerWidth <= 768 || (window.innerHeight / window.innerWidth) > 1.15;
@@ -777,7 +1025,29 @@ export default function DashboardPage({ activeRole, currentUser, onNavigate, onL
       return <SuperAdminOverview challenges={challenges} isMobile={isMobile} />;
     }
     if (activeSection === 'overview') {
-      return <DashboardOverview currentUser={currentUser} challenges={challenges} sectorConfig={sectorConfig} isMobile={isMobile} />;
+      return (
+        <DashboardOverview
+          currentUser={currentUser}
+          challenges={challenges}
+          sectorConfig={sectorConfig}
+          isMobile={isMobile}
+          onOpenResolveModal={handleOpenResolveModal}
+          onNavigate={onNavigate}
+        />
+      );
+    }
+    // Government Portal sections
+    if (sector === 'government') {
+      if (['validate', 'dept-challenges', 'approve', 'pilots'].includes(activeSection)) {
+        return (
+          <GovDepartmentChallengesSection
+            challenges={challenges}
+            onOpenResolveModal={handleOpenResolveModal}
+            onNavigate={onNavigate}
+            isMobile={isMobile}
+          />
+        );
+      }
     }
     // Citizen Portal sections
     if (sector === 'citizen') {
@@ -811,6 +1081,7 @@ export default function DashboardPage({ activeRole, currentUser, onNavigate, onL
     const navItem = sectorConfig.nav.find(n => n.id === activeSection);
     return <PlaceholderSection label={navItem?.label || activeSection} icon={navItem?.icon || LayoutDashboard} color={color} />;
   };
+
 
   // ─── Guest Mode (not logged in) ──────────────────────────────────────────
   if (!currentUser) {
@@ -979,9 +1250,24 @@ export default function DashboardPage({ activeRole, currentUser, onNavigate, onL
           {renderSection()}
         </div>
       </div>
+
+      {/* Government Officer Resolve & Update Progress Modal */}
+      <GovOfficerResolveModal
+        challenge={resolveModalChallenge}
+        isOpen={isResolveModalOpen}
+        onClose={() => {
+          setIsResolveModalOpen(false);
+          setResolveModalChallenge(null);
+        }}
+        onSuccess={() => {
+          setIsResolveModalOpen(false);
+          setResolveModalChallenge(null);
+        }}
+      />
     </div>
   );
 }
+
 
 // ─── Leaderboard Section ──────────────────────────────────────────────────────
 function LeaderboardSection() {

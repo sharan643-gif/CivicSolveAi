@@ -323,7 +323,7 @@ export function getImpactCertificate(challenge) {
 
 export const REPLAY_TIMELINE_STAGES = [
   { step: 1, label: "Citizen Report Filed", desc: "127 citizens reported road washout in Sikaripara via mobile voice & photos.", time: "June 12, 2026" },
-  { step: 2, label: "AI Analysis & DNA", desc: "Groq AI categorized issue as Infrastructure/Erosion, Priority 91/100.", time: "June 12, 2026" },
+  { step: 2, label: "AI Analysis & DNA", desc: "Google Gemini AI categorized issue as Infrastructure/Erosion, Priority 91/100.", time: "June 12, 2026" },
   { step: 3, label: "Duplicate & Cluster Detection", desc: "Merged 142 duplicate raw reports into single Master Problem DNA.", time: "June 13, 2026" },
   { step: 4, label: "Govt Officer Verification", desc: "Shri R. K. Verma (Rural Dev Dept) verified issue on-site.", time: "June 14, 2026" },
   { step: 5, label: "University Capability Match", desc: "Matched with BIT Mesra Civil & IoT department.", time: "June 18, 2026" },

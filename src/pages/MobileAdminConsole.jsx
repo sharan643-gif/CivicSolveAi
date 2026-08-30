@@ -1,18 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Shield, Users, FileText, CheckCircle, Database, Menu, X, ChevronRight } from 'lucide-react';
 import { getProfiles, getChallenges, updateProfileVerification } from '../services/supabaseService';
 
 export default function MobileAdminConsole() {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [users, setUsers] = React.useState([]);
-  const [challenges, setChallenges] = React.useState([]);
+  const [users, setUsers] = useState([]);
+  const [challenges, setChallenges] = useState([]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     Promise.all([getProfiles(), getChallenges()]).then(([u, c]) => {
       setUsers(u);
       setChallenges(c);
     });
   }, []);
+
 
   const pendingUsers = users.filter(u => u.verification === 'pending_verification' || u.verification === 'unverified');
 

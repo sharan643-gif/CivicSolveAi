@@ -1,5 +1,5 @@
-// Vite plugin registering secure server-side API middleware for Groq AI
-// Ensures GROQ_API_KEY is executed exclusively on Node.js server and NEVER exposed to client.
+// Vite plugin registering secure server-side API middleware for Google Gemini AI
+// Ensures GEMINI_API_KEY is executed exclusively on Node.js server and NEVER exposed to client.
 
 import { 
   generateCivicResponse, 
@@ -8,8 +8,12 @@ import {
   generateComplaintDraft, 
   analyzePriority, 
   explainStatus, 
-  analyzeImage 
-} from './groqServerService.js';
+  analyzeImage,
+  routeDepartment,
+  compareResolutionEvidence,
+  explainPendingStatus,
+  queryCivicAnalytics
+} from './geminiServerService.js';
 
 function parseRequestBody(req) {
   return new Promise((resolve, reject) => {
@@ -34,7 +38,7 @@ function sendJsonResponse(res, data, statusCode = 200) {
   res.end(JSON.stringify(data));
 }
 
-function createGroqMiddleware() {
+function createGeminiMiddleware() {
   return async (req, res, next) => {
     const url = req.url ? req.url.split('?')[0] : '';
     
@@ -88,9 +92,33 @@ function createGroqMiddleware() {
         return sendJsonResponse(res, { success: true, result });
       }
 
+      if (url === '/api/ai/route-department') {
+        const { title = '', description = '', category = '', location = '' } = body;
+        const result = await routeDepartment(title, description, category, location);
+        return sendJsonResponse(res, { success: true, result });
+      }
+
+      if (url === '/api/ai/compare-evidence') {
+        const { beforeImage = '', afterImage = '', complaintDetails = {} } = body;
+        const result = await compareResolutionEvidence(beforeImage, afterImage, complaintDetails);
+        return sendJsonResponse(res, { success: true, result });
+      }
+
+      if (url === '/api/ai/explain-pending') {
+        const { complaintDetails = {}, bottleneck = '' } = body;
+        const explanation = await explainPendingStatus(complaintDetails, bottleneck);
+        return sendJsonResponse(res, { success: true, explanation });
+      }
+
+      if (url === '/api/ai/analytics-query') {
+        const { query = '', contextData = {} } = body;
+        const result = await queryCivicAnalytics(query, contextData);
+        return sendJsonResponse(res, { success: true, result });
+      }
+
       return sendJsonResponse(res, { error: 'Endpoint not found' }, 404);
     } catch (err) {
-      console.error('[ViteGroqApiPlugin] Middleware error:', err.message);
+      console.error('[ViteGeminiApiPlugin] Middleware error:', err.message);
       return sendJsonResponse(res, { 
         success: false, 
         error: 'AI assistance is temporarily unavailable. Please try again.' 
@@ -99,10 +127,10 @@ function createGroqMiddleware() {
   };
 }
 
-export default function viteGroqApiPlugin() {
-  const middleware = createGroqMiddleware();
+export default function viteGeminiApiPlugin() {
+  const middleware = createGeminiMiddleware();
   return {
-    name: 'vite-groq-api-plugin',
+    name: 'vite-gemini-api-plugin',
     configureServer(server) {
       server.middlewares.use(middleware);
     },

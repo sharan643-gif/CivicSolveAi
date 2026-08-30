@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Sparkles, Send, X, Bot, Trash2 } from 'lucide-react';
-import { groqService } from '../services/groqClientService';
+import { geminiService } from '../services/geminiClientService';
 
 export default function CivicAssistant({ challenges = [] }) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      text: 'Hello! I am your JanSetu AI Assistant. Ask me how to report potholes, water supply, road accessibility, or track civic solutions across Jharkhand.',
+      text: 'Hello! I am your JanSetu AI Assistant powered by Google Gemini. Ask me how to report potholes, water supply, road accessibility, or track civic solutions across Jharkhand.',
       date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);
@@ -40,7 +40,7 @@ export default function CivicAssistant({ challenges = [] }) {
 
     try {
       const payload = updatedMessages.map(m => ({ role: m.role, content: m.content || m.text }));
-      const response = await groqService.generateCivicResponse(payload);
+      const response = await geminiService.generateCivicResponse(payload);
       
       if (response && response.includes('temporarily unavailable')) {
         setHasError(true);
@@ -143,7 +143,7 @@ export default function CivicAssistant({ challenges = [] }) {
                 </h4>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
                   <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#4ade80' }}></span>
-                  <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.85)', fontWeight: 600 }}>Groq Powered Telemetry</span>
+                  <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.85)', fontWeight: 600 }}>Gemini Powered Telemetry</span>
                 </div>
               </div>
             </div>

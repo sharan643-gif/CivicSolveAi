@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, AlertTriangle, Upload, Eye, FileText, Brain, ArrowRight, ArrowLeft, Wand2, Mic, X } from 'lucide-react';
+import { Sparkles, AlertTriangle, Upload, Eye, FileText, Brain, ArrowRight, ArrowLeft, Wand2, Mic, X, Building2 } from 'lucide-react';
 import { aiService } from '../services/aiService';
-import { groqService } from '../services/groqClientService';
+import { geminiService } from '../services/geminiClientService';
+import { accountabilityService } from '../services/accountabilityService';
+import AiClassificationCard from '../components/AiClassificationCard';
 import { CATEGORIES } from '../services/mockData';
 
 export default function SubmitPage({ onSubmit, challenges = [], onNavigate, preFillData = null, onOpenVoice = () => {} }) {
@@ -29,13 +31,23 @@ export default function SubmitPage({ onSubmit, challenges = [], onNavigate, preF
       if (preFillData.title) setTitle(preFillData.title);
       if (preFillData.description) setDescription(preFillData.description);
       if (preFillData.category) setCategory(preFillData.category);
-      // Put district first, then specific location
-      if (preFillData.district) setLocation(preFillData.district);
-      if (preFillData.location) setLocation(prev => prev ? `${prev}, ${preFillData.location}` : preFillData.location);
-      if (preFillData.severity) setSeverity(preFillData.severity.toLowerCase());
-      if (preFillData.affected_population) setAffectedPop(preFillData.affected_population.toString());
+      if (preFillData.subcategory) setSubcategory(preFillData.subcategory);
+      
+      // Clean location formatting
+      const loc = (preFillData.location || '').trim();
+      const dist = (preFillData.district || '').trim();
+      if (loc && dist && !loc.toLowerCase().includes(dist.toLowerCase())) {
+        setLocation(`${loc}, ${dist}`);
+      } else {
+        setLocation(loc || dist || '');
+      }
+
+      if (preFillData.lat) setLat(preFillData.lat.toString());
+      if (preFillData.lng) setLng(preFillData.lng.toString());
       if (preFillData.who_affected) setWhoAffected(preFillData.who_affected);
+      if (preFillData.affected_population) setAffectedPop(preFillData.affected_population.toString());
       if (preFillData.duration) setDuration(preFillData.duration);
+      if (preFillData.severity) setSeverity(preFillData.severity.toLowerCase());
     }
   }, [preFillData]);
 
@@ -43,6 +55,7 @@ export default function SubmitPage({ onSubmit, challenges = [], onNavigate, preF
   const [step, setStep] = useState(1); // 1 = Form, 2 = AI Loading, 3 = Duplicate Alert, 4 = AI Preview/Approve
   const [duplicateMatch, setDuplicateMatch] = useState(null);
   const [aiAnalysis, setAiAnalysis] = useState(null);
+  const [deptRouting, setDeptRouting] = useState(null);
   const [loadingText, setLoadingText] = useState('Initializing Cognitive Engine...');
 
   const handleGenerateDraft = async () => {
@@ -51,7 +64,7 @@ export default function SubmitPage({ onSubmit, challenges = [], onNavigate, preF
 
     setIsGenerating(true);
     try {
-      const draft = await groqService.generateComplaintDraft(rawInput);
+      const draft = await geminiService.generateComplaintDraft(rawInput);
       if (draft) {
         if (draft.title) setTitle(draft.title);
         if (draft.description) setDescription(draft.description);
@@ -89,24 +102,39 @@ export default function SubmitPage({ onSubmit, challenges = [], onNavigate, preF
 
   const proceedToAiAnalysis = async () => {
     setStep(2);
-    setLoadingText('Executing semantic categorization & sub-sector parsing...');
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setLoadingText('Calculating local priority score based on severity & population density...');
+    setLoadingText('Executing semantic categorization & government department routing...');
+    await new Promise(resolve => setTimeout(resolve, 600));
+    setLoadingText('Calculating legal SLA deadline and local priority score based on severity & population density...');
     
     try {
-      // 2. Call AI analyzer — pass user's selected category for context
-      const analysis = await aiService.analyzeChallenge(title, description, category);
+      // 2. Call AI analyzer & department router concurrently
+      const [analysis, routing] = await Promise.all([
+        aiService.analyzeChallenge(title, description, category),
+        geminiService.routeDepartment(title, description, category, location)
+      ]);
+
       if (analysis) {
         setAiAnalysis(analysis);
-        // Populate form fields with AI output for confirmation
         setCategory(analysis.category);
         setSubcategory(analysis.subcategory || '');
         setSeverity((analysis.severity || 'medium').toLowerCase());
         setAffectedPop((analysis.affected_population_estimate || 1500).toString());
       }
+      if (routing) {
+        setDeptRouting(routing);
+      } else {
+        const fallbackDept = accountabilityService.matchDepartment(category, title, description);
+        setDeptRouting({
+          department_id: fallbackDept.id,
+          department_name: fallbackDept.name,
+          sla_days: fallbackDept.slaDays,
+          confidence: 93,
+          routing_reason: 'Automated civic classification matched to responsible municipal authority.'
+        });
+      }
     } catch (err) {
       console.warn('[SubmitPage] AI analysis failed, using defaults:', err.message);
-      // Set a basic analysis so the submit button still works
+      const fallbackDept = accountabilityService.matchDepartment(category, title, description);
       setAiAnalysis({
         category: category,
         subcategory: '',
@@ -117,24 +145,71 @@ export default function SubmitPage({ onSubmit, challenges = [], onNavigate, preF
         suggested_technologies: ['Field assessment tools'],
         skills_required: ['General Engineering']
       });
+      setDeptRouting({
+        department_id: fallbackDept.id,
+        department_name: fallbackDept.name,
+        sla_days: fallbackDept.slaDays,
+        confidence: 90,
+        routing_reason: 'Automated municipal department match.'
+      });
     }
     setStep(4);
   };
 
   const handleFilesSelected = (files) => {
     const valid = files.filter(f => f.size <= 10 * 1024 * 1024); // 10MB limit
-    const newFiles = valid.map(file => ({
-      id: `file-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      raw: file,
-      preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : null
-    }));
-    setUploadedFiles(prev => [...prev, ...newFiles]);
+    valid.forEach(file => {
+      const id = `file-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const dataUrl = e.target.result;
+          setUploadedFiles(prev => [
+            ...prev,
+            {
+              id,
+              name: file.name,
+              size: file.size,
+              type: file.type,
+              raw: file,
+              preview: dataUrl,
+              url: dataUrl
+            }
+          ]);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setUploadedFiles(prev => [
+          ...prev,
+          {
+            id,
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            raw: file,
+            preview: null,
+            url: ''
+          }
+        ]);
+      }
+    });
   };
 
   const handleFinalSubmit = () => {
+    const evidenceItems = uploadedFiles.map(f => ({
+      id: f.id,
+      name: f.name,
+      type: f.type,
+      size: f.size,
+      url: f.preview || f.url || ''
+    }));
+
+    const assignedDeptId = deptRouting?.department_id || accountabilityService.matchDepartment(category, title, description).id;
+    const assignedDept = accountabilityService.getDepartmentById(assignedDeptId);
+    const effectiveSlaDays = deptRouting?.sla_days || assignedDept.slaDays;
+    const nowIso = new Date().toISOString();
+    const slaDeadlineIso = accountabilityService.calculateSlaDeadline(nowIso, effectiveSlaDays);
+
     const finalChallenge = {
       id: title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Math.floor(Math.random() * 1000),
       title: title,
@@ -151,11 +226,22 @@ export default function SubmitPage({ onSubmit, challenges = [], onNavigate, preF
       priority_score: aiAnalysis ? aiAnalysis.priority_score : 50,
       reports_count: 1,
       support_count: 0,
+      department_id: assignedDeptId,
+      department_name: assignedDept.name,
+      department_head: assignedDept.head,
+      sla_days: effectiveSlaDays,
+      sla_deadline: slaDeadlineIso,
       skills_required: aiAnalysis ? aiAnalysis.skills_required : ['General Engineering'],
-      ai_analysis: aiAnalysis || {},
-      created_at: new Date().toISOString(),
-      evidence: [],
-      evidence_files: uploadedFiles.map(f => ({ name: f.name, type: f.type, size: f.size })),
+      ai_analysis: {
+        ...(aiAnalysis || {}),
+        evidence: evidenceItems,
+        department_routing: deptRouting,
+        sla_days: effectiveSlaDays,
+        sla_deadline: slaDeadlineIso
+      },
+      created_at: nowIso,
+      evidence: evidenceItems,
+      evidence_files: evidenceItems,
       _rawFiles: uploadedFiles.map(f => f.raw), // Pass raw File objects for upload in App.jsx
       comments: []
     };
@@ -496,7 +582,7 @@ export default function SubmitPage({ onSubmit, challenges = [], onNavigate, preF
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <Brain size={24} style={{ color: 'var(--ai-purple)' }} />
               <div>
-                <h2 style={{ fontSize: '1.4rem', color: 'white' }}>AI-Generated Structuring Summary</h2>
+                <h2 style={{ fontSize: '1.4rem', color: 'var(--text-primary)' }}>AI-Generated Structuring & Department Route</h2>
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Review the parameters determined by CivicSolve AI before committing.</p>
               </div>
             </div>
@@ -508,6 +594,16 @@ export default function SubmitPage({ onSubmit, challenges = [], onNavigate, preF
               </span>
             </div>
           </div>
+
+          {/* AI Classification & Routing Card */}
+          <AiClassificationCard
+            department={deptRouting?.department_id || category}
+            category={category}
+            severity={severity}
+            confidence={deptRouting?.confidence || 94}
+            slaDays={deptRouting?.sla_days}
+            routingReason={deptRouting?.routing_reason}
+          />
 
           {/* Structured Panel */}
           <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '20px' }}>

@@ -1,7 +1,5 @@
-// CivicSolve AI - OpenRouter AI integration service with keyword-driven fallback engine
+// CivicSolve AI - Google Gemini AI integration service with keyword-driven fallback engine
 
-const openRouterKey = import.meta.env.VITE_OPENROUTER_API_KEY;
-const hasApiKey = openRouterKey && openRouterKey !== 'your-openrouter-api-key';
 
 // Mock rule-based categorization when AI API is not active
 // Now accepts an optional `userCategory` hint from the form
@@ -167,18 +165,18 @@ const runMockAnalysis = (title = "", description = "", userCategory = "") => {
   };
 };
 
-import { groqService } from './groqClientService';
+import { geminiService, groqService } from './geminiClientService';
 
-export { groqService };
+export { geminiService, groqService };
 
 export const aiService = {
-  // Analyze challenge via Groq AI or fallback engine
+  // Analyze challenge via Gemini AI or fallback engine
   // userCategory: optional category hint from the form selection
   analyzeChallenge: async (title, description, userCategory = '') => {
     try {
-      const res = await groqService.classifyComplaint(title, description);
+      const res = await geminiService.classifyComplaint(title, description);
       if (res && res.category && res.category !== 'Infrastructure') {
-        // Use Groq's classification only if it's specific (not the generic fallback)
+        // Use Gemini's classification only if it's specific (not the generic fallback)
         return {
           category: res.category,
           subcategory: res.subcategory || 'General Maintenance',
@@ -191,7 +189,7 @@ export const aiService = {
         };
       }
     } catch (e) {
-      console.warn('[aiService] Groq classification failed, running local analysis:', e.message);
+      console.warn('[aiService] Gemini classification failed, running local analysis:', e.message);
     }
     // Fall back to enhanced local analysis with user's category hint
     return runMockAnalysis(title, description, userCategory);
@@ -236,16 +234,16 @@ export const aiService = {
     return { hasDuplicate: false };
   },
 
-  // Floating chatbot dialogue using Groq AI
+  // Floating chatbot dialogue using Gemini AI
   askCivicAI: async (question, activeChallenges = []) => {
     try {
       const messages = [{ role: 'user', content: question }];
-      const response = await groqService.generateCivicResponse(messages);
+      const response = await geminiService.generateCivicResponse(messages);
       if (response && !response.includes('temporarily unavailable')) {
         return response;
       }
     } catch (e) {
-      console.warn('[aiService] Groq chat call failed, falling back:', e.message);
+      console.warn('[aiService] Gemini chat call failed, falling back:', e.message);
     }
 
     const q = question.toLowerCase();
@@ -258,7 +256,7 @@ export const aiService = {
     if (q.includes("garbage") || q.includes("waste") || q.includes("trash")) {
       return "Public sanitation & garbage collection complaints are assigned to the Solid Waste Management Department. Attaching a photo helps officers verify the issue faster.";
     }
-    return "Hello! I am your CivicSolve AI Assistant. Ask me how to report potholes, garbage dumps, water pipe leakages, or help draft a formal complaint to local authorities.";
+    return "Hello! I am your CivicSolve AI Assistant powered by Google Gemini. Ask me how to report potholes, garbage dumps, water pipe leakages, or help draft a formal complaint to local authorities.";
   }
 };
 

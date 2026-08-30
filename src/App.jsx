@@ -49,6 +49,8 @@ import AskJanSetuModal from './components/AskJanSetuModal';
 import EnterpriseControlCenter from './pages/EnterpriseControlCenter';
 import DigitalTwinPage from './pages/DigitalTwinPage';
 import FieldOperationsPage from './pages/FieldOperationsPage';
+import DepartmentDashboardPage from './pages/DepartmentDashboardPage';
+import DepartmentScorecardPage from './pages/DepartmentScorecardPage';
 
 // RBAC System
 import { hasPermission, isRouteAllowed, ROLE_NAVIGATION, ROLES, DASHBOARD_CONFIG } from './services/rbacSystem';
@@ -207,6 +209,25 @@ export default function App() {
     refreshDatabaseState();
   }, []);
 
+  // ─── Real-Time Global Challenge Update Listener ─────────────────────────────
+  useEffect(() => {
+    const handleGlobalUpdate = (event) => {
+      const updatedItem = event.detail;
+      if (!updatedItem || !updatedItem.id) return;
+      setChallenges(prev => {
+        const exists = prev.some(c => c.id === updatedItem.id);
+        if (exists) {
+          return prev.map(c => c.id === updatedItem.id ? { ...c, ...updatedItem } : c);
+        }
+        return [updatedItem, ...prev];
+      });
+      addToast('📢 Public Update Broadcast', `Progress updated to "${updatedItem.status_label || updatedItem.status}" for all citizens.`, 'success');
+    };
+    window.addEventListener('civicsolve_challenge_updated', handleGlobalUpdate);
+    return () => window.removeEventListener('civicsolve_challenge_updated', handleGlobalUpdate);
+  }, []);
+
+
   // ─── Scroll Reveal + Awareness ──────────────────────────────────────────────
   useScrollReveal();
   const { isScrolled } = useScrollAware();
@@ -310,8 +331,10 @@ export default function App() {
   };
 
   const handleCreateChallenge = async (newChallenge) => {
+    const evidenceItems = newChallenge.evidence || newChallenge.evidence_files || [];
+    
     // Strip only client-only runtime fields before inserting to DB
-    const { id: _id, evidence, timeline, comments, _rawFiles, ...insertable } = newChallenge;
+    const { id: _id, timeline, comments, _rawFiles, ...insertable } = newChallenge;
     // Ensure required fields have defaults
     insertable.title = insertable.title || 'Untitled Challenge';
     insertable.description = insertable.description || '';
@@ -321,39 +344,25 @@ export default function App() {
     insertable.skills_required = insertable.skills_required || [];
     insertable.support_count = insertable.support_count || 0;
     insertable.reports_count = insertable.reports_count || 1;
-    insertable.evidence = [];
+    insertable.evidence = evidenceItems;
+    insertable.evidence_files = evidenceItems;
+    insertable.ai_analysis = {
+      ...(insertable.ai_analysis || {}),
+      evidence: evidenceItems
+    };
+
     const saved = await addChallenge(insertable);
 
     if (saved) {
-      // Process and save evidence files
-      const rawFiles = _rawFiles || [];
-      let evidenceData = [];
+      const challengeKey = saved.id || newChallenge.id;
 
-      if (rawFiles.length > 0) {
-        try {
-          // Create compressed thumbnails for database storage
-          evidenceData = await uploadEvidenceFiles(rawFiles, saved.id);
-        } catch (fileErr) {
-          console.warn('[App] Evidence processing error:', fileErr.message);
-        }
-
-        // Always save evidence_files metadata (name, type, size)
-        const evidenceMeta = insertable.evidence_files || [];
-
-        // Save to database
-        try {
-          await updateChallenge(saved.id, {
-            evidence: evidenceData,
-            evidence_files: evidenceMeta
-          });
-        } catch (dbErr) {
-          console.warn('[App] DB update for evidence failed, saving to localStorage:', dbErr.message);
-        }
-
-        // Always save to localStorage as reliable fallback
+      // Always save evidence to localStorage as fast, reliable fallback
+      if (evidenceItems.length > 0) {
         try {
           const localEvidence = JSON.parse(localStorage.getItem('civicsolve_evidence') || '{}');
-          localEvidence[saved.id] = evidenceData;
+          localEvidence[challengeKey] = evidenceItems;
+          if (newChallenge.id) localEvidence[newChallenge.id] = evidenceItems;
+          if (saved.id) localEvidence[saved.id] = evidenceItems;
           localStorage.setItem('civicsolve_evidence', JSON.stringify(localEvidence));
         } catch (lsErr) {
           console.warn('[App] localStorage save failed:', lsErr.message);
@@ -361,7 +370,7 @@ export default function App() {
       }
 
       await refreshDatabaseState();
-      addToast('Challenge Submitted', `"${newChallenge.title}" — AI Priority: ${newChallenge.priority_score}/100.${evidenceData.length > 0 ? ` ${evidenceData.length} photo(s) attached.` : ''}`, 'success');
+      addToast('Challenge Submitted', `"${newChallenge.title}" — AI Priority: ${newChallenge.priority_score}/100.${evidenceItems.length > 0 ? ` ${evidenceItems.length} photo(s) attached.` : ''}`, 'success');
     } else {
       addToast('Error', 'Failed to submit challenge. Please try again.', 'error');
     }
@@ -593,7 +602,10 @@ export default function App() {
           <AchievementsPage currentUser={currentUser} />
         )}
         {currentRoute === 'leaderboard' && (
-          <LeaderboardPage />
+          <LeaderboardPage onNavigate={handleNavigate} />
+        )}
+        {currentRoute === 'dept-dashboard' && (
+          <DepartmentDashboardPage currentUser={currentUser} challenges={challenges} onNavigate={handleNavigate} />
         )}
         {currentRoute === 'expert-marketplace' && (
           <ExpertMarketplacePage />
@@ -672,6 +684,13 @@ export default function App() {
             <FieldOperationsPage />
           </ProtectedRoute>
         )}
+        {currentRoute === 'dept-dashboard' && (
+          <DepartmentDashboardPage
+            currentUser={currentUser}
+            challenges={challenges}
+            onNavigate={handleNavigate}
+          />
+        )}
         {currentRoute === 'report' && (
           isMobile ? <MobileReportWizard onSubmit={handleCreateChallenge} onBack={() => handleNavigate('landing')} preFillData={voicePreFillData} onOpenVoice={() => setIsVoiceOpen(true)} /> : <SubmitPage onSubmit={handleCreateChallenge} challenges={challenges} onNavigate={handleNavigate} preFillData={voicePreFillData} onOpenVoice={() => setIsVoiceOpen(true)} />
         )}
@@ -722,7 +741,7 @@ export default function App() {
                   <div style={{ color: '#ffffff', fontWeight: 600, marginBottom: '8px', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Technology</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <span style={{ color: '#adb5bd' }}>Supabase PostgreSQL</span>
-                    <span style={{ color: '#adb5bd' }}>Groq AI Engine</span>
+                    <span style={{ color: '#adb5bd' }}>Google Gemini AI Engine</span>
                     <span style={{ color: '#adb5bd' }}>Open Source</span>
                   </div>
                 </div>
@@ -988,33 +1007,7 @@ function AppHeader({
           zIndex: 2,
           flexShrink: 0,
         }}>
-          {/* Voice AI Trigger */}
-          <button
-            onClick={onOpenVoice}
-            title="Open JanSetu Voice AI Engine"
-            style={{
-              display: 'flex', alignItems: 'center', gap: '6px',
-              background: 'var(--accent)',
-              border: 'none',
-              borderRadius: '9999px',
-              padding: isMobile ? '0' : '8px 14px',
-              width: isMobile ? '36px' : 'auto',
-              height: isMobile ? '36px' : 'auto',
-              justifyContent: 'center',
-              fontSize: '0.8rem',
-              fontWeight: 700,
-              color: '#ffffff',
-              cursor: 'pointer',
-              flexShrink: 0,
-              boxShadow: '0 2px 8px rgba(255,98,0,0.35)',
-              transition: 'background 0.15s ease',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#cc4e00'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'var(--accent)'; }}
-          >
-            <Mic size={16} />
-            {!isMobile && <span>Voice AI</span>}
-          </button>
+
 
           {/* Search — desktop only */}
           {!isMobile && (

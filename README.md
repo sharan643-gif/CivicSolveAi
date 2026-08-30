@@ -6,7 +6,7 @@
 [![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)](https://react.dev)
 [![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite)](https://vitejs.dev)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?logo=supabase)](https://supabase.com)
-[![Groq](https://img.shields.io/badge/Groq-LLaMA%203.3-F55036)](https://groq.com)
+[![Google Gemini](https://img.shields.io/badge/Gemini-3.1%20Flash--Lite-4285F4?logo=google)](https://aistudio.google.com)
 [![Vercel](https://img.shields.io/badge/Deploy-Vercel-000?logo=vercel)](https://vercel.com)
 
 ---
@@ -49,7 +49,7 @@
 | 🔬 **Researcher** | Analyse trends, export data, publish insights |
 | ⚙️ **Admin** | Manage users, roles, AI settings, audit logs |
 
-**Core philosophy:** Every feature degrades gracefully. Even with no internet, no Supabase, and no Groq API key — the app works using LocalStorage mock data. Real Supabase data simply replaces the mocks when available.
+**Core philosophy:** Every feature degrades gracefully. Even with no internet, no Supabase, and no Gemini API key — the app works using LocalStorage mock data. Real Supabase and Gemini AI data simply enhances the platform when available.
 
 ---
 
@@ -117,7 +117,7 @@ npm install
 
 # Copy environment template
 cp .env.example .env
-# → Fill in your Supabase and Groq keys (see Section 4)
+# → Fill in your Supabase and Gemini keys (see Section 4)
 
 # Start dev server
 npm run dev
@@ -141,8 +141,10 @@ Copy `.env.example` to `.env` and fill in:
 VITE_SUPABASE_URL=https://xxxxxxxxxxxxxxxxxxxx.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGci...
 
-# ── Groq AI (LLaMA 3.3) ───────────────────────────────
-VITE_GROQ_API_KEY=gsk_...
+# ── Google Gemini AI (Server-Side ONLY) ────────────────
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL=gemini-3.1-flash-lite
+GEMINI_FALLBACK_MODEL=gemini-2.5-flash-lite
 
 # ── App Metadata ──────────────────────────────────────
 VITE_APP_NAME=JanSetu AI
@@ -342,12 +344,12 @@ Key exported functions:
 - `addAuditLog(userId, action, targetType, targetId, details)`
 - `checkPermission(roleSlug, permissionName)`
 
-### `groqService.js`
-Wraps the Groq REST API (LLaMA 3.3 70B). Used by:
-- `JanSetuVoiceAgent` — parse spoken challenge into JSON
-- `CivicAssistant` — chat completions
-- `AiAnalysisHubPage` — deep challenge analysis
-- `DuplicateDetector` — semantic similarity
+### `geminiClientService.js`
+Wraps the server-side Google Gemini AI endpoints (`/api/ai/*`) using `@google/genai`. Used by:
+- `JanSetuVoiceAgent` — parse spoken challenge into structured JSON
+- `SubmitPage` — AI draft generator, automated categorisation, and priority scoring
+- `CivicAssistant` — conversational civic assistant chat
+- `aiService` — complaint classification and hazard analysis
 - `AiCopilotModal` — generate action plans
 
 ### `mockData.js`
@@ -500,23 +502,24 @@ Use `<ProtectedRoute allowedRoles={['admin','official']}>` to gate any page or s
 
 ## 13. AI Integration
 
-JanSetu uses the **Groq API** with model `llama-3.3-70b-versatile` for all AI features.
+JanSetu uses the **Google Gemini API** (`@google/genai`) with primary free-tier model `gemini-3.1-flash-lite` and automatic fallback model `gemini-2.5-flash-lite`.
 
 ### How it's called
+All Gemini API calls are securely executed server-side via Vite middleware in local dev and Vercel serverless functions in production:
+
 ```js
-// src/services/groqService.js
-const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-  method: 'POST',
-  headers: {
-    'Authorization': `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`,
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    model: 'llama-3.3-70b-versatile',
-    messages: [...],
+// server/geminiServerService.js
+import { GoogleGenAI } from '@google/genai';
+
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const response = await ai.models.generateContent({
+  model: process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite',
+  contents: [...],
+  config: {
+    systemInstruction: SYSTEM_PROMPT,
     temperature: 0.3,
-    max_tokens: 2048
-  })
+    maxOutputTokens: 800
+  }
 });
 ```
 
@@ -531,7 +534,7 @@ const response = await fetch('https://api.groq.com/openai/v1/chat/completions', 
 | Root Cause Analysis | `RootCauseAnalysis` | AI-generated fishbone diagram |
 | Action Plan | `AiCopilotModal` | 5-step action plan per challenge |
 | Chat | `CivicAssistant` | Government scheme Q&A, platform guidance |
-| Voice Parsing | `JanSetuVoiceAgent` | Speech → structured challenge JSON |
+| Voice Parsing | `JanSetuVoiceAgent` | Speech → structured challenge JSON via Gemini |
 
 ---
 
@@ -546,8 +549,8 @@ User taps 🎙️ mic button (header or bottom nav)
   → Browser SpeechRecognition API starts listening
   → Waveform animation plays (CSS pulse keyframes)
   → Speech transcript shown in real-time
-  → On stop: transcript sent to Groq
-  → Groq returns JSON: { title, category, district, description, severity }
+  → On stop: transcript sent to Google Gemini server endpoint
+  → Gemini returns JSON: { title, category, district, description, severity }
   → preFillData state passed to SubmitPage
   → SubmitPage form fields auto-populated
   → User reviews and submits
@@ -719,9 +722,9 @@ Output: `dist/` — static files ready to serve.
 | `invalid input value for enum org_type` | Use one of: `university`, `industry`, `ngo`, `government`, `startup`, `incubator`, `research`, `funding` |
 
 ### AI features not working
-- Check `VITE_GROQ_API_KEY` is set
-- Verify the key starts with `gsk_`
-- The app shows a graceful error message if AI is unavailable — other features still work
+- Check `GEMINI_API_KEY` is set in `.env`
+- Obtain a free API key from [Google AI Studio](https://aistudio.google.com/app/apikey)
+- The app shows a graceful error message and local mock engine if AI is unavailable — other features still work
 
 ### Voice agent not activating
 - Requires HTTPS or localhost (browser security restriction)
@@ -753,7 +756,7 @@ Output: `dist/` — static files ready to serve.
 
 ### v1.5.0
 - Initial platform launch as CivicSolve AI
-- 36 pages, 37 components, Supabase + Groq integration
+- 36 pages, 37 components, Supabase + Google Gemini integration
 - Mock data fallback system
 - RBAC with 12 sectors and 18 roles
 

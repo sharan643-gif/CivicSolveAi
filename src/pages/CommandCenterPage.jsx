@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
-import { ShieldAlert, MapPin, Layers, Clock, AlertTriangle, GitMerge, CheckCircle, BarChart3 } from 'lucide-react';
+import { ShieldAlert, MapPin, Layers, Clock, AlertTriangle, GitMerge, CheckCircle, BarChart3, Flame, Activity, Brain, FileText } from 'lucide-react';
 import GeographicHeatmap from '../components/GeographicHeatmap';
 import SlaTracker from '../components/SlaTracker';
+import CivicHotspotMap from '../components/CivicHotspotMap';
+import VoiceOfTheAreaCard from '../components/VoiceOfTheAreaCard';
+import AskCivicAnalyticsModal from '../components/AskCivicAnalyticsModal';
+import StateOfCivicServiceReportModal from '../components/StateOfCivicServiceReportModal';
 import { JHARKHAND_DISTRICTS } from '../services/mockData';
 
 export default function CommandCenterPage() {
@@ -10,6 +14,8 @@ export default function CommandCenterPage() {
   const [district, setDistrict] = useState('Dumka');
   const [block, setBlock] = useState('Sikaripara Block');
   const [village, setVillage] = useState('All Villages');
+  const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   const clusters = [
     { id: 'cl-1042', name: 'Monsoon Infrastructure Degradation', reportsCount: 43, locationsCount: 7, affectedPop: 3120, evidenceCount: 12, status: 'Active Cluster' },
@@ -56,9 +62,47 @@ export default function CommandCenterPage() {
         </div>
 
         {!emergencyMode && (
-          <button onClick={() => setEmergencyMode(true)} style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444', fontWeight: 700, padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
-            🚨 Trigger Emergency Mode
-          </button>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => setShowAnalyticsModal(true)}
+              style={{
+                background: 'rgba(0, 48, 135, 0.08)',
+                border: '1px solid rgba(0, 48, 135, 0.25)',
+                color: 'var(--primary)',
+                fontWeight: 700,
+                padding: '10px 16px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '0.82rem'
+              }}
+            >
+              <Brain size={15} /> Ask Civic AI
+            </button>
+            <button
+              onClick={() => setShowReportModal(true)}
+              style={{
+                background: '#f8fafc',
+                border: '1px solid var(--border-subtle)',
+                color: 'var(--text-secondary)',
+                fontWeight: 700,
+                padding: '10px 16px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '0.82rem'
+              }}
+            >
+              <FileText size={15} /> Monthly Report
+            </button>
+            <button onClick={() => setEmergencyMode(true)} style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444', fontWeight: 700, padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
+              🚨 Emergency Mode
+            </button>
+          </div>
         )}
       </div>
 
@@ -142,6 +186,16 @@ export default function CommandCenterPage() {
           ))}
         </div>
       </div>
+
+      {/* PILLAR 5: Civic Hotspot & Systemic Failure Detection */}
+      <CivicHotspotMap />
+
+      {/* PILLAR 22: "Voice of the Area" Locality Digital Health Cards */}
+      <VoiceOfTheAreaCard />
+
+      {/* Modals */}
+      {showAnalyticsModal && <AskCivicAnalyticsModal onClose={() => setShowAnalyticsModal(false)} />}
+      {showReportModal && <StateOfCivicServiceReportModal onClose={() => setShowReportModal(false)} />}
 
     </div>
   );

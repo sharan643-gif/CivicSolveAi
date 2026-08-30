@@ -1,4 +1,4 @@
-// Vercel Serverless Function Handler for Groq AI endpoints
+// Vercel Serverless Function Handler for Google Gemini AI endpoints
 import {
   generateCivicResponse,
   classifyComplaint,
@@ -6,8 +6,12 @@ import {
   generateComplaintDraft,
   analyzePriority,
   explainStatus,
-  analyzeImage
-} from '../../server/groqServerService.js';
+  analyzeImage,
+  routeDepartment,
+  compareResolutionEvidence,
+  explainPendingStatus,
+  queryCivicAnalytics
+} from '../../server/geminiServerService.js';
 
 export default async function handler(req, res) {
   // CORS Headers
@@ -54,6 +58,22 @@ export default async function handler(req, res) {
       }
       case 'analyze-image': {
         const result = await analyzeImage(body.imageBase64 || '', body.imageType || 'image/jpeg');
+        return res.status(200).json({ success: true, result });
+      }
+      case 'route-department': {
+        const result = await routeDepartment(body.title || '', body.description || '', body.category || '', body.location || '');
+        return res.status(200).json({ success: true, result });
+      }
+      case 'compare-evidence': {
+        const result = await compareResolutionEvidence(body.beforeImage || '', body.afterImage || '', body.complaintDetails || {});
+        return res.status(200).json({ success: true, result });
+      }
+      case 'explain-pending': {
+        const explanation = await explainPendingStatus(body.complaintDetails || {}, body.bottleneck || '');
+        return res.status(200).json({ success: true, explanation });
+      }
+      case 'analytics-query': {
+        const result = await queryCivicAnalytics(body.query || '', body.contextData || {});
         return res.status(200).json({ success: true, result });
       }
       default:

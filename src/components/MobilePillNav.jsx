@@ -25,39 +25,6 @@ export default function MobilePillNav({ activeTab, onSelectTab, currentUser, onO
     >
       <div style={{ position: 'relative' }}>
 
-        {/* Voice AI — floating top-right of nav pill */}
-        {onOpenVoice && (
-          <button
-            onClick={() => { if (navigator.vibrate) navigator.vibrate(30); onOpenVoice(); }}
-            title="Open Voice AI Assistant"
-            style={{
-              position: 'absolute',
-              top: '-14px',
-              right: '6px',
-              zIndex: 10,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              padding: '5px 10px',
-              borderRadius: '9999px',
-              background: 'var(--accent)',
-              border: '2px solid #ffffff',
-              color: '#ffffff',
-              cursor: 'pointer',
-              fontSize: '0.65rem',
-              fontWeight: 700,
-              fontFamily: 'var(--font-body)',
-              whiteSpace: 'nowrap',
-              boxShadow: '0 3px 10px rgba(255, 98, 0, 0.4)',
-              pointerEvents: 'auto',
-              transition: 'transform 0.15s ease',
-              lineHeight: 1,
-            }}
-          >
-            <Mic size={12} strokeWidth={2.5} />
-            <span>Voice AI</span>
-          </button>
-        )}
 
         <nav
           style={{

@@ -1,16 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, MapPin, AlertTriangle, Users, GitPullRequest, ArrowUpDown, LayoutGrid, Map } from 'lucide-react';
 import ChallengeMap from '../components/ChallengeMap';
 import { JHARKHAND_DISTRICTS, CATEGORIES } from '../services/mockData';
 
 export default function ExplorePage({ challenges = [], onNavigate }) {
   const checkMobile = () => window.innerWidth <= 768 || (window.innerHeight / window.innerWidth) > 1.15;
-  const [isMobile, setIsMobile] = React.useState(checkMobile);
-  React.useEffect(() => {
+  const [isMobile, setIsMobile] = useState(checkMobile);
+  useEffect(() => {
     const h = () => setIsMobile(checkMobile());
     window.addEventListener('resize', h);
     return () => window.removeEventListener('resize', h);
   }, []);
+
 
   const [viewMode, setViewMode] = useState('grid');
   const [search, setSearch] = useState('');

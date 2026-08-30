@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Users, Heart, Share2, Brain, Code, UserCheck, Wrench, Shield, CheckSquare, Plus, MessageSquare, Award } from 'lucide-react';
+import { MapPin, Users, Heart, Share2, Brain, Code, UserCheck, Wrench, Shield, CheckSquare, Plus, MessageSquare, Award, Building2, Clock, Sparkles, AlertTriangle, User, Flame, ThumbsUp } from 'lucide-react';
 import { getChallenges, getTeams, getChallengeById, updateChallenge } from '../services/supabaseService';
+import { accountabilityService } from '../services/accountabilityService';
+import { civicIntelligenceEngine } from '../services/civicIntelligenceEngine';
+import { geminiService } from '../services/geminiClientService';
 import JanSetuLoop from '../components/JanSetuLoop';
 import ProblemDnaCard from '../components/ProblemDnaCard';
 import CapabilityGapCard from '../components/CapabilityGapCard';
@@ -8,6 +11,13 @@ import DeploymentReadinessCard from '../components/DeploymentReadinessCard';
 import SolutionDnaCard from '../components/SolutionDnaCard';
 import CollaborationGraph from '../components/CollaborationGraph';
 import ImpactCertificateModal from '../components/ImpactCertificateModal';
+import AiClassificationCard from '../components/AiClassificationCard';
+import SlaCountdownTimer from '../components/SlaCountdownTimer';
+import ComplaintTimeline from '../components/ComplaintTimeline';
+import CitizenVerificationPanel from '../components/CitizenVerificationPanel';
+import DeptPerformanceBadge from '../components/DeptPerformanceBadge';
+import ResolutionEvidencePackage from '../components/ResolutionEvidencePackage';
+import CitizenRealityCheckModal from '../components/CitizenRealityCheckModal';
 
 export default function DetailPage({ challengeId, onNavigate, currentUserRole }) {
   const [challenges, setChallenges] = useState([]);
@@ -16,6 +26,9 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
   const [mentors, setMentors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCertModal, setShowCertModal] = useState(false);
+  const [tab, setTab] = useState('tracking');
+  const [showRealityCheckModal, setShowRealityCheckModal] = useState(false);
+  const [communityVotes, setCommunityVotes] = useState(() => civicIntelligenceEngine.getCommunityVotes(challengeId));
 
   useEffect(() => {
     async function loadData() {
@@ -42,8 +55,7 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
   }, [challengeId]);
 
   const challenge = challenges.find(c => c.id === challengeId);
-  const activeTab = 'overview';
-  const [tab, setTab] = useState('overview');
+
 
   if (loading) {
     return (
@@ -162,6 +174,21 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
     return '#10b981';
   };
 
+  // Civic intelligence derived values (safe — only runs when challenge is loaded)
+  const slaRisk = civicIntelligenceEngine.predictSlaRisk(challenge);
+  const assignedDept = accountabilityService.getDepartmentById(
+    challenge.department_id || accountabilityService.matchDepartment(challenge.category).id
+  );
+  const officerAssignment = civicIntelligenceEngine.recommendOfficerAssignment(
+    assignedDept.id, challenge.location, challenge.category
+  );
+
+  const handleVoteCommunity = (type) => {
+    const updated = civicIntelligenceEngine.submitCommunityVote(challengeId, type);
+    setCommunityVotes({ ...updated });
+  };
+
+
   return (
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px', paddingBottom: '60px' }}>
       
@@ -174,12 +201,40 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
 
       {/* Top Section / Header Summary */}
       <div className="glass-card reveal detail-header-row" style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '20px', borderLeft: `5px solid ${getSeverityColor(challenge.severity)}` }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flex: 1, minWidth: '280px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <span className={`badge badge-${challenge.severity || 'medium'}`}>{challenge.severity || 'medium'}</span>
             <span className="badge" style={{ background: 'rgba(59, 130, 246, 0.1)', color: 'var(--primary)' }}>
               {(challenge.status || 'reported').replace('_', ' ')}
             </span>
+            <SlaCountdownTimer
+              slaDeadline={challenge.sla_deadline || accountabilityService.calculateSlaDeadline(challenge.created_at, challenge.sla_days || 7)}
+              isResolved={challenge.status === 'resolved'}
+            />
+            <DeptPerformanceBadge
+              deptId={assignedDept.id}
+              showDetails={true}
+            />
+
+            {/* SLA Risk Prediction Badge */}
+            {slaRisk && (
+              <span
+                style={{
+                  fontSize: '0.74rem',
+                  padding: '3px 10px',
+                  borderRadius: '100px',
+                  background: `${slaRisk.color}15`,
+                  color: slaRisk.color,
+                  border: `1px solid ${slaRisk.color}40`,
+                  fontWeight: 800,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+              >
+                ⚠️ {slaRisk.riskPercentage}% Breach Risk ({slaRisk.riskLevel})
+              </span>
+            )}
           </div>
           
           <h1 style={{ fontSize: '2rem', color: 'var(--text-primary)', fontWeight: 800 }}>{challenge.title}</h1>
@@ -191,6 +246,102 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
             </div>
             <div>Affected: <strong style={{ color: 'var(--text-primary)' }}>{(challenge.affected_population || 0).toLocaleString()} residents</strong></div>
             <div>Reports: <strong style={{ color: 'var(--text-primary)' }}>{challenge.reports_count} files</strong></div>
+          </div>
+
+          {/* ONE ISSUE -> ONE OWNER ACCOUNTABILITY MATRIX (PILLAR 26) */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '14px',
+              flexWrap: 'wrap',
+              background: '#f8fafc',
+              padding: '10px 14px',
+              borderRadius: '8px',
+              border: '1px solid var(--border-subtle)',
+              fontSize: '0.76rem'
+            }}
+          >
+            <div>
+              <span style={{ color: 'var(--text-muted)' }}>Assigned Officer: </span>
+              <strong style={{ color: 'var(--text-primary)' }}>{officerAssignment?.assignedOfficer?.name || 'Er. Sandeep Verma'}</strong>
+            </div>
+            <div>
+              <span style={{ color: 'var(--text-muted)' }}>Supervisor: </span>
+              <strong style={{ color: 'var(--text-primary)' }}>{assignedDept.head.split(',')[0]}</strong>
+            </div>
+            <div>
+              <span style={{ color: 'var(--text-muted)' }}>Department: </span>
+              <strong style={{ color: 'var(--primary)' }}>{assignedDept.shortName}</strong>
+            </div>
+          </div>
+
+          {/* COMMUNITY VERIFICATION VOTING (PILLAR 21) */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: '#ffffff',
+              padding: '8px 14px',
+              borderRadius: '8px',
+              border: '1px solid var(--border-subtle)',
+              flexWrap: 'wrap',
+              gap: '8px'
+            }}
+          >
+            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+              👥 Community Ground Verification: "Is this problem still active?"
+            </span>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <button
+                onClick={() => handleVoteCommunity('still_damaged')}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: '6px',
+                  border: communityVotes.userVoted === 'still_damaged' ? '2px solid #dc2626' : '1px solid #fecaca',
+                  background: communityVotes.userVoted === 'still_damaged' ? '#fee2e2' : '#ffffff',
+                  color: '#dc2626',
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                Still Damaged ({communityVotes.stillDamaged})
+              </button>
+
+              <button
+                onClick={() => handleVoteCommunity('partial')}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: '6px',
+                  border: communityVotes.userVoted === 'partial' ? '2px solid #d97706' : '1px solid #fde68a',
+                  background: communityVotes.userVoted === 'partial' ? '#fef3c7' : '#ffffff',
+                  color: '#d97706',
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                Partially Fixed ({communityVotes.partiallyFixed})
+              </button>
+
+              <button
+                onClick={() => handleVoteCommunity('fixed')}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: '6px',
+                  border: communityVotes.userVoted === 'fixed' ? '2px solid #059669' : '1px solid #bbf7d0',
+                  background: communityVotes.userVoted === 'fixed' ? '#dcfce7' : '#ffffff',
+                  color: '#059669',
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                Fixed ({communityVotes.fixed})
+              </button>
+            </div>
           </div>
         </div>
 
@@ -221,62 +372,89 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
       </div>
 
       {/* ── EVIDENCE GALLERY — Prominent display of uploaded photos/videos ── */}
-      {(challenge.evidence && challenge.evidence.length > 0) || (challenge.evidence_files && challenge.evidence_files.length > 0) ? (
-        <div style={{ background: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '20px', boxShadow: 'var(--shadow-sm)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
-            <span style={{ fontSize: '1.1rem' }}>📷</span>
-            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-              Field Evidence — {challenge.evidence?.length || challenge.evidence_files?.length || 0} file{(challenge.evidence?.length || challenge.evidence_files?.length || 0) > 1 ? 's' : ''} uploaded
-            </h3>
-          </div>
+      {(() => {
+        // Collect and deduplicate all evidence items
+        const rawList = [];
+        if (Array.isArray(challenge.evidence)) rawList.push(...challenge.evidence);
+        if (Array.isArray(challenge.evidence_files)) rawList.push(...challenge.evidence_files);
+        if (Array.isArray(challenge.ai_analysis?.evidence)) rawList.push(...challenge.ai_analysis.evidence);
 
-          {/* Main gallery grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' }}>
-            {/* Render evidence from 'evidence' array (uploaded URLs) */}
-            {(challenge.evidence || []).map((ev, idx) => (
-              <div key={ev.id || `ev-${idx}`} style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)' }}>
-                {ev.type && ev.type.startsWith('video/') ? (
-                  <video src={ev.url} controls style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block' }} />
-                ) : ev.url && (ev.url.startsWith('http') || ev.url.startsWith('data:')) ? (
-                  <img
-                    src={ev.url}
-                    alt={ev.name || 'Evidence photo'}
-                    style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block', cursor: 'pointer' }}
-                    onClick={() => window.open(ev.url, '_blank')}
-                  />
-                ) : (
-                  <div style={{ width: '100%', height: '180px', background: 'linear-gradient(135deg, #f1f5f9, #e2e8f0)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '6px' }}>
-                    <span style={{ fontSize: '2rem' }}>📎</span>
-                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>File attached</span>
-                  </div>
-                )}
-                <div style={{ padding: '8px 10px', background: 'var(--bg-primary)', borderTop: '1px solid var(--border-subtle)' }}>
-                  <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    📎 {ev.name || 'Evidence file'}
-                  </div>
-                  {ev.size && <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '2px' }}>{(ev.size / 1024).toFixed(0)} KB</div>}
-                </div>
-              </div>
-            ))}
+        // Also retrieve from localStorage if needed
+        try {
+          const localEvidence = JSON.parse(localStorage.getItem('civicsolve_evidence') || '{}');
+          if (localEvidence[challenge.id]) rawList.push(...localEvidence[challenge.id]);
+          if (challengeId && localEvidence[challengeId]) rawList.push(...localEvidence[challengeId]);
+        } catch (e) {}
 
-            {/* Also render evidence_files metadata (name/type/size only, no URL) */}
-            {(challenge.evidence_files || []).map((ef, idx) => (
-              <div key={`ef-${idx}`} style={{ borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)' }}>
-                <div style={{ width: '100%', height: '180px', background: 'linear-gradient(135deg, #f1f5f9, #e2e8f0)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '6px' }}>
-                  <span style={{ fontSize: '2rem' }}>{ef.type?.includes('video') ? '📹' : ef.type?.includes('pdf') ? '📄' : '🖼️'}</span>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>File attached</span>
-                </div>
-                <div style={{ padding: '8px 10px', background: 'var(--bg-primary)', borderTop: '1px solid var(--border-subtle)' }}>
-                  <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    📎 {ef.name || 'Evidence file'}
-                  </div>
-                  {ef.size && <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '2px' }}>{(ef.size / 1024).toFixed(0)} KB</div>}
-                </div>
+        // Deduplicate by name + size
+        const seen = new Set();
+        const allEvidence = rawList.filter(item => {
+          if (!item) return false;
+          const key = (item.name || '') + '_' + (item.size || '');
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+
+        if (allEvidence.length === 0) return null;
+
+        return (
+          <div style={{ background: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '20px', boxShadow: 'var(--shadow-sm)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '1.1rem' }}>📷</span>
+                <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+                  Field Evidence & Uploaded Photos ({allEvidence.length} file{allEvidence.length > 1 ? 's' : ''})
+                </h3>
               </div>
-            ))}
+              <span style={{ fontSize: '0.72rem', color: '#15803d', background: '#dcfce7', padding: '2px 8px', borderRadius: '100px', fontWeight: 700 }}>
+                Verified Citizen Attachments
+              </span>
+            </div>
+
+            {/* Main gallery grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '14px' }}>
+              {allEvidence.map((ev, idx) => {
+                const hasUrl = Boolean(ev.url || ev.preview);
+                const mediaUrl = ev.url || ev.preview || '';
+                const isImg = (ev.type && ev.type.startsWith('image/')) || mediaUrl.startsWith('data:image') || mediaUrl.startsWith('http') || mediaUrl.startsWith('blob:') || /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(ev.name || '');
+                const isVideo = ev.type && ev.type.startsWith('video/');
+
+                return (
+                  <div key={ev.id || `ev-${idx}`} style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-medium)', background: '#f8fafc', boxShadow: '0 2px 6px rgba(0,0,0,0.05)' }}>
+                    {isVideo && hasUrl ? (
+                      <video src={mediaUrl} controls style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block' }} />
+                    ) : hasUrl && isImg ? (
+                      <div style={{ position: 'relative', overflow: 'hidden' }}>
+                        <img
+                          src={mediaUrl}
+                          alt={ev.name || 'Evidence photo'}
+                          style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block', cursor: 'pointer' }}
+                          onClick={() => window.open(mediaUrl, '_blank')}
+                        />
+                        <div style={{ position: 'absolute', bottom: '6px', right: '6px', background: 'rgba(0,0,0,0.65)', color: '#fff', fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px' }}>
+                          Click to enlarge
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ width: '100%', height: '180px', background: 'linear-gradient(135deg, #f1f5f9, #e2e8f0)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '6px' }}>
+                        <span style={{ fontSize: '2.2rem' }}>{ev.type?.includes('video') ? '📹' : ev.type?.includes('pdf') ? '📄' : '🖼️'}</span>
+                        <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 600 }}>{ev.name || 'File Attached'}</span>
+                      </div>
+                    )}
+                    <div style={{ padding: '8px 10px', background: '#ffffff', borderTop: '1px solid var(--border-subtle)' }}>
+                      <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        📎 {ev.name || 'Evidence file'}
+                      </div>
+                      {ev.size && <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '2px' }}>{(ev.size / 1024).toFixed(0)} KB</div>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      ) : null}
+        );
+      })()}
 
       {/* JanSetu Lifecycle Loop Signature */}
       <JanSetuLoop activeStage={challenge.status === 'prototype' ? 'BUILD' : challenge.status === 'pilot' ? 'VALIDATE' : challenge.status === 'implemented' ? 'MEASURE' : 'UNDERSTAND'} />
@@ -284,6 +462,7 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
       {/* Tabs selectors */}
       <div className="reveal mobile-scroll-tabs" style={{ display: 'flex', gap: '12px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '2px', overflowX: 'auto' }}>
         {[
+          { id: 'tracking', label: 'Complaint Lifecycle & SLA Tracking', icon: Building2 },
           { id: 'overview', label: 'Problem DNA & Overview', icon: Shield },
           { id: 'ai', label: 'AI Forensics & Capability', icon: Brain },
           { id: 'team', label: team ? 'Team & Solution DNA' : 'University Matching', icon: Code }
@@ -312,6 +491,96 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
           );
         })}
       </div>
+
+      {/* TAB CONTENT: 0. Complaint Lifecycle & SLA Tracking */}
+      {tab === 'tracking' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* PILLAR 23: "Why Is This Still Pending?" Transparent AI Explainer */}
+          <div
+            style={{
+              padding: '16px 20px',
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, rgba(0, 48, 135, 0.04), rgba(2, 132, 199, 0.06))',
+              border: '1px solid rgba(0, 48, 135, 0.2)',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '12px'
+            }}
+          >
+            <Sparkles size={20} color="var(--primary)" style={{ flexShrink: 0, marginTop: '2px' }} />
+            <div>
+              <h4 style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+                AI Transparency Status: "What is happening with this complaint right now?"
+              </h4>
+              <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: '4px 0 0' }}>
+                {civicIntelligenceEngine.getPendingExplanation(challenge)}
+              </p>
+            </div>
+          </div>
+
+          {/* AI Routing Overview Card */}
+          <AiClassificationCard
+            department={challenge.department_id || challenge.category}
+            category={challenge.category}
+            severity={challenge.severity}
+            slaDays={challenge.sla_days || 7}
+            routingReason={challenge.ai_analysis?.department_routing?.routing_reason || 'Automated AI classification matched to responsible government department.'}
+          />
+
+          {/* PILLAR 10 & 11: Resolution Evidence Package (Before vs After Photo Verification) */}
+          <ResolutionEvidencePackage challenge={challenge} />
+
+          {/* PILLAR 12: Citizen Reality Check Action Bar */}
+          <div
+            className="glass-card"
+            style={{
+              padding: '16px 20px',
+              borderRadius: '12px',
+              background: '#ffffff',
+              border: '1px solid var(--border-subtle)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '10px'
+            }}
+          >
+            <div>
+              <h4 style={{ fontSize: '0.94rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+                Citizen Ground Audit: "Has the problem genuinely been solved?"
+              </h4>
+              <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                Help audit government performance by submitting your 3-option reality check.
+              </span>
+            </div>
+            <button
+              onClick={() => setShowRealityCheckModal(true)}
+              className="btn btn-primary"
+              style={{ padding: '8px 18px', fontSize: '0.82rem' }}
+            >
+              Take Reality Check Audit
+            </button>
+          </div>
+
+          {/* Citizen Verification Panel if resolved */}
+          {challenge.status === 'resolved' && (
+            <CitizenVerificationPanel challenge={challenge} />
+          )}
+
+          {/* Lifecycle Stepper Timeline */}
+          <ComplaintTimeline challenge={challenge} />
+        </div>
+      )}
+
+      {showRealityCheckModal && (
+        <CitizenRealityCheckModal
+          challenge={challenge}
+          onClose={() => setShowRealityCheckModal(false)}
+          onSuccess={(verdict) => {
+            alert(`Reality check audit logged: ${verdict.toUpperCase().replace('_', ' ')}`);
+          }}
+        />
+      )}
 
       {/* TAB CONTENT: 1. Overview */}
       {tab === 'overview' && (
