@@ -7,11 +7,15 @@ const SAFE_FALLBACK_ERROR = 'AI assistance is temporarily unavailable. Please tr
 async function postAiRoute(endpoint, payload, retries = 1) {
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
       const response = await fetch(`/api/ai/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
@@ -41,6 +45,56 @@ export const geminiService = {
       return data.reply || "I am your CivicSolve AI Assistant powered by Google Gemini. How can I help you today?";
     } catch (err) {
       return SAFE_FALLBACK_ERROR;
+    }
+  },
+
+  // 1b. Streaming Chat for Live Voice Assistant (SSE)
+  generateCivicResponseStream: async (messages, onChunk, onDone) => {
+    try {
+      const response = await fetch('/api/ai/chat-stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages }),
+      });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data.done) {
+                onDone?.();
+                return;
+              }
+              if (data.text) {
+                onChunk?.(data.text);
+              }
+            } catch (e) {
+              // Skip malformed SSE lines
+            }
+          }
+        }
+      }
+      onDone?.();
+    } catch (err) {
+      console.warn('[geminiClientService] Stream error:', err.message);
+      // Fallback: generate full response
+      const reply = await geminiService.generateCivicResponse(messages);
+      onChunk?.(reply);
+      onDone?.();
     }
   },
 
@@ -174,7 +228,45 @@ export const geminiService = {
     }
   },
 
-  // 11. Natural Language Civic Analytics Query
+  // 11b. AI Inspect: Analyze Camera Frame
+  inspectFrame: async (frameBase64, conversationHistory = [], userMessage = '', mimeType = 'image/jpeg', voiceContext = null) => {
+    try {
+      const data = await postAiRoute('inspect-frame', { frameBase64, conversationHistory, userMessage, mimeType, voiceContext });
+      return data;
+    } catch (err) {
+      return {
+        success: false,
+        error: err.message,
+        spokenResponse: 'I am having trouble analyzing right now. Could you describe what you see?',
+        observation: 'Unable to analyze frame. Please try again.',
+        category: 'Unknown',
+        severity: 'medium',
+        confidence: 'low'
+      };
+    }
+  },
+
+  // 11c. AI Inspect: Generate Final Inspection Report
+  generateInspectionReport: async (inspectionData) => {
+    try {
+      const data = await postAiRoute('generate-inspection-report', inspectionData);
+      return data;
+    } catch (err) {
+      return {
+        success: false,
+        title: 'Inspection Report',
+        description: 'Report generated from camera inspection.',
+        category: inspectionData.category || 'Infrastructure',
+        severity: 'medium',
+        department: 'Municipal Services',
+        department_id: 'pwd_roads',
+        observations: inspectionData.observations || [],
+        aiConfidence: 'needs_confirmation'
+      };
+    }
+  },
+
+  // 12. Natural Language Civic Analytics Query
   queryCivicAnalytics: async (query, contextData = {}) => {
     try {
       const data = await postAiRoute('analytics-query', { query, contextData });

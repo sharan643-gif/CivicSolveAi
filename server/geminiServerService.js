@@ -158,6 +158,57 @@ async function callGeminiGenerate(contents, options = {}) {
   throw lastError;
 }
 
+// ─── HELPER: Call Gemini Content Generation with STREAMING ────────────────────
+async function* callGeminiGenerateStream(contents, options = {}) {
+  if (!geminiClient) {
+    throw new Error('GEMINI_API_KEY_MISSING');
+  }
+
+  const {
+    systemInstruction = SYSTEM_PROMPT,
+    temperature = 0.4,
+    maxOutputTokens = 600,
+  } = options;
+
+  const config = {
+    systemInstruction,
+    temperature,
+    maxOutputTokens,
+  };
+
+  const modelsToTry = [GEMINI_MODEL];
+  if (GEMINI_FALLBACK_MODEL && GEMINI_FALLBACK_MODEL !== GEMINI_MODEL) {
+    modelsToTry.push(GEMINI_FALLBACK_MODEL);
+  }
+
+  for (let i = 0; i < modelsToTry.length; i++) {
+    const currentModel = modelsToTry[i];
+    try {
+      const response = await geminiClient.models.generateContentStream({
+        model: currentModel,
+        contents,
+        config,
+      });
+
+      for await (const chunk of response) {
+        const text = chunk?.text || '';
+        if (text) {
+          yield { text, model: currentModel };
+        }
+      }
+      return; // Successfully streamed
+    } catch (err) {
+      const classified = classifyGeminiError(err);
+      console.warn(`[GeminiServerService] Stream error on model ${currentModel} (${classified}):`, err.message);
+      if (i < modelsToTry.length - 1 && [AI_ERRORS.RATE_LIMITED, AI_ERRORS.QUOTA_EXCEEDED, AI_ERRORS.MODEL_UNAVAILABLE].includes(classified)) {
+        await new Promise(r => setTimeout(r, 600));
+        continue;
+      }
+      throw err;
+    }
+  }
+}
+
 // ─── 1. CHATBOT / VOICE RESPONSE ─────────────────────────────────────────────
 export async function generateCivicResponse(messages) {
   const startTime = Date.now();
@@ -195,6 +246,45 @@ export async function generateCivicResponse(messages) {
   } catch (err) {
     logAiRequest('chat', 'error', Date.now() - startTime, GEMINI_MODEL, err.message);
     return getFallbackChatResponse(messages);
+  }
+}
+
+// ─── STREAMING CHAT for Live Voice Assistant ──────────────────────────────────
+export async function generateCivicResponseStream(messages) {
+  const startTime = Date.now();
+  try {
+    if (!geminiClient) {
+      logAiRequest('chat-stream', 'fallback_no_key', Date.now() - startTime);
+      // Return a single-item async generator with fallback
+      const fallback = getFallbackChatResponse(messages);
+      async function* fallbackGen() { yield { text: fallback, model: 'fallback' }; }
+      return fallbackGen();
+    }
+
+    const geminiContents = [];
+    for (const msg of messages) {
+      if (msg.role === 'system') continue;
+      const role = msg.role === 'assistant' ? 'model' : 'user';
+      const text = typeof msg.content === 'string' ? msg.content : msg.text || '';
+      if (text) {
+        geminiContents.push({ role, parts: [{ text }] });
+      }
+    }
+
+    if (geminiContents.length === 0) {
+      geminiContents.push({ role: 'user', parts: [{ text: 'Hello' }] });
+    }
+
+    logAiRequest('chat-stream', 'started', Date.now() - startTime);
+    return callGeminiGenerateStream(geminiContents, {
+      temperature: 0.4,
+      maxOutputTokens: 600,
+    });
+  } catch (err) {
+    logAiRequest('chat-stream', 'error', Date.now() - startTime, GEMINI_MODEL, err.message);
+    const fallback = getFallbackChatResponse(messages);
+    async function* fallbackGen() { yield { text: fallback, model: 'fallback' }; }
+    return fallbackGen();
   }
 }
 
@@ -820,6 +910,306 @@ function getFallbackAnalyticsQuery(queryText) {
     recommended_administrative_action: 'Deploy emergency preventive desilting squads to Ward 14 and Ward 22.',
     urgency: 'high'
   };
+}
+
+// ─── 12. AI INSPECT: Live Camera Frame Analysis ──────────────────────────────
+const INSPECTION_SYSTEM_PROMPT = `
+You are JanSetu AI Inspect, an intelligent civic issue inspection assistant for the Government of India.
+
+Your role: Help citizens identify and report public infrastructure and civic problems by visually inspecting camera frames AND having a natural voice conversation.
+
+You receive camera frames from the citizen's phone/laptop. Analyze each frame carefully.
+
+VOICE CONVERSATION MODE:
+When the citizen is speaking to you (voiceContext is provided), you are having a LIVE voice call.
+You must respond like a friendly helpful person — NOT a robot, NOT a formal assistant.
+- Use casual fillers: "Okay", "Got it", "Haan", "Accha", "Theek hai"
+- Vary your sentence openings — NEVER repeat the same phrase twice
+- Mirror the citizen's energy — if they're casual, be casual
+- If they seem frustrated, be extra empathetic
+- If they seem rushed, be concise
+- Keep responses SHORT (1-2 sentences) since this is voice — punchy and natural
+- End with a natural question when you need more info
+- NEVER say the same thing twice — always add new info or ask something new
+- If the camera can't see enough, ASK the citizen what they can see
+- For Hindi speakers: Use CASUAL Hindi like talking to a friend. Use Hinglish if natural. Example: 'Haan samajh gaya, yeh kahaan hai?' NOT formal 'कृपया स्थान बताएं'
+
+IMPORTANT RULES:
+1. Never claim certainty when the camera does not provide enough evidence.
+2. Distinguish between: Visually observed facts, Reasonable inference, Information from the user.
+3. Ask concise follow-up questions when important information is missing.
+4. Prioritize citizen safety — warn about immediate dangers (exposed wires, fire, collapse).
+5. Do not fabricate facts or details not visible in the frame.
+6. Be conversational — short, natural responses like a helpful agent on a call.
+7. NEVER repeat an observation you already made — acknowledge it was already noted.
+8. When vision is unclear, ask the citizen to describe what they see.
+
+Civic categories you can identify:
+- Road damage / Pothole
+- Drainage problem / Sewage overflow
+- Garbage accumulation / Illegal dumping
+- Water leakage / Pipe burst
+- Streetlight failure
+- Traffic signal problem
+- Damaged public infrastructure
+- Public sanitation issue
+- Electrical / Public utility hazard
+- Encroachment
+- Flooding / Waterlogging
+- Broken footpath / Damaged public property
+- Other civic issue
+
+When analyzing frames, provide:
+1. What you observe (brief, factual)
+2. Likely civic category
+3. Severity assessment
+4. Whether it appears urgent
+5. What information is still needed
+6. Safety warnings if applicable
+
+If the camera view is blurry, obstructed, or unclear, say so honestly and ask the citizen to help.
+`;
+
+export async function inspectFrame(frameBase64, conversationHistory = [], userMessage = '', mimeType = 'image/jpeg', voiceContext = null) {
+  const startTime = Date.now();
+  
+  try {
+    if (!geminiClient) {
+      throw new Error('GEMINI_API_KEY_MISSING');
+    }
+
+    const cleanBase64 = frameBase64.includes(',') ? frameBase64.split(',')[1] : frameBase64;
+
+    // Build conversation context
+    const contents = [];
+    
+    // Add recent conversation history (last 12 turns)
+    const recentHistory = conversationHistory.slice(-12);
+    for (const msg of recentHistory) {
+      const role = msg.role === 'assistant' ? 'model' : 'user';
+      if (msg.image) {
+        contents.push({
+          role,
+          parts: [
+            { text: msg.text || '' },
+            { inlineData: { mimeType: msg.mimeType || 'image/jpeg', data: msg.image } }
+          ]
+        });
+      } else {
+        contents.push({ role, parts: [{ text: msg.text }] });
+      }
+    }
+
+    // Voice context mode: citizen is speaking to the AI via voice
+    if (voiceContext && voiceContext.spokenText) {
+      const langLabel = voiceContext.language === 'hi-IN' ? 'Hindi' : 'English';
+      const previousObservations = voiceContext.previousObservations || [];
+      const turnNumber = voiceContext.turnNumber || 1;
+      
+      const isHindi = voiceContext.language === 'hi-IN';
+      const responseLangRule = isHindi
+        ? `CRITICAL LANGUAGE RULE: The citizen is speaking ${langLabel}. You MUST respond ENTIRELY in ${langLabel} (Hindi/Devanagari script). Both spokenResponse and observation must be written in Hindi Devanagari script. Do NOT use English in your response to the citizen. Write everything in Hindi.`
+        : `The citizen is speaking ${langLabel}. Respond in English.`;
+
+      const voicePrompt = `The citizen is speaking to you via voice. They said: "${voiceContext.spokenText}"
+
+Language: ${langLabel}
+${responseLangRule}
+Voice tone context: ${voiceContext.toneHint || 'normal conversational'}
+Previous observations already shared (DO NOT repeat these):
+${previousObservations.length > 0 ? previousObservations.map((o, i) => `${i + 1}. ${o}`).join('\n') : '(none yet)'}
+Turn number: ${turnNumber}
+
+Your task:
+1. Look at the camera frame — what civic problem do you see?
+2. Talk to the citizen like a friendly helper, NOT like an AI robot
+3. Respond to what they said — acknowledge, ask follow-up, or give info
+4. If the camera is blurry or unclear, just ask them to describe it
+5. You still need: location (area/ward/district), how long it's been, who is affected, severity
+6. NEVER repeat something you already said — always say something NEW
+7. Keep it SHORT — 1-2 sentences max for voice. Be punchy and natural.
+8. For Hindi: Use CASUAL conversational Hindi like you're talking to a friend. Use Hinglish if natural. NO formal textbook Hindi. Say 'tum' not 'aap' for formality. Example: 'Haan samajh gaya, yeh kahaan hai?' NOT 'कृपया बताएं कि यह किस स्थान पर है'
+9. For English: Be casual and warm. Say 'Got it!' not 'I acknowledge your concern.'
+10. If the language is Hindi, spokenResponse MUST be in Hindi/Devanagari. Do NOT use English in spokenResponse.
+
+Return ONLY valid JSON:
+{
+  "spokenResponse": "Your casual conversational response to the citizen (in their language, short and punchy)",
+  "observation": "What you see in the camera frame (brief, in the citizen's language)",
+  "category": "Civic category or Unknown",
+  "severity": "low|medium|high|critical",
+  "confidence": "high|medium|low",
+  "missingInfo": ["list of what you still need to know"],
+  "safetyWarning": "warning text if danger detected, else null",
+  "department": "relevant government department",
+  "suggestedAction": "what should happen next",
+  "isReadyForReport": false
+}`;
+
+      contents.push({ role: 'user', parts: [
+        { text: voicePrompt },
+        { inlineData: { mimeType, data: cleanBase64 } }
+      ]});
+    } else {
+      // Non-voice mode: analyze frame with optional text message
+      const currentParts = [];
+      if (userMessage) {
+        currentParts.push({ text: userMessage });
+      }
+      currentParts.push({ text: 'Analyze this camera frame for civic issues. Return ONLY valid JSON:' });
+      currentParts.push({ inlineData: { mimeType, data: cleanBase64 } });
+      contents.push({ role: 'user', parts: currentParts });
+    }
+
+    if (contents.length === 0) {
+      contents.push({ role: 'user', parts: [{ text: 'Hello' }] });
+    }
+
+    const { text, model } = await callGeminiGenerate(contents, {
+      systemInstruction: INSPECTION_SYSTEM_PROMPT,
+      temperature: voiceContext ? 0.5 : 0.2,
+      maxOutputTokens: voiceContext ? 350 : 500, // Voice: shorter = faster
+    });
+
+    logAiRequest('inspect-frame', 'success', Date.now() - startTime, model);
+    
+    // Try to parse structured JSON response
+    try {
+      const parsed = JSON.parse(sanitizeJsonString(text));
+      return {
+        success: true,
+        spokenResponse: parsed.spokenResponse || parsed.observation || text.slice(0, 200),
+        observation: parsed.observation || text.slice(0, 200),
+        category: parsed.category || 'Unknown',
+        subCategory: parsed.subCategory || '',
+        severity: parsed.severity || 'medium',
+        urgency: parsed.urgency || 'normal',
+        confidence: parsed.confidence || 'medium',
+        safetyWarning: parsed.safetyWarning || null,
+        missingInfo: parsed.missingInfo || [],
+        suggestedAction: parsed.suggestedAction || '',
+        department: parsed.department || '',
+        isReadyForReport: parsed.isReadyForReport || false,
+        rawText: text,
+        model
+      };
+    } catch (parseErr) {
+      // If JSON parse fails, return the raw text as observation
+      return {
+        success: true,
+        spokenResponse: text.slice(0, 300),
+        observation: text.slice(0, 300),
+        category: 'Other civic issue',
+        severity: 'medium',
+        confidence: 'medium',
+        rawText: text,
+        model
+      };
+    }
+  } catch (err) {
+    logAiRequest('inspect-frame', 'error', Date.now() - startTime, GEMINI_MODEL, err.message);
+    return {
+      success: false,
+      error: err.message,
+      spokenResponse: 'I am having trouble analyzing right now. Could you describe what you see?',
+      observation: 'Unable to analyze frame. Please try again.',
+      category: 'Unknown',
+      severity: 'medium',
+      confidence: 'low'
+    };
+  }
+}
+
+// ─── 13. AI INSPECT: Generate Final Inspection Report ─────────────────────────
+export async function generateInspectionReport(inspectionData) {
+  const startTime = Date.now();
+  const { observations = [], category = '', location = '', userNotes = '' } = inspectionData;
+
+  // Detect if observations contain Hindi (Devanagari) text
+  const hasHindi = observations.some(o => /[\u0900-\u097F]/.test(o));
+  const hasHindiNotes = /[\u0900-\u097F]/.test(userNotes || '');
+  const needsTranslation = hasHindi || hasHindiNotes;
+
+  const translationRule = needsTranslation
+    ? `IMPORTANT: The citizen spoke in Hindi. The observations and notes below are in Hindi. You MUST translate ALL content to English for this formal report. Write the title, description, observations, and all fields entirely in English. The citizen's Hindi observations should be understood and then expressed in clear English.\n`
+    : '';
+
+  const promptText = `You are JanSetu AI. Generate a formal civic complaint report from this camera inspection data.
+
+${translationRule}Inspection Observations:
+${observations.map((o, i) => `${i + 1}. ${o}`).join('\n')}
+
+Detected Category: ${category}
+Location: ${location || 'Not provided'}
+Citizen Notes: ${userNotes || 'None'}
+
+Return ONLY valid JSON:
+{
+  "title": "Concise 5-8 word problem title (in English)",
+  "description": "Clear 2-3 sentence problem statement (in English)",
+  "category": "One of: Road Damage, Water Management, Waste Management, Healthcare & Sanitation, Energy & Power, Infrastructure, Environment & Pollution, Public Safety & Disaster, Urban Transport & Traffic",
+  "subcategory": "Specific sub-sector",
+  "severity": "low | medium | high | critical",
+  "urgency": "low | medium | high | critical",
+  "department": "Suggested government department",
+  "department_id": "Matching department ID from: pwd_roads, water_board, electricity_board, sanitation_swm, traffic_police, pollution_control, health_dept, rural_dev, education_dept, disaster_mgmt",
+  "observations": ["List of key visual observations in English"],
+  "recommendedAction": "Recommended municipal action",
+  "aiConfidence": "high | medium | needs_confirmation",
+  "spokenSummary": "1-sentence warm confirmation for the citizen (use the citizen's language - Hindi if they spoke Hindi, else English)"
+}`;
+
+  try {
+    if (!geminiClient) {
+      throw new Error('GEMINI_API_KEY_MISSING');
+    }
+
+    const { text, model } = await callGeminiGenerate(
+      [{ role: 'user', parts: [{ text: promptText }] }],
+      {
+        temperature: 0.2,
+        maxOutputTokens: 500,
+        responseMimeType: 'application/json'
+      }
+    );
+
+    const parsed = JSON.parse(sanitizeJsonString(text));
+    logAiRequest('generate-inspection-report', 'success', Date.now() - startTime, model);
+    
+    return {
+      success: true,
+      title: parsed.title || 'Civic Issue Detected by AI Inspection',
+      description: parsed.description || observations.join('. '),
+      category: parsed.category || category || 'Infrastructure',
+      subcategory: parsed.subcategory || '',
+      severity: parsed.severity || 'medium',
+      urgency: parsed.urgency || 'medium',
+      department: parsed.department || 'Municipal Services',
+      department_id: parsed.department_id || 'pwd_roads',
+      observations: parsed.observations || observations,
+      recommendedAction: parsed.recommendedAction || 'Site inspection required',
+      aiConfidence: parsed.aiConfidence || 'medium',
+      spokenSummary: parsed.spokenSummary || 'Your inspection report has been prepared.',
+      model
+    };
+  } catch (err) {
+    logAiRequest('generate-inspection-report', 'error', Date.now() - startTime, GEMINI_MODEL, err.message);
+    return {
+      success: true,
+      title: `Civic Issue: ${category || 'Infrastructure'}`,
+      description: observations.join('. ') || 'Issue detected during AI camera inspection.',
+      category: category || 'Infrastructure',
+      subcategory: '',
+      severity: 'medium',
+      urgency: 'medium',
+      department: 'Municipal Services',
+      department_id: 'pwd_roads',
+      observations,
+      recommendedAction: 'Field inspection and assessment required',
+      aiConfidence: 'needs_confirmation',
+      spokenSummary: 'Report prepared from camera inspection. Please review.'
+    };
+  }
 }
 
 // ─── UTILITY: Sanitize markdown block wrappers ────────────────────────────────

@@ -1,6 +1,7 @@
 // Vercel Serverless Function Handler for Google Gemini AI endpoints
 import {
   generateCivicResponse,
+  generateCivicResponseStream,
   classifyComplaint,
   summarizeComplaint,
   generateComplaintDraft,
@@ -10,7 +11,9 @@ import {
   routeDepartment,
   compareResolutionEvidence,
   explainPendingStatus,
-  queryCivicAnalytics
+  queryCivicAnalytics,
+  inspectFrame,
+  generateInspectionReport
 } from '../../server/geminiServerService.js';
 
 export default async function handler(req, res) {
@@ -35,6 +38,24 @@ export default async function handler(req, res) {
       case 'chat': {
         const reply = await generateCivicResponse(body.messages || []);
         return res.status(200).json({ success: true, reply });
+      }
+      case 'chat-stream': {
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        res.setHeader('X-Accel-Buffering', 'no');
+        res.status(200);
+        try {
+          const stream = await generateCivicResponseStream(body.messages || []);
+          for await (const chunk of stream) {
+            res.write(`data: ${JSON.stringify({ text: chunk.text, done: false })}\n\n`);
+          }
+          res.write(`data: ${JSON.stringify({ text: '', done: true })}\n\n`);
+        } catch (err) {
+          res.write(`data: ${JSON.stringify({ text: '', done: true, error: err.message })}\n\n`);
+        }
+        res.end();
+        return;
       }
       case 'classify': {
         const classification = await classifyComplaint(body.title || '', body.description || '');
@@ -75,6 +96,16 @@ export default async function handler(req, res) {
       case 'analytics-query': {
         const result = await queryCivicAnalytics(body.query || '', body.contextData || {});
         return res.status(200).json({ success: true, result });
+      }
+      case 'inspect-frame': {
+        const { frameBase64 = '', conversationHistory = [], userMessage = '', mimeType = 'image/jpeg', voiceContext = null } = body;
+        const result = await inspectFrame(frameBase64, conversationHistory, userMessage, mimeType, voiceContext);
+        return res.status(200).json(result);
+      }
+      case 'generate-inspection-report': {
+        const { observations = [], category = '', location = '', userNotes = '' } = body;
+        const result = await generateInspectionReport({ observations, category, location, userNotes });
+        return res.status(200).json(result);
       }
       default:
         return res.status(404).json({ success: false, error: `Unknown AI endpoint: ${action}` });

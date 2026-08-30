@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Mic, MicOff, Volume2, X, ArrowRight, CheckCircle2, AlertCircle, RefreshCw, Bot, User, FileText, Sparkles } from 'lucide-react';
+import { Mic, MicOff, Volume2, X, ArrowRight, CheckCircle2, AlertCircle, RefreshCw, Bot, User, FileText, Sparkles, Phone, PhoneOff } from 'lucide-react';
 import { geminiService } from '../services/geminiClientService';
 
 // District coordinate database for Jharkhand
@@ -31,177 +31,186 @@ const DISTRICT_COORDS = {
   'khunti': { lat: '23.0723', lng: '85.2798' },
 };
 
-// ─── Conversational Interview Questions ───────────────────────────────────────
-const INTERVIEW_STEPS = [
-  {
-    id: 'greeting',
-    question: "Hello! I'm JanSetu Voice Assistant. Please tell me about the civic problem in your area — what is happening, where is it located, and who is affected? Speak naturally!",
-    field: 'raw_problem',
-    isGreeting: true,
-  },
-  {
-    id: 'location',
-    question: "Got it. Could you tell me the exact district, block, or nearby landmark for this issue?",
-    field: 'location',
-  },
-  {
-    id: 'who_affected',
-    question: "Who is most affected by this, and roughly how many people or families are facing difficulty?",
-    field: 'who_affected',
-  },
-  {
-    id: 'duration',
-    question: "How long has this issue been going on, and how severe is the danger or disruption?",
-    field: 'duration',
-  },
-];
+// ─── Humanize text for TTS (add natural pauses, filler words, breaths) ───────
+function humanizeForSpeech(text, lang = 'en-IN') {
+  if (!text) return '';
+  let t = text;
+  t = t.replace(/\.\s+/g, '. ... ');
+  t = t.replace(/\!\s+/g, '! ... ');
+  t = t.replace(/\?\s+/g, '? ... ');
+  t = t.replace(/\,\s+/g, ', ... ');
+  t = t.replace(/\s*[—–]\s*/g, ' ... ');
+  if (lang === 'en-IN') {
+    t = t.replace(/\b(So|Well|Okay|Alright|Hmm|Right)\b/gi, '$1, ...');
+  }
+  return t.trim();
+}
 
-const HI_STEPS = [
-  {
-    id: 'greeting',
-    question: "नमस्ते! मैं जनसेतु वॉयस असिस्टेंट हूँ। आप अपने इलाके की नागरिक समस्या के बारे में बताइए — क्या परेशानी है, कहाँ पर है, और कौन प्रभावित है? आप खुलकर बताइए!",
-    field: 'raw_problem',
-    isGreeting: true,
-  },
-  {
-    id: 'location',
-    question: "समझ गया। कृपया अपना जिला, प्रखंड (Block) या नजदीकी लैंडमार्क बताएं।",
-    field: 'location',
-  },
-  {
-    id: 'who_affected',
-    question: "इस समस्या से मुख्य रूप से कौन प्रभावित हैं और लगभग कितने लोग या परिवार परेशान हैं?",
-    field: 'who_affected',
-  },
-  {
-    id: 'duration',
-    question: "यह समस्या कितने समय से चल रही है, और स्थिति कितनी गंभीर है?",
-    field: 'duration',
-  },
-];
+// ─── Pick the most natural-sounding voice ─────────────────────────────────────
+function pickBestVoice(lang = 'en-IN') {
+  if (!window.speechSynthesis) return null;
+  const voices = window.speechSynthesis.getVoices() || [];
+  if (voices.length === 0) return null;
+
+  if (lang === 'hi-IN') {
+    return voices.find(v => v.lang.includes('hi-IN') && (v.name.includes('Swara') || v.name.includes('Kalpana') || v.name.includes('Google') || v.name.includes('Natural')))
+      || voices.find(v => v.lang.includes('hi'))
+      || voices.find(v => v.lang.includes('en-IN'));
+  }
+
+  const preferred = [
+    'Google UK English Female', 'Google UK English Male',
+    'Google US English', 'Microsoft Aria', 'Microsoft Zira',
+    'Samantha', 'Karen', 'Daniel', 'Ava',
+    'Natural', 'Premium', 'Neural',
+  ];
+
+  for (const name of preferred) {
+    const found = voices.find(v => v.name.includes(name) && v.lang.startsWith('en'));
+    if (found) return found;
+  }
+
+  return voices.find(v => v.lang.startsWith('en-IN'))
+    || voices.find(v => v.lang.startsWith('en'))
+    || voices[0];
+}
+
+// ─── Check if user response is just an acknowledgment (not actual info) ──────
+const ACKNOWLEDGMENT_PATTERNS = /^(yes|yeah|yep|ok|okay|sure|start|begin|hello|hi|namaste|ji|haan|acha|thik hai|chal|start karo|batao|bataiye|haan batao|sure|please start|yes please|go ahead|i'm ready|i am ready)$/i;
+const isAcknowledgmentOnly = (text) => {
+  if (!text) return true;
+  const trimmed = text.trim();
+  if (trimmed.length < 4) return true;
+  return ACKNOWLEDGMENT_PATTERNS.test(trimmed);
+};
 
 export default function JanSetuVoiceAgent({ isOpen, onClose, onNavigate, onAutoFillReport }) {
+  // ─── Voice & Speech States ───────────────────────────────────────────────
   const [isListening, setIsListening] = useState(false);
   const [interimText, setInterimText] = useState('');
   const [selectedLanguage, setSelectedLanguage] = useState('en-IN');
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isThinking, setIsThinking] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
   // Interview state
-  const [currentStep, setCurrentStep] = useState(0);
   const [conversationLog, setConversationLog] = useState([]);
-  const [phase, setPhase] = useState('intro'); // 'intro' | 'questioning' | 'summary'
+  const [phase, setPhase] = useState('intro');
   const [generatedData, setGeneratedData] = useState(null);
   const [detectedLang, setDetectedLang] = useState(null);
+  const [turnCount, setTurnCount] = useState(0);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
-  // ─── Refs for stable async execution ──────────────────────────────────────
+  // Mobile detection
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  // ─── Refs ────────────────────────────────────────────────────────────────
   const answersRef = useRef({});
   const recognitionRef = useRef(null);
-  const stepsRef = useRef(INTERVIEW_STEPS);
   const abortRef = useRef(false);
   const isRunningRef = useRef(false);
-
-  const steps = selectedLanguage === 'hi-IN' ? HI_STEPS : INTERVIEW_STEPS;
-  stepsRef.current = steps;
+  const speakingRef = useRef(false);
+  const liveModeRef = useRef(false);
+  const conversationHistoryRef = useRef([]);
+  const turnCountRef = useRef(0);
+  const collectedFieldsRef = useRef(new Set());
 
   // ─── Language Detection ───────────────────────────────────────────────────
   const detectLanguage = (text) => {
     if (!text) return null;
-    const lower = text.toLowerCase();
-    const hindiWords = ['namaste', 'paani', 'sadak', 'bijli', 'kachra', 'nala', 'gao', 'jila', 'bhaiya', 'nahi', 'karo', 'hai', 'kripya', 'madad', 'ganda', 'toot', 'problem'];
     const hasDevanagari = /[\u0900-\u097F]/.test(text);
-    const hasHindiKeywords = hindiWords.some(w => lower.includes(w));
-    if (hasDevanagari || hasHindiKeywords) {
-      return 'hi-IN';
-    }
+    if (hasDevanagari) return 'hi-IN';
+    const lower = text.toLowerCase();
+    const hindiWords = ['namaste', 'paani', 'sadak', 'bijli', 'kachra', 'nala', 'gao', 'jila', 'bhaiya', 'nahi', 'karo', 'hai', 'kripya', 'madad'];
+    if (hindiWords.some(w => lower.includes(w))) return 'hi-IN';
     return 'en-IN';
   };
 
   // ─── Speech Recognition Setup ──────────────────────────────────────────────
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = selectedLanguage;
-
-      recognition.onstart = () => {
-        setIsListening(true);
-      };
-
-      recognition.onresult = (event) => {
-        let interim = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          if (!event.results[i].isFinal) {
-            interim += event.results[i][0].transcript;
-          }
-        }
-        setInterimText(interim);
-      };
-
-      recognition.onerror = (event) => {
-        console.warn('[VoiceAgent] Recognition error:', event.error);
-        if (event.error === 'not-allowed') {
-          setErrorMsg('Microphone access denied. Please enable microphone permissions in your browser.');
-        } else if (event.error === 'network') {
-          setErrorMsg('Network connectivity issue with voice recognition.');
-        }
-        setIsListening(false);
-      };
-
-      recognition.onend = () => {
-        setIsListening(false);
-      };
-
-      recognitionRef.current = recognition;
-    } else {
-      setErrorMsg('Speech recognition not supported in this browser. Please use Chrome or Edge.');
+    if (!SpeechRecognition) {
+      setErrorMsg('Speech recognition not supported. Please use Chrome or Edge.');
+      return;
     }
 
-    return () => {
-      if (recognitionRef.current) {
-        try { recognitionRef.current.stop(); } catch (e) {}
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = selectedLanguage;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => setIsListening(true);
+
+    recognition.onresult = (event) => {
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (!event.results[i].isFinal) {
+          interim += event.results[i][0].transcript;
+        }
       }
+      setInterimText(interim);
+    };
+
+    recognition.onerror = (event) => {
+      console.warn('[VoiceAgent] Recognition error:', event.error);
+      if (event.error === 'not-allowed') {
+        setErrorMsg('Microphone access denied. Please enable microphone permissions.');
+      } else if (event.error === 'network') {
+        setErrorMsg('Network issue with voice recognition.');
+      }
+      if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+        setIsListening(false);
+      }
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+      if (liveModeRef.current && !abortRef.current && !speakingRef.current) {
+        setTimeout(() => {
+          try {
+            recognition.lang = selectedLanguage;
+            recognition.start();
+          } catch (e) {}
+        }, 150);
+      }
+    };
+
+    recognitionRef.current = recognition;
+
+    return () => {
+      try { recognition.stop(); } catch (e) {}
       if (window.speechSynthesis) window.speechSynthesis.cancel();
     };
   }, [selectedLanguage]);
 
-  // ─── Natural Text-to-Speech Engine ─────────────────────────────────────────
+  // ─── High-Quality TTS with Human-Like Voice ────────────────────────────────
   const speak = useCallback((text) => {
     return new Promise((resolve) => {
-      if (!window.speechSynthesis || !text) {
-        resolve();
-        return;
-      }
+      if (!window.speechSynthesis || !text) { resolve(); return; }
 
       window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      
-      // Conversational audio tuning: slightly warm pitch & human cadence
-      utterance.rate = 1.02;
-      utterance.pitch = 1.05;
+      speakingRef.current = true;
+      setIsSpeaking(true);
+
+      const humanText = humanizeForSpeech(text, selectedLanguage);
+      const utterance = new SpeechSynthesisUtterance(humanText);
+      utterance.rate = 0.92;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
       utterance.lang = selectedLanguage === 'hi-IN' ? 'hi-IN' : 'en-IN';
 
-      // Pick natural human voice if available
-      const voices = window.speechSynthesis.getVoices() || [];
-      if (voices.length > 0) {
-        if (selectedLanguage === 'hi-IN') {
-          const hiVoice = voices.find(v => v.lang.includes('hi') || v.name.toLowerCase().includes('hindi') || v.name.includes('Swara') || v.name.includes('Kalpana'));
-          if (hiVoice) utterance.voice = hiVoice;
-        } else {
-          const naturalVoice = voices.find(v => 
-            (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Online') || v.name.includes('Samantha') || v.name.includes('Aria') || v.name.includes('Zira')) &&
-            (v.lang.startsWith('en'))
-          ) || voices.find(v => v.lang.startsWith('en'));
-          if (naturalVoice) utterance.voice = naturalVoice;
-        }
-      }
+      const voice = pickBestVoice(selectedLanguage);
+      if (voice) utterance.voice = voice;
 
-      utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => { setIsSpeaking(false); resolve(); };
-      utterance.onerror = () => { setIsSpeaking(false); resolve(); };
+      utterance.onstart = () => { setIsSpeaking(true); speakingRef.current = true; };
+      utterance.onend = () => { setIsSpeaking(false); speakingRef.current = false; resolve(); };
+      utterance.onerror = () => { setIsSpeaking(false); speakingRef.current = false; resolve(); };
 
       window.speechSynthesis.speak(utterance);
     });
@@ -227,13 +236,10 @@ export default function JanSetuVoiceAgent({ isOpen, onClose, onNavigate, onAutoF
     } catch (e) {}
   }, []);
 
-  // ─── Collect Final Transcript from Speech Recognition ──────────────────────
+  // ─── Collect Final Transcript ──────────────────────────────────────────────
   const collectTranscript = useCallback(() => {
     return new Promise((resolve) => {
-      if (!recognitionRef.current) {
-        resolve('');
-        return;
-      }
+      if (!recognitionRef.current) { resolve(''); return; }
       const finalParts = [];
       let resolved = false;
 
@@ -257,7 +263,7 @@ export default function JanSetuVoiceAgent({ isOpen, onClose, onNavigate, onAutoF
       recognitionRef.current?.addEventListener('result', onResult);
       recognitionRef.current?.addEventListener('end', onEnd);
 
-      // Auto resolve if quiet for 12 seconds
+      // Auto resolve if quiet for 15 seconds
       setTimeout(() => {
         if (!resolved) {
           resolved = true;
@@ -266,84 +272,198 @@ export default function JanSetuVoiceAgent({ isOpen, onClose, onNavigate, onAutoF
           try { recognitionRef.current?.stop(); } catch (e) {}
           resolve(finalParts.join(' ').trim());
         }
-      }, 12000);
+      }, 15000);
     });
   }, []);
 
   // ─── Fallback Local Extractor ──────────────────────────────────────────────
   const extractLocalReport = (combinedText) => {
     const text = (combinedText || '').toLowerCase();
-    
-    // Category mapping
     let category = 'Infrastructure';
-    if (text.includes('water') || text.includes('pipe') || text.includes('leak') || text.includes('drain') || text.includes('paani') || text.includes('nal')) {
-      category = 'Water Management';
-    } else if (text.includes('garbage') || text.includes('waste') || text.includes('trash') || text.includes('kachra') || text.includes('dump')) {
-      category = 'Waste Management';
-    } else if (text.includes('light') || text.includes('electric') || text.includes('wire') || text.includes('bijli') || text.includes('power')) {
-      category = 'Energy & Power';
-    } else if (text.includes('health') || text.includes('hospital') || text.includes('clinic') || text.includes('doctor') || text.includes('disease')) {
-      category = 'Healthcare & Sanitation';
-    } else if (text.includes('school') || text.includes('teacher') || text.includes('student') || text.includes('college') || text.includes('padhai')) {
-      category = 'Education & Literacy';
-    } else if (text.includes('farm') || text.includes('crop') || text.includes('kisan') || text.includes('soil') || text.includes('irrigation')) {
-      category = 'Agriculture & Rural';
-    } else if (text.includes('traffic') || text.includes('bus') || text.includes('transport') || text.includes('auto') || text.includes('road')) {
-      category = 'Urban Transport & Traffic';
-    }
+    if (text.includes('water') || text.includes('pipe') || text.includes('leak') || text.includes('drain') || text.includes('paani')) category = 'Water Management';
+    else if (text.includes('garbage') || text.includes('waste') || text.includes('kachra')) category = 'Waste Management';
+    else if (text.includes('light') || text.includes('electric') || text.includes('bijli')) category = 'Energy & Power';
+    else if (text.includes('health') || text.includes('hospital') || text.includes('doctor')) category = 'Healthcare & Sanitation';
+    else if (text.includes('school') || text.includes('teacher')) category = 'Education & Literacy';
+    else if (text.includes('farm') || text.includes('kisan')) category = 'Agriculture & Rural';
+    else if (text.includes('traffic') || text.includes('road')) category = 'Urban Transport & Traffic';
 
-    // Severity mapping
     let severity = 'medium';
-    if (text.includes('emergency') || text.includes('critical') || text.includes('death') || text.includes('fatal') || text.includes('accident') || text.includes('collapse')) {
-      severity = 'critical';
-    } else if (text.includes('urgent') || text.includes('severe') || text.includes('heavy') || text.includes('blocked') || text.includes('hazard')) {
-      severity = 'high';
-    }
+    if (text.includes('emergency') || text.includes('critical') || text.includes('collapse')) severity = 'critical';
+    else if (text.includes('urgent') || text.includes('severe')) severity = 'high';
 
-    // District detection
-    let district = 'Ranchi';
-    let lat = '23.3441';
-    let lng = '85.3090';
+    let district = 'Ranchi', lat = '23.3441', lng = '85.3090';
     for (const [dName, coords] of Object.entries(DISTRICT_COORDS)) {
-      if (text.includes(dName)) {
-        district = dName.charAt(0).toUpperCase() + dName.slice(1);
-        lat = coords.lat;
-        lng = coords.lng;
-        break;
-      }
+      if (text.includes(dName)) { district = dName.charAt(0).toUpperCase() + dName.slice(1); lat = coords.lat; lng = coords.lng; break; }
     }
 
-    // Population estimation
     let affectedPop = 1500;
-    const popMatch = text.match(/(\d[\d,]*)\s*(people|person|citizen|family|household|village|student)/);
-    if (popMatch) {
-      affectedPop = parseInt(popMatch[1].replace(/,/g, '')) || 1500;
-    } else if (text.includes('village') || text.includes('gao')) {
-      affectedPop = 2500;
-    }
+    const popMatch = text.match(/(\d[\d,]*)\s*(people|person|citizen|family|village)/);
+    if (popMatch) affectedPop = parseInt(popMatch[1].replace(/,/g, '')) || 1500;
 
-    // Duration
     let duration = '2 months';
-    if (text.includes('week') || text.includes('din') || text.includes('day')) duration = '2 weeks';
-    else if (text.includes('month') || text.includes('mahine')) duration = '3 months';
-    else if (text.includes('year') || text.includes('saal')) duration = '1 year';
+    if (text.includes('week')) duration = '2 weeks';
+    else if (text.includes('month')) duration = '3 months';
+    else if (text.includes('year')) duration = '1 year';
 
     return {
       title: combinedText.slice(0, 55) || 'Civic Infrastructure Grievance',
       description: combinedText || 'Civic problem reported via JanSetu Voice Assistant.',
-      category,
-      subcategory: 'Public Utility Maintenance',
-      district,
-      location: `${district} Ward / Block Area`,
-      lat,
-      lng,
-      severity,
+      category, subcategory: 'Public Utility Maintenance', district,
+      location: `${district} Ward / Block Area`, lat, lng, severity,
       affected_population: affectedPop,
-      who_affected: 'Local community residents & daily commuters',
+      who_affected: 'Local community residents',
       duration,
       spoken_summary: `I have drafted your grievance report for ${category} in ${district}. It is ready for submission.`
     };
   };
+
+  // ─── GEMINI CONVERSATION ENGINE: Decides what to ask next ─────────────────
+  // This is the brain — Gemini analyzes everything said so far and decides:
+  // 1. Has the user described a real problem? (vs just "yes, start")
+  // 2. What info is still missing?
+  // 3. What should the AI say next?
+  const geminiConversationTurn = useCallback(async (userMessage, history, lang) => {
+    const langLabel = lang === 'hi-IN' ? 'Hindi' : 'English';
+    const collectedInfo = Object.entries(answersRef.current)
+      .filter(([_, v]) => v)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join('\n') || '(nothing collected yet)';
+
+    const prompt = `You are JanSetu AI, a warm, intelligent civic grievance voice assistant for the Government of India. You are having a LIVE voice call with a citizen.
+
+CRITICAL RULES:
+1. The citizen may say things like "yes, please start" or "hello" — these are NOT problem descriptions. If the user hasn't described an actual civic problem yet, you MUST ask them to describe what's wrong.
+2. Never assume or fabricate a problem. Wait for the citizen to actually tell you what's happening.
+3. Be conversational, warm, and natural — like a helpful government service agent on a phone call.
+4. If the user gives a RICH description (10+ words about an actual issue), acknowledge what they said and ask about missing details.
+5. If the user gives a SHORT or EMPTY response, or just an acknowledgment, gently ask them to describe the problem.
+6. Speak in ${langLabel}.
+
+Information collected so far:
+${collectedInfo}
+
+Conversation history:
+${history.map(m => `${m.role === 'agent' ? 'AI' : 'Citizen'}: ${m.text}`).join('\n')}
+
+Citizen just said: "${userMessage}"
+
+Your task: Decide the NEXT action. Return ONLY valid JSON:
+{
+  "intent": "greeting_ack" | "problem_described" | "location_given" | "details_given" | "empty_response" | "needs_clarification" | "ready_for_report",
+  "userMessageSummary": "Brief 3-5 word summary of what the citizen said",
+  "extractedFields": {
+    "raw_problem": "Extracted problem description or null if not yet described",
+    "location": "Extracted location/district/area or null",
+    "who_affected": "Who is affected or null",
+    "duration": "How long or null",
+    "severity": "low|medium|high|critical or null"
+  },
+  "missingFields": ["list of still-missing critical fields"],
+  "aiResponse": "Your natural conversational response to the citizen. Be warm and specific.",
+  "isReadyForReport": false,
+  "confidence": 0.0
+}
+
+Rules for aiResponse:
+- If intent is "empty_response" or "greeting_ack": Say something like "I understand you'd like to report a civic issue. Could you please tell me what's happening? For example, is there a broken road, water leak, garbage problem, or something else?"
+- If intent is "problem_described": Acknowledge warmly, then ask for the next most important missing detail (location, affected people, duration)
+- If intent is "ready_for_report": Say "I now have all the information I need. Let me prepare your official grievance report."
+- Keep responses SHORT (1-2 sentences max) since this is voice.
+- Be encouraging and helpful, not robotic.`;
+
+    try {
+      const rawAi = await geminiService.generateCivicResponse([
+        { role: 'system', content: `You are a warm civic intake AI having a live voice call. Respond in ${langLabel}. Output strict JSON only.` },
+        { role: 'user', content: prompt }
+      ]);
+      const jsonMatch = rawAi.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return parsed;
+      }
+    } catch (err) {
+      console.warn('[VoiceAgent] Gemini turn error:', err);
+    }
+
+    // ── Fallback: Local intelligent response ──
+    const msgLower = (userMessage || '').toLowerCase();
+    const hasProblem = msgLower.length > 15 && !isAcknowledgmentOnly(userMessage);
+
+    if (!hasProblem) {
+      return {
+        intent: 'empty_response',
+        userMessageSummary: userMessage || '(empty)',
+        extractedFields: {},
+        missingFields: ['raw_problem'],
+        aiResponse: selectedLanguage === 'hi-IN'
+          ? 'जी, मैं समझ गई। कृपया बताइए — आपके इलाके में क्या समस्या है? जैसे सड़क टूटी है, पानी का पाइप फूटा है, या कचरा जमा है?'
+          : 'I understand. Please tell me — what is the civic problem in your area? For example, a broken road, water leak, garbage dump, or something else?',
+        isReadyForReport: false,
+        confidence: 0.5
+      };
+    }
+
+    // Extract what we can locally
+    const extracted = {};
+    if (hasProblem) extracted.raw_problem = userMessage;
+
+    // Location extraction
+    for (const dName of Object.keys(DISTRICT_COORDS)) {
+      if (msgLower.includes(dName)) {
+        extracted.location = dName.charAt(0).toUpperCase() + dName.slice(1);
+        break;
+      }
+    }
+
+    // Severity
+    if (msgLower.includes('emergency') || msgLower.includes('critical') || msgLower.includes('dangerous') || msgLower.includes('collapse')) extracted.severity = 'critical';
+    else if (msgLower.includes('urgent') || msgLower.includes('severe')) extracted.severity = 'high';
+
+    // Duration
+    if (msgLower.includes('week')) extracted.duration = '2 weeks';
+    else if (msgLower.includes('month')) extracted.duration = '3 months';
+    else if (msgLower.includes('year')) extracted.duration = '1 year';
+
+    // Who affected
+    const popMatch = msgLower.match(/(\d[\d,]*)\s*(people|person|family|village|student)/);
+    if (popMatch) extracted.who_affected = `${popMatch[1]} ${popMatch[2]}`;
+
+    const missing = [];
+    if (!extracted.raw_problem) missing.push('raw_problem');
+    if (!extracted.location) missing.push('location');
+    if (!extracted.who_affected) missing.push('who_affected');
+    if (!extracted.duration) missing.push('duration');
+
+    const followUps = {
+      'location': selectedLanguage === 'hi-IN'
+        ? 'बहुत अच्छा! यह किस जिले या इलाके में है?'
+        : 'Great! Which district or area is this in?',
+      'who_affected': selectedLanguage === 'hi-IN'
+        ? 'समझ गई। इससे मुख्य रूप से कौन प्रभावित है?'
+        : 'Got it. Who is mainly affected by this?',
+      'duration': selectedLanguage === 'hi-IN'
+        ? 'यह कब से चल रहा है?'
+        : 'How long has this been going on?',
+      'raw_problem': selectedLanguage === 'hi-IN'
+        ? 'कृपया थोड़ा और विस्तार से बताएं — ठीक क्या हो रहा है?'
+        : 'Could you describe a bit more about what exactly is happening?',
+    };
+
+    const isReady = missing.length === 0;
+
+    return {
+      intent: isReady ? 'ready_for_report' : 'problem_described',
+      userMessageSummary: userMessage.slice(0, 30),
+      extractedFields: extracted,
+      missingFields: missing,
+      aiResponse: isReady
+        ? (selectedLanguage === 'hi-IN' ? 'बहुत बढ़िया! अब मेरे पास सारी जानकारी है। रिपोर्ट तैयार कर रही हूँ...' : 'Perfect! I have all the information I need. Preparing your report now...')
+        : (followUps[missing[0]] || 'Could you share more details?'),
+      isReadyForReport: isReady,
+      confidence: hasProblem ? 0.7 : 0.4
+    };
+  }, [selectedLanguage]);
 
   // ─── Generate Structured Report with Gemini AI ─────────────────────────────
   const generateReport = useCallback(async () => {
@@ -363,41 +483,35 @@ Combined Citizen Voice Transcript:
 
 Extract and return a valid JSON object matching the exact schema below:
 {
-  "title": "Concise professional 5-8 word problem title (e.g. Monsoon Rural Road Washout & Bridge Collapse)",
-  "description": "Clear, detailed 2-3 sentence problem statement describing what is happening, why, and civic impact",
+  "title": "Concise professional 5-8 word problem title",
+  "description": "Clear, detailed 2-3 sentence problem statement",
   "category": "Water Management | Infrastructure | Agriculture & Rural | Healthcare & Sanitation | Education & Literacy | Energy & Power | Environment & Pollution | Public Safety & Disaster | Digital Services & Governance | Urban Transport & Traffic",
-  "subcategory": "Specific sub-sector (e.g. Road Connectivity, Water Pipeline, Solid Waste Collection)",
-  "district": "Extracted Jharkhand district name (e.g. Ranchi, Dumka, Dhanbad, Jamshedpur, Bokaro, Deoghar, Hazaribagh, etc.)",
+  "subcategory": "Specific sub-sector",
+  "district": "Extracted Jharkhand district name",
   "location": "Specific street, village, block, ward or landmark",
-  "lat": "Approximate latitude string (e.g. 24.2686 for Dumka, 23.3441 for Ranchi)",
-  "lng": "Approximate longitude string (e.g. 87.2486 for Dumka, 85.3090 for Ranchi)",
+  "lat": "Approximate latitude string",
+  "lng": "Approximate longitude string",
   "severity": "low | medium | high | critical",
-  "affected_population": number (e.g. 1800),
-  "who_affected": "Who is affected (e.g. Local school students, 10 farming villages, daily commuters)",
-  "duration": "Duration (e.g. 3 months, 2 weeks, 6 months)",
-  "spoken_summary": "Warm, lively 1-sentence confirmation for the citizen explaining what report was prepared"
+  "affected_population": number,
+  "who_affected": "Who is affected",
+  "duration": "Duration",
+  "spoken_summary": "Warm 1-sentence confirmation for the citizen"
 }`;
 
     let parsedData = null;
     try {
       const rawAi = await geminiService.generateCivicResponse([
-        { role: 'system', content: 'You are JanSetu Voice AI parser. Output strict JSON only matching the schema.' },
+        { role: 'system', content: 'You are JanSetu Voice AI parser. Output strict JSON only.' },
         { role: 'user', content: prompt }
       ]);
-
       const jsonMatch = rawAi.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        parsedData = JSON.parse(jsonMatch[0]);
-      }
+      if (jsonMatch) parsedData = JSON.parse(jsonMatch[0]);
     } catch (err) {
-      console.warn('[VoiceAgent] Gemini AI parsing error:', err);
+      console.warn('[VoiceAgent] Gemini parse error:', err);
     }
 
-    if (!parsedData || !parsedData.title) {
-      parsedData = extractLocalReport(allText);
-    }
+    if (!parsedData || !parsedData.title) parsedData = extractLocalReport(allText);
 
-    // Auto-fill district coordinates if missing
     const distKey = (parsedData.district || '').toLowerCase().trim();
     if (DISTRICT_COORDS[distKey]) {
       if (!parsedData.lat) parsedData.lat = DISTRICT_COORDS[distKey].lat;
@@ -407,131 +521,187 @@ Extract and return a valid JSON object matching the exact schema below:
       if (!parsedData.lng) parsedData.lng = '85.3090';
     }
 
-    // Validate category
-    const validCats = [
-      'Water Management', 'Infrastructure', 'Agriculture & Rural', 'Healthcare & Sanitation',
-      'Education & Literacy', 'Energy & Power', 'Environment & Pollution', 'Public Safety & Disaster',
-      'Digital Services & Governance', 'Urban Transport & Traffic'
-    ];
-    if (!validCats.includes(parsedData.category)) {
-      parsedData.category = 'Infrastructure';
-    }
-
     setGeneratedData(parsedData);
     setIsProcessing(false);
 
-    // Add summary message to conversation
-    const summaryMsg = `✨ Report Prepared Successfully!\n📌 Title: ${parsedData.title}\n📂 Category: ${parsedData.category}\n📍 Location: ${parsedData.location} (${parsedData.district})\n👥 Affected: ${parsedData.who_affected} (~${parsedData.affected_population} people)\n⚠️ Severity: ${parsedData.severity.toUpperCase()}\n⏱️ Duration: ${parsedData.duration}\n\n👉 Click 'Auto-Fill Report' below to populate all form fields instantly!`;
-    
+    const summaryMsg = `✨ Report Prepared Successfully!\n📌 Title: ${parsedData.title}\n📂 Category: ${parsedData.category}\n📍 Location: ${parsedData.location} (${parsedData.district})\n👥 Affected: ${parsedData.who_affected} (~${parsedData.affected_population} people)\n⚠️ Severity: ${parsedData.severity.toUpperCase()}\n⏱️ Duration: ${parsedData.duration}`;
     setConversationLog(prev => [...prev, { role: 'agent', text: summaryMsg }]);
 
-    // Speak warm confirmation readout
-    const confirmationSpeech = parsedData.spoken_summary || `I have drafted your grievance for ${parsedData.title} in ${parsedData.district}. Please review and tap Auto-Fill to submit.`;
-    await speak(confirmationSpeech);
+    const speech = parsedData.spoken_summary || `Report prepared for ${parsedData.title} in ${parsedData.district}. Tap Auto-Fill to submit.`;
+    await speak(speech);
+  }, [speak, stopListening]);
 
-  }, [speak]);
-
-  // ─── Main Interview Conversation Loop ──────────────────────────────────────
-  const runInterview = useCallback(async () => {
-    if (isRunningRef.current) return;
-    isRunningRef.current = true;
-    abortRef.current = false;
+  // ═══ FULLY ADAPTIVE GEMINI LIVE CONVERSATION ════════════════════════════════
+  const startLiveConversation = useCallback(async () => {
+    liveModeRef.current = true;
     answersRef.current = {};
+    conversationHistoryRef.current = [];
+    collectedFieldsRef.current = new Set();
+    turnCountRef.current = 0;
+    setConversationLog([]);
+    setPhase('questioning');
+    setGeneratedData(null);
+    setTurnCount(0);
+    abortRef.current = false;
+    isRunningRef.current = false;
 
-    const activeSteps = stepsRef.current;
+    const MAX_TURNS = 8; // Safety limit to prevent infinite loops
 
-    for (let stepIdx = 0; stepIdx < activeSteps.length; stepIdx++) {
-      if (abortRef.current) break;
+    // ── GREETING: Say hello and immediately listen ──
+    const greeting = selectedLanguage === 'hi-IN'
+      ? "नमस्ते! मैं जनसेतु वॉयस असिस्टेंट हूँ। बताइए आपके इलाके में क्या समस्या है? आप खुलकर बोलिए।"
+      : "Hello! I'm JanSetu Voice Assistant. Tell me about the civic problem in your area — what's happening, where, and who's affected? Just speak naturally!";
 
-      const step = activeSteps[stepIdx];
-      setCurrentStep(stepIdx);
-      setPhase('questioning');
+    setConversationLog([{ role: 'agent', text: greeting }]);
+    conversationHistoryRef.current.push({ role: 'agent', text: greeting });
+    stopListening();
+    await speak(greeting);
+    if (abortRef.current) { isRunningRef.current = false; return; }
 
-      // 1. Post and Speak Question
-      setConversationLog(prev => [...prev, { role: 'agent', text: step.question }]);
-      stopListening();
-      await speak(step.question);
-      if (abortRef.current) break;
+    // ── MAIN LOOP: Listen → Analyze → Respond → Repeat ──
+    for (let turn = 0; turn < MAX_TURNS; turn++) {
+      if (abortRef.current || !liveModeRef.current) break;
 
-      // 2. Start Listening
+      turnCountRef.current = turn + 1;
+      setTurnCount(turn + 1);
+
+      // 1. Start listening
+      setInterimText('');
       startListening();
-      const answer = await collectTranscript();
+
+      // 2. Wait for user to speak
+      const userMessage = await collectTranscript();
       stopListening();
       setInterimText('');
 
       if (abortRef.current) break;
 
-      // Language Auto-Detection on first turn
-      if (stepIdx === 0 && answer.trim()) {
-        const detected = detectLanguage(answer);
+      // 3. Handle empty / acknowledgment-only responses
+      const isEmpty = !userMessage.trim() || isAcknowledgmentOnly(userMessage);
+      const displayMsg = isEmpty ? '(waiting for response...)' : userMessage;
+      setConversationLog(prev => [...prev, { role: 'user', text: displayMsg }]);
+      conversationHistoryRef.current.push({ role: 'user', text: displayMsg });
+
+      // 4. Language detection on first real response
+      if (turn === 0 && userMessage.trim()) {
+        const detected = detectLanguage(userMessage);
         if (detected && detected !== selectedLanguage) {
           setDetectedLang(detected);
           setSelectedLanguage(detected);
-          stepsRef.current = detected === 'hi-IN' ? HI_STEPS : INTERVIEW_STEPS;
         }
       }
 
-      if (answer.trim()) {
-        setConversationLog(prev => [...prev, { role: 'user', text: answer }]);
-        answersRef.current[step.field] = answer;
+      // 5. Let Gemini analyze and decide what to say next
+      setIsThinking(true);
+      const analysis = await geminiConversationTurn(
+        isEmpty ? '' : userMessage,
+        conversationHistoryRef.current,
+        detectedLang || selectedLanguage
+      );
+      setIsThinking(false);
 
-        // If the user provided a rich explanation on step 0 (more than 18 words), we can synthesize early!
-        const wordCount = answer.trim().split(/\s+/).length;
-        if (stepIdx === 0 && wordCount >= 16) {
-          const acknowledgeMsg = selectedLanguage === 'hi-IN'
-            ? "बहुत बढ़िया! मुझे सारी मुख्य जानकारी मिल गई है। मैं आपकी रिपोर्ट तैयार कर रही हूँ..."
-            : "Thank you! I have captured your complete issue details. Preparing your structured report now...";
-          
-          setConversationLog(prev => [...prev, { role: 'agent', text: acknowledgeMsg }]);
-          await speak(acknowledgeMsg);
-          break;
+      if (abortRef.current) break;
+
+      // 6. Extract any fields Gemini identified
+      if (analysis.extractedFields) {
+        for (const [field, value] of Object.entries(analysis.extractedFields)) {
+          if (value && value !== null) {
+            answersRef.current[field] = value;
+            collectedFieldsRef.current.add(field);
+          }
         }
-      } else {
-        // If empty on greeting, record default acknowledgement
-        if (step.isGreeting) {
-          setConversationLog(prev => [...prev, { role: 'user', text: 'Yes, please start.' }]);
-          answersRef.current[step.field] = 'User agreed to report';
-        } else {
-          setConversationLog(prev => [...prev, { role: 'user', text: '(skipped)' }]);
-          answersRef.current[step.field] = '';
+      }
+
+      // 7. Speak the AI's response
+      setConversationLog(prev => [...prev, { role: 'agent', text: analysis.aiResponse }]);
+      conversationHistoryRef.current.push({ role: 'agent', text: analysis.aiResponse });
+      await speak(analysis.aiResponse);
+      if (abortRef.current) break;
+
+      // 8. Check if we're ready for report
+      if (analysis.isReadyForReport) {
+        // Small pause for natural feel
+        await new Promise(r => setTimeout(r, 500));
+        break;
+      }
+
+      // 9. If confidence is very low and we've had 3+ turns, try to wrap up
+      if (turn >= 2 && collectedFieldsRef.current.has('raw_problem')) {
+        // We have the problem — check if we can generate with what we have
+        const hasMinimum = answersRef.current.raw_problem;
+        if (hasMinimum && turn >= 3) {
+          const wrapUp = selectedLanguage === 'hi-IN'
+            ? "ठीक है, मेरे पास जो जानकारी है उसके आधार पर रिपोर्ट तैयार करती हूँ।"
+            : "Alright, let me prepare your report with the information I have.";
+          setConversationLog(prev => [...prev, { role: 'agent', text: wrapUp }]);
+          await speak(wrapUp);
+          break;
         }
       }
     }
 
-    // Finished questions — generate complete report
-    if (!abortRef.current) {
+    // ── GENERATE REPORT ──
+    if (!abortRef.current && liveModeRef.current) {
+      // If we never got a problem description, ask one more time
+      if (!answersRef.current.raw_problem || answersRef.current.raw_problem.length < 5) {
+        const lastChance = selectedLanguage === 'hi-IN'
+          ? "मुझे आपकी समस्या के बारे में और बताइए — ठीक क्या हो रहा है?"
+          : "I still need to understand the problem. What exactly is happening?";
+        setConversationLog(prev => [...prev, { role: 'agent', text: lastChance }]);
+        await speak(lastChance);
+        startListening();
+        const lastAnswer = await collectTranscript();
+        stopListening();
+        if (lastAnswer.trim() && !isAcknowledgmentOnly(lastAnswer)) {
+          setConversationLog(prev => [...prev, { role: 'user', text: lastAnswer }]);
+          answersRef.current.raw_problem = lastAnswer;
+          const thinkingMsg = selectedLanguage === 'hi-IN' ? "समझ गई! रिपोर्ट तैयार कर रही हूँ..." : "Got it! Preparing your report...";
+          setConversationLog(prev => [...prev, { role: 'agent', text: thinkingMsg }]);
+          await speak(thinkingMsg);
+        }
+      }
+
       await generateReport();
     }
     isRunningRef.current = false;
-  }, [selectedLanguage, speak, startListening, stopListening, collectTranscript, generateReport]);
+  }, [selectedLanguage, detectedLang, speak, startListening, stopListening, collectTranscript, generateReport, geminiConversationTurn]);
 
   // ─── Modal Open / Close Lifecycle ──────────────────────────────────────────
   useEffect(() => {
     if (isOpen) {
+      if (window.speechSynthesis) {
+        window.speechSynthesis.getVoices();
+        window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+      }
+
       answersRef.current = {};
+      conversationHistoryRef.current = [];
+      collectedFieldsRef.current = new Set();
+      turnCountRef.current = 0;
       setConversationLog([]);
-      setCurrentStep(0);
       setPhase('intro');
       setGeneratedData(null);
       setInterimText('');
       setErrorMsg('');
       setDetectedLang(null);
+      setTurnCount(0);
+      liveModeRef.current = false;
       abortRef.current = false;
       isRunningRef.current = false;
 
-      const timer = setTimeout(() => {
-        runInterview();
-      }, 400);
+      const timer = setTimeout(() => startLiveConversation(), 600);
 
       return () => {
         clearTimeout(timer);
         abortRef.current = true;
+        liveModeRef.current = false;
         isRunningRef.current = false;
         stopListening();
         if (window.speechSynthesis) window.speechSynthesis.cancel();
       };
     } else {
       abortRef.current = true;
+      liveModeRef.current = false;
       isRunningRef.current = false;
       stopListening();
       if (window.speechSynthesis) window.speechSynthesis.cancel();
@@ -547,435 +717,291 @@ Extract and return a valid JSON object matching the exact schema below:
     }
   };
 
-  // ─── Skip to End Early ─────────────────────────────────────────────────────
+  // ─── Skip to End ───────────────────────────────────────────────────────────
   const handleSkipToEnd = () => {
     abortRef.current = true;
+    liveModeRef.current = false;
     stopListening();
     if (window.speechSynthesis) window.speechSynthesis.cancel();
     generateReport();
   };
 
+  // ─── Stop Live Session ─────────────────────────────────────────────────────
+  const handleStopLive = () => {
+    abortRef.current = true;
+    liveModeRef.current = false;
+    stopListening();
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+  };
+
   if (!isOpen) return null;
 
-  const progress = phase === 'summary' ? 100 : Math.round(((currentStep + 1) / steps.length) * 100);
+  const progress = phase === 'summary' ? 100 : Math.min(Math.round((turnCount / 5) * 100), 90);
+
+  // ─── Orb State ─────────────────────────────────────────────────────────────
+  const orbState = isSpeaking ? 'speaking' : isListening ? 'listening' : isThinking ? 'thinking' : 'idle';
+  const orbColor = {
+    speaking: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+    listening: 'linear-gradient(135deg, #FF6200 0%, #dc2626 100%)',
+    thinking: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+    idle: 'linear-gradient(135deg, #003087 0%, #0284c7 100%)',
+  }[orbState];
+
+  const orbShadow = {
+    speaking: '0 0 60px rgba(16,185,129,0.8), 0 0 120px rgba(16,185,129,0.3)',
+    listening: '0 0 60px rgba(255,98,0,0.8), 0 0 120px rgba(255,98,0,0.3)',
+    thinking: '0 0 60px rgba(139,92,246,0.8), 0 0 120px rgba(139,92,246,0.3)',
+    idle: '0 0 30px rgba(0,48,135,0.4)',
+  }[orbState];
 
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 1100,
-      background: 'rgba(2, 11, 25, 0.75)', backdropFilter: 'blur(16px)',
+      background: 'rgba(2, 11, 25, 0.85)', backdropFilter: 'blur(20px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: '10px', fontFamily: 'var(--font-body)',
-      animation: 'fadeIn 0.25s ease forwards',
+      animation: 'fadeIn 0.3s ease forwards',
     }}>
-      {/* Main HUD Window */}
       <div style={{
-        background: '#ffffff',
-        border: '1px solid rgba(56, 189, 248, 0.3)',
-        borderRadius: '16px', width: '100%', maxWidth: '580px',
+        background: '#ffffff', border: '1px solid rgba(56, 189, 248, 0.3)',
+        borderRadius: '20px', width: '100%', maxWidth: '520px',
         boxShadow: '0 25px 70px rgba(0, 15, 45, 0.6), 0 0 30px rgba(56, 189, 248, 0.15)',
         overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '94vh',
         position: 'relative',
       }}>
+        {/* Flag Accent */}
+        <div style={{ height: '3px', width: '100%', background: 'linear-gradient(90deg, #FF9933 0%, #FFFFFF 50%, #128807 100%)' }} />
 
-        {/* National Flag Accent Strip */}
-        <div style={{
-          height: '4px', width: '100%',
-          background: 'linear-gradient(90deg, #FF9933 0%, #FFFFFF 50%, #128807 100%)',
-        }} />
-
-        {/* Futuristic Responsive Header */}
+        {/* Header */}
         <div style={{
           background: 'linear-gradient(135deg, #051630 0%, #020b18 100%)',
           borderBottom: '1px solid rgba(56, 189, 248, 0.2)',
-          padding: '12px 14px', display: 'flex',
-          justifyContent: 'space-between', alignItems: 'center', color: '#ffffff',
-          gap: '8px', flexWrap: 'wrap',
+          padding: isMobile ? '10px 10px' : '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#ffffff',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
-            {/* Glowing Avatar */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{
-              width: '36px', height: '36px', borderRadius: '10px',
-              background: isListening 
-                ? 'linear-gradient(135deg, #FF6200 0%, #dc2626 100%)' 
-                : isSpeaking 
-                ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' 
-                : 'linear-gradient(135deg, #003087 0%, #0284c7 100%)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-              boxShadow: isListening 
-                ? '0 0 16px rgba(255,98,0,0.8)' 
-                : isSpeaking 
-                ? '0 0 16px rgba(16,185,129,0.7)' 
-                : '0 0 12px rgba(2,132,199,0.4)',
-              transition: 'all 0.3s ease',
+              width: isMobile ? '30px' : '36px', height: isMobile ? '30px' : '36px', borderRadius: isMobile ? '8px' : '10px',
+              background: orbColor, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: orbShadow, transition: 'all 0.4s ease',
               border: '1px solid rgba(255,255,255,0.2)',
             }}>
-              {isListening ? <Mic size={18} color="#ffffff" /> : <Bot size={18} color="#ffffff" />}
+              {isListening ? <Mic size={18} color="#fff" /> : isSpeaking ? <Volume2 size={18} color="#fff" /> : isThinking ? <RefreshCw size={18} color="#fff" className="spin" /> : <Bot size={18} color="#fff" />}
             </div>
-
-            <div style={{ minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
-                <span style={{
-                  fontSize: '0.58rem', letterSpacing: '0.04em', textTransform: 'uppercase',
-                  color: '#38bdf8', fontWeight: 800, background: 'rgba(56, 189, 248, 0.12)',
-                  padding: '1px 6px', borderRadius: '4px', border: '1px solid rgba(56, 189, 248, 0.25)',
-                  whiteSpace: 'nowrap'
-                }}>
-                  Govt of India · JanSetu AI
-                </span>
-                <span style={{
-                  fontSize: '0.58rem', background: 'linear-gradient(135deg, #FF6200, #d97706)',
-                  color: '#ffffff', padding: '1px 6px', borderRadius: '8px', fontWeight: 800,
-                  boxShadow: '0 2px 5px rgba(255,98,0,0.4)', whiteSpace: 'nowrap'
-                }}>
-                  Gemini AI
-                </span>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <span style={{ fontSize: '0.55rem', letterSpacing: '0.04em', textTransform: 'uppercase', color: '#38bdf8', fontWeight: 800, background: 'rgba(56, 189, 248, 0.12)', padding: '1px 6px', borderRadius: '4px', border: '1px solid rgba(56, 189, 248, 0.25)' }}>Govt of India · JanSetu AI</span>
+                <span style={{ fontSize: '0.55rem', background: 'linear-gradient(135deg, #FF6200, #d97706)', color: '#fff', padding: '1px 6px', borderRadius: '8px', fontWeight: 800, boxShadow: '0 2px 5px rgba(255,98,0,0.4)' }}>Gemini AI</span>
               </div>
-              <h3 style={{ fontSize: 'clamp(0.9rem, 3.6vw, 1.05rem)', fontWeight: 800, margin: '2px 0 0 0', color: '#ffffff', letterSpacing: '-0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                JanSetu Voice Assistant
-              </h3>
+              <h3 style={{ fontSize: isMobile ? '0.8rem' : '0.95rem', fontWeight: 800, margin: '2px 0 0', color: '#fff', letterSpacing: '-0.01em' }}>JanSetu Live</h3>
             </div>
           </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-            <select
-              value={selectedLanguage}
-              onChange={e => setSelectedLanguage(e.target.value)}
-              style={{
-                background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.25)',
-                borderRadius: '6px', color: '#ffffff', fontSize: '0.72rem',
-                padding: '5px 7px', outline: 'none', cursor: 'pointer', fontWeight: 700,
-                backdropFilter: 'blur(4px)',
-              }}
-            >
-              <option value="en-IN" style={{ color: '#0f172a', background: '#ffffff' }}>English</option>
-              <option value="hi-IN" style={{ color: '#0f172a', background: '#ffffff' }}>हिन्दी</option>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <select value={selectedLanguage} onChange={e => setSelectedLanguage(e.target.value)} style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '6px', color: '#fff', fontSize: '0.7rem', padding: '4px 6px', outline: 'none', cursor: 'pointer', fontWeight: 700 }}>
+              <option value="en-IN" style={{ color: '#0f172a' }}>English</option>
+              <option value="hi-IN" style={{ color: '#0f172a' }}>हिन्दी</option>
             </select>
-            <button onClick={onClose} title="Close HUD" style={{
-              background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)',
-              borderRadius: '6px', color: '#ffffff', padding: '6px',
-              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
+            <button onClick={onClose} title="Close" style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '6px', color: '#fff', padding: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
               <X size={15} />
             </button>
           </div>
         </div>
 
-
-        {/* Futuristic Status Bar & Telemetry */}
-        <div style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', padding: '10px 20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{
-                width: '8px', height: '8px', borderRadius: '50%',
-                background: isListening ? '#FF6200' : isSpeaking ? '#10b981' : '#0284c7',
-                boxShadow: isListening ? '0 0 10px #FF6200' : isSpeaking ? '0 0 10px #10b981' : 'none',
-                display: 'inline-block',
-              }} />
-              <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1e293b' }}>
-                {isListening ? '🎙️ Live Audio Input Active — Speak Now' : isSpeaking ? '🔊 JanSetu AI Speaking...' : phase === 'summary' ? '✨ Structured Grievance Ready' : 'Conversational Intake'}
+        {/* Status Bar */}
+        <div style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', padding: isMobile ? '6px 10px' : '8px 16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: orbState === 'listening' ? '#FF6200' : orbState === 'speaking' ? '#10b981' : orbState === 'thinking' ? '#8b5cf6' : '#0284c7', boxShadow: orbState !== 'idle' ? `0 0 10px ${orbState === 'listening' ? '#FF6200' : orbState === 'speaking' ? '#10b981' : '#8b5cf6'}` : 'none', display: 'inline-block', animation: orbState !== 'idle' ? 'pulse 1.5s infinite' : 'none' }} />
+              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#1e293b' }}>
+                {isListening ? '🎙️ Listening — Speak Now' : isSpeaking ? '🔊 AI Speaking...' : isThinking ? '🧠 Thinking...' : phase === 'summary' ? '✨ Report Ready' : 'Initializing...'}
               </span>
             </div>
-            <span style={{ fontSize: '0.74rem', color: '#003087', fontWeight: 800 }}>
-              {phase === 'summary' ? '100% Complete' : `Step ${Math.min(currentStep + 1, steps.length)} of ${steps.length} (${progress}%)`}
+            <span style={{ fontSize: '0.7rem', color: '#003087', fontWeight: 800 }}>
+              {phase === 'summary' ? '100%' : `${Math.min(turnCount + 1, 5)}/5`}
             </span>
           </div>
-
-          {/* Saffron Glowing Progress Track */}
-          <div style={{ height: '5px', background: '#e2e8f0', borderRadius: '10px', overflow: 'hidden' }}>
-            <div style={{
-              height: '100%', width: `${progress}%`,
-              background: phase === 'summary' 
-                ? 'linear-gradient(90deg, #10b981, #059669)' 
-                : 'linear-gradient(90deg, #FF6200, #d97706)',
-              borderRadius: '10px',
-              transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-              boxShadow: '0 0 8px rgba(255,98,0,0.5)',
-            }} />
+          <div style={{ height: '4px', background: '#e2e8f0', borderRadius: '10px', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${progress}%`, background: phase === 'summary' ? 'linear-gradient(90deg, #10b981, #059669)' : 'linear-gradient(90deg, #FF6200, #d97706)', borderRadius: '10px', transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1)', boxShadow: '0 0 8px rgba(255,98,0,0.5)' }} />
           </div>
         </div>
 
-        {/* Conversation Log Feed */}
+        {/* ═══ GEMINI LIVE ORB ═══ */}
+        {phase === 'questioning' && (
+          <div style={{
+            background: orbState === 'listening' ? 'linear-gradient(180deg, #fff7ed 0%, #ffffff 100%)' : orbState === 'speaking' ? 'linear-gradient(180deg, #ecfdf5 0%, #ffffff 100%)' : orbState === 'thinking' ? 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 100%)' : '#ffffff',
+            padding: isMobile ? '16px 16px' : '24px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', transition: 'all 0.4s ease',
+          }}>
+            <div style={{ position: 'relative', width: isMobile ? '90px' : '120px', height: isMobile ? '90px' : '120px', marginBottom: isMobile ? '10px' : '16px' }}>
+              {(orbState === 'listening' || orbState === 'speaking') && (
+                <>
+                  <div style={{ position: 'absolute', inset: '-12px', borderRadius: '50%', border: `2px solid ${orbState === 'listening' ? 'rgba(255,98,0,0.3)' : 'rgba(16,185,129,0.3)'}`, animation: 'orbPulse 2s infinite ease-out' }} />
+                  <div style={{ position: 'absolute', inset: '-24px', borderRadius: '50%', border: `1px solid ${orbState === 'listening' ? 'rgba(255,98,0,0.15)' : 'rgba(16,185,129,0.15)'}`, animation: 'orbPulse 2s infinite ease-out 0.5s' }} />
+                </>
+              )}
+              <div style={{
+                width: isMobile ? '90px' : '120px', height: isMobile ? '90px' : '120px', borderRadius: '50%', background: orbColor, boxShadow: orbShadow,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.4s ease',
+                animation: orbState === 'speaking' ? 'orbBreathe 1.5s infinite ease-in-out' : orbState === 'thinking' ? 'orbSpin 3s infinite linear' : 'none',
+                cursor: 'pointer',
+              }} onClick={isListening ? stopListening : startListening}>
+                {isListening && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', height: '40px' }}>
+                    {[8, 20, 14, 28, 10, 24, 12, 26, 8, 20, 14, 22, 10, 18].map((h, idx) => (
+                      <div key={idx} style={{ width: '3px', height: `${h}px`, background: '#fff', borderRadius: '2px', animation: `waveBar 0.4s infinite alternate ease-in-out ${idx * 0.05}s` }} />
+                    ))}
+                  </div>
+                )}
+                {isSpeaking && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '3px', height: '40px' }}>
+                    {[10, 18, 12, 24, 14, 20, 16, 22, 10, 18, 14, 20, 12, 16].map((h, idx) => (
+                      <div key={idx} style={{ width: '3px', height: `${h}px`, background: 'rgba(255,255,255,0.9)', borderRadius: '2px', animation: `waveBar 0.5s infinite alternate ease-in-out ${idx * 0.06}s` }} />
+                    ))}
+                  </div>
+                )}
+                {isThinking && (
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    {[0, 1, 2].map(i => (
+                      <div key={i} style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#fff', animation: `thinkingDot 1.2s infinite ease-in-out ${i * 0.2}s` }} />
+                    ))}
+                  </div>
+                )}
+                {!isListening && !isSpeaking && !isThinking && <Mic size={36} color="#fff" />}
+              </div>
+            </div>
+            <div style={{ fontSize: '0.88rem', fontWeight: 800, color: isListening ? '#FF6200' : isSpeaking ? '#059669' : '#64748b', textAlign: 'center' }}>
+              {isListening ? 'Listening... Tap orb to stop' : isSpeaking ? 'Speaking naturally...' : isThinking ? 'Processing...' : 'Tap to start speaking'}
+            </div>
+            <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '2px' }}>
+              {isSpeaking ? 'Voice response is live' : 'Conversational voice mode active'}
+            </div>
+            {isListening && interimText && (
+              <div style={{ marginTop: '10px', padding: '8px 14px', background: 'rgba(255,98,0,0.08)', borderRadius: '10px', border: '1px dashed rgba(255,98,0,0.4)', fontSize: '0.8rem', color: '#c2410c', fontWeight: 600, fontStyle: 'italic', maxWidth: '90%', textAlign: 'center' }}>
+                "{interimText}..."
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ═══ CONVERSATION LOG ═══ */}
         <div style={{
-          flex: 1, overflowY: 'auto', padding: '20px',
-          display: 'flex', flexDirection: 'column', gap: '14px',
-          minHeight: '260px', maxHeight: '360px', background: '#f1f5f9',
-          backgroundImage: 'radial-gradient(rgba(0, 48, 135, 0.03) 1px, transparent 1px)',
-          backgroundSize: '16px 16px',
+          flex: 1, overflowY: 'auto', padding: isMobile ? '12px 10px' : '16px',
+          display: 'flex', flexDirection: 'column', gap: isMobile ? '8px' : '10px',
+          minHeight: phase === 'questioning' ? (isMobile ? '80px' : '120px') : (isMobile ? '180px' : '260px'), maxHeight: phase === 'questioning' ? (isMobile ? '120px' : '160px') : (isMobile ? '280px' : '360px'),
+          background: '#f1f5f9', backgroundImage: 'radial-gradient(rgba(0, 48, 135, 0.03) 1px, transparent 1px)', backgroundSize: '16px 16px',
         }}>
           {conversationLog.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '40px 20px', color: '#64748b' }}>
-              <div style={{
-                width: '56px', height: '56px', borderRadius: '50%',
-                background: 'rgba(0, 48, 135, 0.08)', display: 'flex',
-                alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px',
-                border: '1px solid rgba(0, 48, 135, 0.15)',
-              }}>
-                <Bot size={28} color="#003087" />
+            <div style={{ textAlign: 'center', padding: '30px 20px', color: '#64748b' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(0, 48, 135, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px', border: '1px solid rgba(0, 48, 135, 0.15)' }}>
+                <Bot size={24} color="#003087" />
               </div>
-              <p style={{ margin: 0, fontWeight: 700, color: '#0f172a', fontSize: '0.95rem' }}>Initializing JanSetu Voice Assistant...</p>
-              <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: '#64748b' }}>State Public Grievance AI Intake Portal</p>
+              <p style={{ margin: 0, fontWeight: 700, color: '#0f172a', fontSize: '0.88rem' }}>Connecting to JanSetu Live...</p>
             </div>
           )}
 
           {conversationLog.map((msg, idx) => (
-            <div key={idx} style={{
-              display: 'flex', justifyContent: msg.role === 'agent' ? 'flex-start' : 'flex-end',
-              gap: '10px', animation: 'fadeIn 0.2s ease',
-            }}>
+            <div key={idx} style={{ display: 'flex', justifyContent: msg.role === 'agent' ? 'flex-start' : 'flex-end', gap: '8px', animation: 'fadeIn 0.2s ease' }}>
               {msg.role === 'agent' && (
-                <div style={{
-                  width: '32px', height: '32px', borderRadius: '10px',
-                  background: 'linear-gradient(135deg, #003087 0%, #001d5a 100%)', flexShrink: 0,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: '0 2px 8px rgba(0,48,135,0.2)',
-                  border: '1px solid rgba(255,255,255,0.2)',
-                }}>
-                  <Bot size={17} color="#ffffff" />
+                <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'linear-gradient(135deg, #003087, #001d5a)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,48,135,0.2)' }}>
+                  <Bot size={14} color="#fff" />
                 </div>
               )}
               <div style={{
-                maxWidth: '85%', padding: '13px 17px',
-                borderRadius: msg.role === 'agent' ? '4px 16px 16px 16px' : '16px 4px 16px 16px',
-                background: msg.role === 'agent' ? '#ffffff' : 'linear-gradient(135deg, #003087 0%, #002266 100%)',
-                color: msg.role === 'agent' ? '#0f172a' : '#ffffff',
-                fontSize: '0.88rem', lineHeight: 1.55, fontWeight: 500,
-                border: msg.role === 'agent' ? '1px solid #cbd5e1' : '1px solid rgba(56,189,248,0.3)',
-                boxShadow: msg.role === 'agent' ? '0 2px 10px rgba(0,0,0,0.06)' : '0 4px 16px rgba(0,48,135,0.25)',
+                maxWidth: '82%', padding: '10px 14px',
+                borderRadius: msg.role === 'agent' ? '3px 14px 14px 14px' : '14px 3px 14px 14px',
+                background: msg.role === 'agent' ? '#fff' : 'linear-gradient(135deg, #003087, #002266)',
+                color: msg.role === 'agent' ? '#0f172a' : '#fff',
+                fontSize: '0.82rem', lineHeight: 1.5, fontWeight: 500,
+                border: msg.role === 'agent' ? '1px solid #e2e8f0' : '1px solid rgba(56,189,248,0.3)',
+                boxShadow: msg.role === 'agent' ? '0 1px 6px rgba(0,0,0,0.05)' : '0 3px 12px rgba(0,48,135,0.2)',
                 whiteSpace: 'pre-line',
               }}>
                 {msg.text}
               </div>
               {msg.role === 'user' && (
-                <div style={{
-                  width: '32px', height: '32px', borderRadius: '10px',
-                  background: 'linear-gradient(135deg, #FF6200 0%, #c2410c 100%)', flexShrink: 0,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: '0 2px 8px rgba(255,98,0,0.3)',
-                }}>
-                  <User size={17} color="#ffffff" />
+                <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'linear-gradient(135deg, #FF6200, #c2410c)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(255,98,0,0.3)' }}>
+                  <User size={14} color="#fff" />
                 </div>
               )}
             </div>
           ))}
 
-          {/* Interim speech transcript */}
-          {isListening && interimText && (
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-              <div style={{
-                padding: '11px 16px', borderRadius: '16px 4px 16px 16px',
-                background: 'rgba(255,98,0,0.1)', border: '1px dashed rgba(255,98,0,0.5)',
-                fontSize: '0.86rem', color: '#c2410c', fontWeight: 600,
-                fontStyle: 'italic', maxWidth: '85%',
-              }}>
-                🗣️ "{interimText}..."
-              </div>
+          {isThinking && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '0.8rem', color: '#64748b' }}>
+              <RefreshCw size={14} className="spin" color="#8b5cf6" />
+              <span style={{ fontWeight: 600 }}>AI is thinking...</span>
             </div>
           )}
 
-          {/* Generated Structured Report Card */}
           {phase === 'summary' && generatedData && (
             <div style={{
-              background: '#ffffff', border: '2px solid #003087',
-              borderRadius: '16px', padding: '18px',
-              display: 'flex', flexDirection: 'column', gap: '12px',
-              boxShadow: '0 8px 24px rgba(0,48,135,0.15)',
-              position: 'relative', overflow: 'hidden',
+              background: '#fff', border: '2px solid #003087', borderRadius: '14px', padding: isMobile ? '10px' : '14px',
+              display: 'flex', flexDirection: 'column', gap: '10px',
+              boxShadow: '0 6px 20px rgba(0,48,135,0.12)',
             }}>
-              <div style={{
-                position: 'absolute', top: 0, left: 0, right: 0, height: '4px',
-                background: 'linear-gradient(90deg, #10b981, #0284c7)',
-              }} />
-
-              <div style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                borderBottom: '1px solid #e2e8f0', paddingBottom: '10px',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#166534', fontWeight: 800, fontSize: '0.92rem' }}>
-                  <CheckCircle2 size={20} color="#16a34a" />
-                  <span>Structured Grievance Report Ready</span>
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #10b981, #0284c7)', borderRadius: '14px 14px 0 0' }} />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#166534', fontWeight: 800, fontSize: '0.85rem' }}>
+                  <CheckCircle2 size={18} color="#16a34a" /><span>Report Ready</span>
                 </div>
-                <span style={{
-                  fontSize: '0.72rem', background: 'rgba(2, 132, 199, 0.1)', color: '#0284c7',
-                  padding: '3px 10px', borderRadius: '100px', fontWeight: 800, border: '1px solid rgba(2, 132, 199, 0.2)',
-                }}>
-                  Verified by Gemini AI
-                </span>
+                <span style={{ fontSize: '0.65rem', background: 'rgba(2,132,199,0.1)', color: '#0284c7', padding: '2px 8px', borderRadius: '100px', fontWeight: 800, border: '1px solid rgba(2,132,199,0.2)' }}>Gemini AI Verified</span>
               </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '0.8rem' }}>
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <span style={{ color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>Title</span>
-                  <div style={{ color: '#0f172a', fontWeight: 800, fontSize: '0.92rem', marginTop: '2px' }}>{generatedData.title}</div>
-                </div>
-                <div>
-                  <span style={{ color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>Category</span>
-                  <div style={{ color: '#003087', fontWeight: 700, marginTop: '2px' }}>{generatedData.category}</div>
-                </div>
-                <div>
-                  <span style={{ color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>District / Location</span>
-                  <div style={{ color: '#0f172a', fontWeight: 700, marginTop: '2px' }}>{generatedData.district} ({generatedData.location})</div>
-                </div>
-                <div>
-                  <span style={{ color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>Affected Population</span>
-                  <div style={{ color: '#0f172a', fontWeight: 700, marginTop: '2px' }}>~{generatedData.affected_population} residents</div>
-                </div>
-                <div>
-                  <span style={{ color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>Severity Level</span>
-                  <div style={{ color: '#dc2626', fontWeight: 800, textTransform: 'uppercase', marginTop: '2px' }}>{generatedData.severity}</div>
-                </div>
-                <div style={{ gridColumn: '1 / -1', background: '#f8fafc', padding: '10px 12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                  <span style={{ color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, display: 'block', marginBottom: '4px' }}>Draft Summary Statement</span>
-                  <p style={{ margin: 0, color: '#1e293b', fontSize: '0.8rem', lineHeight: 1.5 }}>{generatedData.description}</p>
-                </div>
+              <div style={{ fontSize: '0.78rem' }}>
+                <div style={{ color: '#64748b', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>Title</div>
+                <div style={{ color: '#0f172a', fontWeight: 800, fontSize: '0.88rem', marginTop: '1px' }}>{generatedData.title}</div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.75rem' }}>
+                <div><span style={{ color: '#64748b', fontSize: '0.65rem', textTransform: 'uppercase', fontWeight: 700 }}>Category</span><div style={{ color: '#003087', fontWeight: 700, marginTop: '1px' }}>{generatedData.category}</div></div>
+                <div><span style={{ color: '#64748b', fontSize: '0.65rem', textTransform: 'uppercase', fontWeight: 700 }}>Location</span><div style={{ color: '#0f172a', fontWeight: 700, marginTop: '1px' }}>{generatedData.district}</div></div>
+                <div><span style={{ color: '#64748b', fontSize: '0.65rem', textTransform: 'uppercase', fontWeight: 700 }}>Affected</span><div style={{ color: '#0f172a', fontWeight: 700, marginTop: '1px' }}>~{generatedData.affected_population}</div></div>
+                <div><span style={{ color: '#64748b', fontSize: '0.65rem', textTransform: 'uppercase', fontWeight: 700 }}>Severity</span><div style={{ color: '#dc2626', fontWeight: 800, textTransform: 'uppercase', marginTop: '1px' }}>{generatedData.severity}</div></div>
               </div>
             </div>
           )}
 
-          {/* Processing Indicator */}
           {isProcessing && (
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              gap: '10px', padding: '18px',
-              color: '#003087', fontSize: '0.88rem', fontWeight: 800,
-              background: '#ffffff', borderRadius: '12px', border: '1px solid #cbd5e1',
-            }}>
-              <RefreshCw size={20} className="spin" color="#FF6200" />
-              <span>Analyzing spoken responses & structuring official grievance...</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '14px', color: '#003087', fontSize: '0.82rem', fontWeight: 800, background: '#fff', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+              <RefreshCw size={18} className="spin" color="#FF6200" />
+              <span>Structuring official grievance...</span>
             </div>
           )}
         </div>
 
-        {/* Error Alert */}
         {errorMsg && (
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: '8px',
-            padding: '12px 20px', background: '#fef2f2',
-            borderTop: '1px solid #fecaca',
-            color: '#dc2626', fontSize: '0.82rem', fontWeight: 700,
-          }}>
-            <AlertCircle size={16} />
-            <span>{errorMsg}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 16px', background: '#fef2f2', borderTop: '1px solid #fecaca', color: '#dc2626', fontSize: '0.78rem', fontWeight: 700 }}>
+            <AlertCircle size={14} />{errorMsg}
           </div>
         )}
 
-        {/* Futuristic Mic Controller HUD Bar */}
-        {phase === 'questioning' && (
-          <div style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center',
-            padding: '16px 20px',
-            background: isListening ? 'linear-gradient(180deg, #fff7ed 0%, #fff 100%)' : '#ffffff',
-            borderTop: '1px solid #e2e8f0',
-            transition: 'all 0.3s ease',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <button
-                onClick={isListening ? stopListening : startListening}
-                style={{
-                  width: '56px', height: '56px', borderRadius: '50%',
-                  background: isListening 
-                    ? 'linear-gradient(135deg, #FF6200 0%, #dc2626 100%)' 
-                    : 'linear-gradient(135deg, #003087 0%, #001d5a 100%)',
-                  border: '4px solid #ffffff', color: '#ffffff',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: isListening 
-                    ? '0 0 30px rgba(255,98,0,0.7), 0 0 10px rgba(255,98,0,0.4)' 
-                    : '0 6px 20px rgba(0,48,135,0.3)',
-                  cursor: 'pointer',
-                  transform: isListening ? 'scale(1.08)' : 'scale(1)',
-                  transition: 'all 0.25s ease',
-                }}
-              >
-                {isListening ? <Mic size={26} color="#fff" /> : <MicOff size={24} color="#fff" />}
-              </button>
-
-              <div>
-                <div style={{ fontSize: '0.9rem', fontWeight: 800, color: isListening ? '#FF6200' : '#0f172a' }}>
-                  {isListening ? 'Listening... Speak Now' : 'Tap Microphone to Speak'}
-                </div>
-                <div style={{ fontSize: '0.74rem', color: '#64748b', marginTop: '2px' }}>
-                  {isSpeaking ? '🔊 JanSetu AI is speaking...' : 'Speech is transcribed live in real time'}
-                </div>
-              </div>
-            </div>
-
-            {/* Audio Waveform Animation */}
-            {isListening && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '12px', height: '24px' }}>
-                {[12, 22, 16, 26, 14, 24, 18, 28, 12, 22, 16, 24, 14, 20].map((h, idx) => (
-                  <div key={idx} style={{
-                    width: '4px', height: `${h}px`,
-                    background: 'linear-gradient(180deg, #FF6200, #d97706)',
-                    borderRadius: '3px',
-                    animation: `pulse 0.5s infinite alternate ease-in-out ${idx * 0.06}s`,
-                  }} />
-                ))}
-              </div>
+        {/* Footer */}
+        <div style={{ padding: isMobile ? '10px 10px' : '12px 16px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: isMobile ? '6px' : '10px', flexWrap: 'wrap' }}>
+          <button onClick={onClose} style={{ padding: isMobile ? '7px 10px' : '8px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#fff', color: '#334155', fontSize: isMobile ? '0.72rem' : '0.8rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
+          <div style={{ display: 'flex', gap: isMobile ? '5px' : '8px', flexWrap: 'wrap' }}>
+            {phase === 'questioning' && turnCount > 0 && !generatedData && (
+              <button onClick={handleSkipToEnd} style={{ padding: isMobile ? '7px 10px' : '8px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#fff', color: '#475569', fontSize: isMobile ? '0.72rem' : '0.78rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Skip & Analyze</button>
             )}
-          </div>
-        )}
-
-        {/* Footer Actions */}
-        <div style={{
-          padding: '14px 20px', background: '#f8fafc',
-          borderTop: '1px solid #e2e8f0',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px',
-        }}>
-          <button onClick={onClose} style={{
-            padding: '10px 18px', borderRadius: '8px',
-            border: '1px solid #cbd5e1', background: '#ffffff',
-            color: '#334155', fontSize: '0.85rem', fontWeight: 700,
-            cursor: 'pointer', fontFamily: 'inherit',
-            transition: 'all 0.2s ease',
-          }}>
-            Cancel
-          </button>
-
-          <div style={{ display: 'flex', gap: '10px' }}>
-            {phase === 'questioning' && currentStep > 0 && !generatedData && (
-              <button onClick={handleSkipToEnd} style={{
-                padding: '10px 18px', borderRadius: '8px',
-                border: '1px solid #cbd5e1', background: '#ffffff',
-                color: '#475569', fontSize: '0.82rem', fontWeight: 700,
-                cursor: 'pointer', fontFamily: 'inherit',
-              }}>
-                Skip & Analyze with AI
-              </button>
+            {phase === 'questioning' && liveModeRef.current && (
+              <button onClick={handleStopLive} style={{ padding: isMobile ? '7px 10px' : '8px 14px', borderRadius: '8px', border: '1px solid #dc2626', background: 'rgba(220,38,38,0.06)', color: '#dc2626', fontSize: isMobile ? '0.72rem' : '0.78rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: '4px' }}><PhoneOff size={13} /> End Call</button>
             )}
-
             {phase === 'summary' && generatedData && (
               <>
-                <button onClick={() => {
-                  const speech = generatedData.spoken_summary || `Report prepared for ${generatedData.title}.`;
-                  speak(speech);
-                }} style={{
-                  padding: '10px 16px', borderRadius: '8px',
-                  border: '1px solid #003087', background: 'rgba(0,48,135,0.06)',
-                  color: '#003087', fontSize: '0.84rem', fontWeight: 700,
-                  cursor: 'pointer', fontFamily: 'inherit',
-                  display: 'flex', alignItems: 'center', gap: '6px',
-                }}>
-                  <Volume2 size={16} /> Speak Summary
-                </button>
-                
-                <button onClick={handleApplyToForm} style={{
-                  padding: '11px 22px', borderRadius: '8px',
-                  background: 'linear-gradient(135deg, #FF6200 0%, #ea580c 100%)',
-                  color: '#ffffff', border: 'none',
-                  fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', gap: '8px',
-                  boxShadow: '0 4px 14px rgba(255,98,0,0.4)',
-                }}>
-                  <FileText size={16} />
-                  <span>Auto-Fill Official Report</span>
-                  <ArrowRight size={16} />
-                </button>
+                <button onClick={() => speak(generatedData.spoken_summary || `Report for ${generatedData.title}.`)} style={{ padding: isMobile ? '7px 10px' : '8px 14px', borderRadius: '8px', border: '1px solid #003087', background: 'rgba(0,48,135,0.06)', color: '#003087', fontSize: isMobile ? '0.72rem' : '0.78rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: '4px' }}><Volume2 size={13} /> Speak</button>
+                <button onClick={handleApplyToForm} style={{ padding: isMobile ? '7px 12px' : '9px 18px', borderRadius: '8px', background: 'linear-gradient(135deg, #FF6200, #ea580c)', color: '#fff', border: 'none', fontWeight: 800, fontSize: isMobile ? '0.75rem' : '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', boxShadow: '0 3px 12px rgba(255,98,0,0.4)' }}><FileText size={13} />{isMobile ? 'Auto-Fill' : 'Auto-Fill Report'}<ArrowRight size={13} /></button>
               </>
             )}
           </div>
         </div>
-
       </div>
+
+      <style>{`
+        @keyframes orbPulse { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(1.4); opacity: 0; } }
+        @keyframes orbBreathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+        @keyframes orbSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes waveBar { 0% { transform: scaleY(0.4); } 100% { transform: scaleY(1); } }
+        @keyframes thinkingDot { 0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; } 40% { transform: scale(1); opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      `}</style>
     </div>
   );
 }
-

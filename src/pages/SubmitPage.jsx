@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, AlertTriangle, Upload, Eye, FileText, Brain, ArrowRight, ArrowLeft, Wand2, Mic, X, Building2 } from 'lucide-react';
+import { Sparkles, AlertTriangle, Upload, Eye, FileText, Brain, ArrowRight, ArrowLeft, Wand2, Mic, Camera, X, Building2 } from 'lucide-react';
 import { aiService } from '../services/aiService';
 import { geminiService } from '../services/geminiClientService';
 import { accountabilityService } from '../services/accountabilityService';
 import AiClassificationCard from '../components/AiClassificationCard';
 import { CATEGORIES } from '../services/mockData';
 
-export default function SubmitPage({ onSubmit, challenges = [], onNavigate, preFillData = null, onOpenVoice = () => {} }) {
+export default function SubmitPage({ onSubmit, challenges = [], onNavigate, preFillData = null, onOpenVoice = () => {}, onOpenInspect = () => {} }) {
   // Form State
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -25,7 +25,7 @@ export default function SubmitPage({ onSubmit, challenges = [], onNavigate, preF
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef(null);
 
-  // Sync Voice Pre-fill Data if provided
+  // Sync Pre-fill Data (Voice or Inspection) if provided
   useEffect(() => {
     if (preFillData) {
       if (preFillData.title) setTitle(preFillData.title);
@@ -48,6 +48,25 @@ export default function SubmitPage({ onSubmit, challenges = [], onNavigate, preF
       if (preFillData.affected_population) setAffectedPop(preFillData.affected_population.toString());
       if (preFillData.duration) setDuration(preFillData.duration);
       if (preFillData.severity) setSeverity(preFillData.severity.toLowerCase());
+
+      // Inspection-specific fields
+      if (preFillData.ai_inspected) {
+        // Evidence from camera inspection
+        if (preFillData.evidence && preFillData.evidence.length > 0) {
+          setUploadedFiles(prev => [
+            ...prev,
+            ...preFillData.evidence.map(ev => ({
+              id: ev.id,
+              name: ev.name,
+              size: ev.size,
+              type: ev.type,
+              raw: null,
+              preview: ev.url,
+              url: ev.url,
+            }))
+          ]);
+        }
+      }
     }
   }, [preFillData]);
 
@@ -280,6 +299,26 @@ export default function SubmitPage({ onSubmit, challenges = [], onNavigate, preF
               >
                 <Mic size={15} />
                 <span>Speak & AI Auto-Fill</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={onOpenInspect}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  padding: '8px 14px',
+                  background: 'linear-gradient(135deg, #003087, #0284c7)',
+                  border: 'none',
+                  color: '#ffffff',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(0,48,135,0.3)',
+                }}
+              >
+                <Camera size={15} />
+                <span>AI Inspect</span>
               </button>
 
               <button

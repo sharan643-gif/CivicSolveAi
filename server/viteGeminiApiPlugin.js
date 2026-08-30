@@ -3,6 +3,7 @@
 
 import { 
   generateCivicResponse, 
+  generateCivicResponseStream,
   classifyComplaint, 
   summarizeComplaint, 
   generateComplaintDraft, 
@@ -12,7 +13,9 @@ import {
   routeDepartment,
   compareResolutionEvidence,
   explainPendingStatus,
-  queryCivicAnalytics
+  queryCivicAnalytics,
+  inspectFrame,
+  generateInspectionReport
 } from './geminiServerService.js';
 
 function parseRequestBody(req) {
@@ -54,6 +57,30 @@ function createGeminiMiddleware() {
         const messages = Array.isArray(body.messages) ? body.messages : [{ role: 'user', content: body.question || 'Hello' }];
         const response = await generateCivicResponse(messages);
         return sendJsonResponse(res, { success: true, reply: response });
+      }
+
+      if (url === '/api/ai/chat-stream') {
+        const messages = Array.isArray(body.messages) ? body.messages : [{ role: 'user', content: body.question || 'Hello' }];
+        
+        // SSE streaming response
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        res.setHeader('X-Accel-Buffering', 'no');
+
+        try {
+          const stream = await generateCivicResponseStream(messages);
+          for await (const chunk of stream) {
+            const data = JSON.stringify({ text: chunk.text, done: false });
+            res.write(`data: ${data}\n\n`);
+          }
+          res.write(`data: ${JSON.stringify({ text: '', done: true })}\n\n`);
+        } catch (err) {
+          res.write(`data: ${JSON.stringify({ text: '', done: true, error: err.message })}\n\n`);
+        }
+        res.end();
+        return;
       }
 
       if (url === '/api/ai/classify') {
@@ -114,6 +141,18 @@ function createGeminiMiddleware() {
         const { query = '', contextData = {} } = body;
         const result = await queryCivicAnalytics(query, contextData);
         return sendJsonResponse(res, { success: true, result });
+      }
+
+      if (url === '/api/ai/inspect-frame') {
+        const { frameBase64 = '', conversationHistory = [], userMessage = '', mimeType = 'image/jpeg', voiceContext = null } = body;
+        const result = await inspectFrame(frameBase64, conversationHistory, userMessage, mimeType, voiceContext);
+        return sendJsonResponse(res, result);
+      }
+
+      if (url === '/api/ai/generate-inspection-report') {
+        const { observations = [], category = '', location = '', userNotes = '' } = body;
+        const result = await generateInspectionReport({ observations, category, location, userNotes });
+        return sendJsonResponse(res, result);
       }
 
       return sendJsonResponse(res, { error: 'Endpoint not found' }, 404);

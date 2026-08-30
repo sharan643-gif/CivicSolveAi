@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Sparkles, Search, Bell, AlertCircle, LogOut, User, ChevronDown, ArrowLeft, Home, Compass, Lightbulb, ShieldCheck, DollarSign, BookOpen, FileText, LayoutDashboard, Plus, Trophy, BarChart3, Brain, Heart, Eye, Zap, Award, Map, Mic } from 'lucide-react';
+import { Sparkles, Search, Bell, AlertCircle, LogOut, User, ChevronDown, ArrowLeft, Home, Compass, Lightbulb, ShieldCheck, DollarSign, BookOpen, FileText, LayoutDashboard, Plus, Trophy, BarChart3, Brain, Heart, Eye, Zap, Award, Map, Mic, Camera } from 'lucide-react';
 import { supabase } from './services/supabaseClient';
 import { getChallenges, getStats, addChallenge, updateChallenge, addAuditLog, getProfileById, uploadEvidenceFiles } from './services/supabaseService';
 import LandingPage from './pages/LandingPage';
@@ -17,6 +17,7 @@ import SuperAdminLogin from './pages/SuperAdminLogin';
 import CommandMenu from './components/CommandMenu';
 import CivicAssistant from './components/CivicAssistant';
 import JanSetuVoiceAgent from './components/JanSetuVoiceAgent';
+import AiInspectionModal from './components/AiInspectionModal';
 
 // Navigation Components
 import MobilePillNav from './components/MobilePillNav';
@@ -148,6 +149,8 @@ export default function App() {
   const [isAskJanSetuOpen, setIsAskJanSetuOpen] = useState(false);
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
   const [voicePreFillData, setVoicePreFillData] = useState(null);
+  const [isInspectOpen, setIsInspectOpen] = useState(false);
+  const [inspectPreFillData, setInspectPreFillData] = useState(null);
 
   // ─── RBAC State ─────────────────────────────────────────────────────────────
   const [impersonateRole, setImpersonateRole] = useState(null);
@@ -448,6 +451,7 @@ export default function App() {
             activeTab="landing"
             onSelectTab={(r) => { handleNavigate(r); setAuthState('unauthenticated'); }}
             currentUser={currentUser}
+            onOpenVoice={() => setIsVoiceOpen(true)}
           />
         )}
       </div>
@@ -495,6 +499,7 @@ export default function App() {
             activeTab="landing"
             onSelectTab={(r) => { handleNavigate(r); setAuthState('unauthenticated'); }}
             currentUser={currentUser}
+            onOpenVoice={() => setIsVoiceOpen(true)}
           />
         )}
       </div>
@@ -561,6 +566,7 @@ export default function App() {
         activeTab={currentRoute}
         onSelectTab={handleNavigate}
         onOpenVoice={() => setIsVoiceOpen(true)}
+        onOpenInspect={() => setIsInspectOpen(true)}
       />
       </div>
 
@@ -692,7 +698,7 @@ export default function App() {
           />
         )}
         {currentRoute === 'report' && (
-          isMobile ? <MobileReportWizard onSubmit={handleCreateChallenge} onBack={() => handleNavigate('landing')} preFillData={voicePreFillData} onOpenVoice={() => setIsVoiceOpen(true)} /> : <SubmitPage onSubmit={handleCreateChallenge} challenges={challenges} onNavigate={handleNavigate} preFillData={voicePreFillData} onOpenVoice={() => setIsVoiceOpen(true)} />
+          isMobile ? <MobileReportWizard onSubmit={handleCreateChallenge} onBack={() => handleNavigate('landing')} preFillData={voicePreFillData} onOpenVoice={() => setIsVoiceOpen(true)} onOpenInspect={() => setIsInspectOpen(true)} /> : <SubmitPage onSubmit={handleCreateChallenge} challenges={challenges} onNavigate={handleNavigate} preFillData={voicePreFillData || inspectPreFillData} onOpenVoice={() => setIsVoiceOpen(true)} onOpenInspect={() => setIsInspectOpen(true)} />
         )}
         {currentRoute === 'challenge-detail' && (
           <DetailPage
@@ -813,6 +819,15 @@ export default function App() {
           handleNavigate('report');
         }}
       />
+      <AiInspectionModal
+        isOpen={isInspectOpen}
+        onClose={() => setIsInspectOpen(false)}
+        onSubmitInspection={(data) => {
+          setInspectPreFillData(data);
+          setIsInspectOpen(false);
+          handleNavigate('report');
+        }}
+      />
     </div>
   );
 }
@@ -831,6 +846,7 @@ function AppHeader({
   activeTab = 'landing',
   onSelectTab = () => {},
   onOpenVoice = () => {},
+  onOpenInspect = () => {},
 }) {
   return (
     <header style={{
@@ -850,17 +866,18 @@ function AppHeader({
           position: 'relative',
           display: 'flex',
           alignItems: 'center',
-          width: isMobile ? 'calc(100% - 24px)' : '98%',
-          maxWidth: isMobile ? '480px' : '1400px',
-          height: isMobile ? '52px' : '58px',
-          padding: isMobile ? '0 8px 0 10px' : '0 16px 0 16px',
+          width: isMobile ? 'calc(100% - 16px)' : '98%',
+          maxWidth: isMobile ? '400px' : '1500px',
+          height: isMobile ? '44px' : '50px',
+          padding: isMobile ? '0 6px' : '0 8px',
           background: '#ffffff',
           border: '1px solid var(--border-subtle)',
           borderRadius: '9999px',
           boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
           pointerEvents: 'auto',
-          overflow: 'visible',
+          overflow: 'hidden',
           boxSizing: 'border-box',
+          justifyContent: 'center',
         }}
       >
 
@@ -870,18 +887,18 @@ function AppHeader({
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: isMobile ? '7px' : '10px',
+            gap: isMobile ? '5px' : '8px',
             cursor: 'pointer',
             flexShrink: 0,
             zIndex: 2,
             minWidth: 0,
-            paddingRight: isMobile ? '4px' : '12px',
+            paddingRight: isMobile ? '2px' : '6px',
           }}
         >
           <div style={{
             background: 'var(--primary)',
-            width: isMobile ? '32px' : '38px',
-            height: isMobile ? '32px' : '38px',
+            width: isMobile ? '30px' : '38px',
+            height: isMobile ? '30px' : '38px',
             borderRadius: '10px',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             flexShrink: 0,
@@ -890,7 +907,7 @@ function AppHeader({
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
             <span style={{
-              fontSize: isMobile ? '0.92rem' : '1.05rem',
+              fontSize: isMobile ? '0.82rem' : '0.95rem',
               fontWeight: 800,
               fontFamily: 'var(--font-display)',
               letterSpacing: '-0.01em',
@@ -900,22 +917,18 @@ function AppHeader({
             }}>
               JanSetu <span style={{ color: 'var(--accent)' }}>AI</span>
             </span>
-            {!isMobile && (
-              <span style={{ fontSize: '0.58rem', color: 'var(--text-muted)', fontWeight: 500, letterSpacing: '0.02em', whiteSpace: 'nowrap', lineHeight: 1.2 }}>
-                Government Innovation Portal
-              </span>
-            )}
+            {/* Subtitle hidden for compact header */}
           </div>
         </div>
 
         {/* Vertical divider */}
         {!isMobile && (
-          <div style={{ width: '1px', height: '22px', background: 'rgba(0,0,0,0.08)', flexShrink: 0, margin: '0 6px 0 4px' }} />
+          <div style={{ width: '1px', height: '20px', background: 'rgba(0,0,0,0.08)', flexShrink: 0, margin: '0 3px' }} />
         )}
 
         {/* Desktop Navigation Items */}
         {!isMobile && (
-          <div style={{ display: 'flex', flex: 1, gap: '2px', position: 'relative', zIndex: 1 }}>
+          <div style={{ display: 'flex', gap: '1px', position: 'relative', zIndex: 1, flexShrink: 0 }}>
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
@@ -928,24 +941,24 @@ function AppHeader({
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '6px',
-                      padding: '8px 18px',
+                      gap: '4px',
+                      padding: '6px 12px',
                       borderRadius: '9999px',
                       border: '2px solid var(--accent)',
                       background: 'var(--accent)',
                       color: '#fff',
                       cursor: 'pointer',
-                      fontSize: '0.82rem',
+                      fontSize: '0.78rem',
                       fontWeight: 700,
                       fontFamily: 'var(--font-body)',
                       whiteSpace: 'nowrap',
-                      margin: '0 4px',
+                      margin: '0 3px',
                       transition: 'background 0.15s ease',
                     }}
                     onMouseEnter={e => { e.currentTarget.style.background = '#cc4e00'; }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'var(--accent)'; }}
                   >
-                    <Plus size={15} strokeWidth={2.5} />
+                    <Plus size={14} strokeWidth={2.5} />
                     Report
                   </button>
                 );
@@ -958,19 +971,19 @@ function AppHeader({
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px',
-                    padding: '9px 14px',
+                    gap: '4px',
+                    padding: '6px 10px',
                     borderRadius: '9999px',
                     border: isActive ? '1px solid var(--primary)' : '1px solid transparent',
                     background: isActive ? 'var(--primary)' : 'transparent',
                     cursor: 'pointer',
                     color: isActive ? '#ffffff' : 'var(--text-secondary)',
-                    fontSize: '0.82rem',
+                    fontSize: '0.78rem',
                     fontWeight: isActive ? 700 : 500,
                     fontFamily: 'var(--font-body)',
                     whiteSpace: 'nowrap',
                     transition: 'all 0.15s ease',
-                    minHeight: '40px',
+                    minHeight: '34px',
                   }}
                   onMouseEnter={e => {
                     if (!isActive) {
@@ -987,7 +1000,7 @@ function AppHeader({
                     }
                   }}
                 >
-                  <Icon size={15} strokeWidth={isActive ? 2.5 : 2} />
+                  <Icon size={13} strokeWidth={isActive ? 2.5 : 2} />
                   <span>{item.label}</span>
                 </button>
               );
@@ -998,41 +1011,97 @@ function AppHeader({
         {/* Spacer — pushes right section to edge on mobile */}
         {isMobile && <div style={{ flex: 1 }} />}
 
+        {/* Mobile Icon-Only Buttons */}
+        {isMobile && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+            <button
+              onClick={onOpenVoice}
+              title="Voice AI"
+              style={{
+                width: '34px', height: '34px', borderRadius: '50%', border: 'none',
+                background: 'var(--accent)', color: '#fff', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 2px 6px rgba(255,98,0,0.35)', flexShrink: 0,
+              }}
+            >
+              <Mic size={16} />
+            </button>
+            <button
+              onClick={onOpenInspect}
+              title="AI Inspect"
+              style={{
+                width: '34px', height: '34px', borderRadius: '50%', border: 'none',
+                background: 'var(--primary)', color: '#fff', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 2px 6px rgba(0,48,135,0.35)', flexShrink: 0,
+              }}
+            >
+              <Camera size={16} />
+            </button>
+          </div>
+        )}
+
         {/* Right Section */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: isMobile ? '6px' : '8px',
-          marginLeft: isMobile ? '0' : 'auto',
+          gap: isMobile ? '3px' : '4px',
+          marginLeft: isMobile ? '0' : '0',
           zIndex: 2,
           flexShrink: 0,
         }}>
-          {/* Voice AI Trigger — Desktop only */}
+          {/* Voice AI + Camera AI Triggers — Desktop only */}
 
           {!isMobile && (
-            <button
-              onClick={onOpenVoice}
-              title="Open JanSetu Voice AI Engine"
-              style={{
-                display: 'flex', alignItems: 'center', gap: '6px',
-                background: 'var(--accent)',
-                border: 'none',
-                borderRadius: '9999px',
-                padding: '8px 14px',
-                fontSize: '0.8rem',
-                fontWeight: 700,
-                color: '#ffffff',
-                cursor: 'pointer',
-                flexShrink: 0,
-                boxShadow: '0 2px 8px rgba(255,98,0,0.35)',
-                transition: 'background 0.15s ease',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#cc4e00'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'var(--accent)'; }}
-            >
-              <Mic size={16} />
-              <span>Voice AI</span>
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+              <button
+                onClick={onOpenVoice}
+                title="Open JanSetu Voice AI Engine"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '4px',
+                  background: 'var(--accent)',
+                  border: 'none',
+                  borderRadius: '9999px',
+                  padding: '6px 10px',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  color: '#ffffff',
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                  boxShadow: '0 2px 8px rgba(255,98,0,0.35)',
+                  transition: 'background 0.15s ease',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#cc4e00'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'var(--accent)'; }}
+              >
+                <Mic size={14} />
+                <span>Voice AI</span>
+              </button>
+
+              <button
+                onClick={onOpenInspect}
+                title="Open AI Camera Inspection"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '4px',
+                  background: 'var(--primary)',
+                  border: 'none',
+                  borderRadius: '9999px',
+                  padding: '6px 10px',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  color: '#ffffff',
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                  boxShadow: '0 2px 8px rgba(0,48,135,0.35)',
+                  transition: 'background 0.15s ease',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#002266'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'var(--primary)'; }}
+              >
+                <Camera size={14} />
+                <span>AI Inspect</span>
+              </button>
+            </div>
           )}
 
           {/* Search — desktop only */}
@@ -1041,12 +1110,12 @@ function AppHeader({
             <button
               onClick={() => setIsCommandOpen(true)}
               style={{
-                display: 'flex', alignItems: 'center', gap: '6px',
+                display: 'flex', alignItems: 'center', gap: '4px',
                 background: 'var(--bg-primary)',
                 border: '1px solid var(--border-medium)',
                 borderRadius: '9999px',
-                padding: '7px 12px',
-                fontSize: '0.75rem',
+                padding: '5px 8px',
+                fontSize: '0.72rem',
                 color: 'var(--text-secondary)',
                 cursor: 'pointer',
                 transition: 'border-color 0.15s ease',
@@ -1054,13 +1123,13 @@ function AppHeader({
               onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.color = 'var(--primary)'; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-medium)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
             >
-              <Search size={14} />
+              <Search size={13} />
               <kbd style={{
                 background: '#f0f0f0',
                 border: '1px solid var(--border-medium)',
-                padding: '1px 5px',
+                padding: '1px 4px',
                 borderRadius: '3px',
-                fontSize: '0.62rem',
+                fontSize: '0.58rem',
                 fontFamily: 'var(--font-body)',
                 color: 'var(--text-muted)',
               }}>Ctrl+K</kbd>
@@ -1075,9 +1144,9 @@ function AppHeader({
               style={{
                 background: 'var(--bg-primary)',
                 border: '1px solid var(--border-medium)',
-                padding: '9px',
-                width: '38px',
-                height: '38px',
+                padding: '7px',
+                width: '32px',
+                height: '32px',
                 borderRadius: '9999px',
                 cursor: 'pointer',
                 color: activeUnreadCount > 0 ? 'var(--primary)' : 'var(--text-secondary)',
@@ -1088,7 +1157,7 @@ function AppHeader({
               onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--primary)'; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-medium)'; }}
             >
-              <Bell size={16} />
+              <Bell size={14} />
               {activeUnreadCount > 0 && (
                 <span style={{
                   position: 'absolute', top: '-2px', right: '-2px',
@@ -1130,7 +1199,7 @@ function AppHeader({
 
           {/* User Auth state */}
           {!currentUser ? (
-            <button onClick={onLoginClick} className="btn btn-primary" style={{ padding: isMobile ? '7px 12px' : '8px 20px', fontSize: isMobile ? '0.78rem' : '0.82rem', borderRadius: '9999px', fontWeight: 700, flexShrink: 0, whiteSpace: 'nowrap' }}>
+            <button onClick={onLoginClick} className="btn btn-primary" style={{ padding: isMobile ? '7px 12px' : '6px 14px', fontSize: isMobile ? '0.78rem' : '0.75rem', borderRadius: '9999px', fontWeight: 700, flexShrink: 0, whiteSpace: 'nowrap' }}>
               Sign In
             </button>
           ) : (
@@ -1138,11 +1207,11 @@ function AppHeader({
               <button
                 onClick={() => { setIsUserMenuOpen(!isUserMenuOpen); setIsNotifOpen(false); }}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: '7px',
+                  display: 'flex', alignItems: 'center', gap: '5px',
                   background: 'var(--primary-light)',
                   border: '1px solid rgba(0,48,135,0.2)',
                   borderRadius: '9999px',
-                  padding: '6px 12px 6px 6px',
+                  padding: '4px 10px 4px 4px',
                   cursor: 'pointer',
                   transition: 'background 0.15s ease',
                 }}
@@ -1150,17 +1219,17 @@ function AppHeader({
                 onMouseLeave={e => e.currentTarget.style.background = 'var(--primary-light)'}
               >
                 <div style={{
-                  width: '28px', height: '28px', borderRadius: '50%',
+                  width: '26px', height: '26px', borderRadius: '50%',
                   background: 'var(--primary)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '13px', color: '#fff', fontWeight: 700,
+                  fontSize: '11px', color: '#fff', fontWeight: 700,
                 }}>
                   {(currentUser.name || currentUser.email || 'U')[0].toUpperCase()}
                 </div>
                 {!isMobile && (
                   <div style={{ textAlign: 'left' }}>
-                    <div style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--primary)', lineHeight: 1.2 }}>{(currentUser.name || currentUser.email).split(' ')[0]}</div>
-                    <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', lineHeight: 1.2 }}>{currentUser.role}</div>
+                    <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--primary)', lineHeight: 1.2 }}>{(currentUser.name || currentUser.email).split(' ')[0]}</div>
+                    <div style={{ fontSize: '0.58rem', color: 'var(--text-muted)', lineHeight: 1.2 }}>{currentUser.role}</div>
                   </div>
                 )}
                 <ChevronDown size={12} color="var(--text-muted)" />
