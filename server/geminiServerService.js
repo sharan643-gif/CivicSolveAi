@@ -913,61 +913,38 @@ function getFallbackAnalyticsQuery(queryText) {
 }
 
 // ─── 12. AI INSPECT: Live Camera Frame Analysis ──────────────────────────────
-const INSPECTION_SYSTEM_PROMPT = `
-You are JanSetu AI Inspect, an intelligent civic issue inspection assistant for the Government of India.
+const INSPECTION_SYSTEM_PROMPT = `You are JanSetu AI Inspect — fast civic issue detector for India. Analyze camera frames INSTANTLY.
 
-Your role: Help citizens identify and report public infrastructure and civic problems by visually inspecting camera frames AND having a natural voice conversation.
+SPEED RULES (critical):
+- Respond in 1-2 SHORT sentences max
+- Detect the civic problem in the frame IMMEDIATELY
+- NEVER repeat the same observation
+- NEVER say generic filler — be specific about what you SEE
+- If blurry/unclear, say so in 5 words and move on
 
-You receive camera frames from the citizen's phone/laptop. Analyze each frame carefully.
+VOICE MODE (when voiceContext provided):
+- Casual, friendly — like talking to a friend
+- Use: "Okay", "Got it", "Haan", "Accha"
+- Mirror citizen's energy
+- Keep it SHORT — voice responses must be under 15 words
+- NEVER repeat — always ask something NEW
+- Hindi: Use casual Hinglish, not formal Hindi
 
-VOICE CONVERSATION MODE:
-When the citizen is speaking to you (voiceContext is provided), you are having a LIVE voice call.
-You must respond like a friendly helpful person — NOT a robot, NOT a formal assistant.
-- Use casual fillers: "Okay", "Got it", "Haan", "Accha", "Theek hai"
-- Vary your sentence openings — NEVER repeat the same phrase twice
-- Mirror the citizen's energy — if they're casual, be casual
-- If they seem frustrated, be extra empathetic
-- If they seem rushed, be concise
-- Keep responses SHORT (1-2 sentences) since this is voice — punchy and natural
-- End with a natural question when you need more info
-- NEVER say the same thing twice — always add new info or ask something new
-- If the camera can't see enough, ASK the citizen what they can see
-- For Hindi speakers: Use CASUAL Hindi like talking to a friend. Use Hinglish if natural. Example: 'Haan samajh gaya, yeh kahaan hai?' NOT formal 'कृपया स्थान बताएं'
+SAFETY: If you see exposed wires, fire, collapse, flooding — WARN IMMEDIATELY first, then analyze.
 
-IMPORTANT RULES:
-1. Never claim certainty when the camera does not provide enough evidence.
-2. Distinguish between: Visually observed facts, Reasonable inference, Information from the user.
-3. Ask concise follow-up questions when important information is missing.
-4. Prioritize citizen safety — warn about immediate dangers (exposed wires, fire, collapse).
-5. Do not fabricate facts or details not visible in the frame.
-6. Be conversational — short, natural responses like a helpful agent on a call.
-7. NEVER repeat an observation you already made — acknowledge it was already noted.
-8. When vision is unclear, ask the citizen to describe what they see.
+Civic categories: Road/Pothole, Drainage/Sewage, Garbage/Waste, Water/Pipe, Streetlight, Traffic Signal, Electrical Hazard, Encroachment, Flooding, Infrastructure Damage, Other.
 
-Civic categories you can identify:
-- Road damage / Pothole
-- Drainage problem / Sewage overflow
-- Garbage accumulation / Illegal dumping
-- Water leakage / Pipe burst
-- Streetlight failure
-- Traffic signal problem
-- Damaged public infrastructure
-- Public sanitation issue
-- Electrical / Public utility hazard
-- Encroachment
-- Flooding / Waterlogging
-- Broken footpath / Damaged public property
-- Other civic issue
+OUTPUT (JSON):
+- observation: what you SEE (brief, specific)
+- category: civic category
+- severity: low/medium/high/critical
+- confidence: high/medium/low
+- department: suggested govt department
+- suggestedAction: 1 sentence action
+- missingInfo: array of what's still needed
+- isReadyForReport: true if you have category+severity+department
 
-When analyzing frames, provide:
-1. What you observe (brief, factual)
-2. Likely civic category
-3. Severity assessment
-4. Whether it appears urgent
-5. What information is still needed
-6. Safety warnings if applicable
-
-If the camera view is blurry, obstructed, or unclear, say so honestly and ask the citizen to help.
+If camera is blurry/unclear: return observation="Camera view unclear", confidence="low", isReadyForReport=false.
 `;
 
 export async function inspectFrame(frameBase64, conversationHistory = [], userMessage = '', mimeType = 'image/jpeg', voiceContext = null) {
@@ -1067,8 +1044,8 @@ Return ONLY valid JSON:
 
     const { text, model } = await callGeminiGenerate(contents, {
       systemInstruction: INSPECTION_SYSTEM_PROMPT,
-      temperature: voiceContext ? 0.5 : 0.2,
-      maxOutputTokens: voiceContext ? 350 : 500, // Voice: shorter = faster
+      temperature: voiceContext ? 0.5 : 0.15,
+      maxOutputTokens: voiceContext ? 250 : 350, // Reduced for faster responses
     });
 
     logAiRequest('inspect-frame', 'success', Date.now() - startTime, model);
@@ -1167,8 +1144,8 @@ Return ONLY valid JSON:
     const { text, model } = await callGeminiGenerate(
       [{ role: 'user', parts: [{ text: promptText }] }],
       {
-        temperature: 0.2,
-        maxOutputTokens: 500,
+        temperature: 0.15,
+        maxOutputTokens: 400, // Faster report generation
         responseMimeType: 'application/json'
       }
     );
@@ -1210,6 +1187,226 @@ Return ONLY valid JSON:
       spokenSummary: 'Report prepared from camera inspection. Please review.'
     };
   }
+}
+
+// ─── 14. DEEP COMPLAINT ANALYSIS WITH FULL DATABASE CONTEXT ──────────────────
+// Receives real DB context (similar complaints, dept stats, hotspots, trends)
+// for accurate, data-grounded AI analysis instead of generic keyword matching.
+export async function deepAnalyzeComplaint(title, description, category = '', location = '', dbContext = {}) {
+  const startTime = Date.now();
+
+  // Unpack the rich context the client gathered from Supabase / local DB
+  const {
+    similarComplaints = [],
+    departmentStats = {},
+    hotspotAreas = [],
+    recentTrends = [],
+    totalChallenges = 0,
+    avgResolutionDays = 0,
+    topCategories = [],
+    existingChallenges = [],
+  } = dbContext;
+
+  // Build a concise but rich context block for the AI
+  const similarBlock = similarComplaints.length > 0
+    ? `\nSIMILAR EXISTING COMPLAINTS (${similarComplaints.length} found):\n${similarComplaints.slice(0, 5).map((c, i) => `${i + 1}. "${c.title}" — Category: ${c.category}, District: ${c.district || 'N/A'}, Status: ${c.status}, Severity: ${c.severity || 'medium'}, Reports: ${c.reports_count || 1}, Pop. Affected: ${c.affected_population || 'unknown'}`).join('\n')}`
+    : '\nNo similar existing complaints found — this appears to be a new issue type.';
+
+  const deptStatsBlock = Object.keys(departmentStats).length > 0
+    ? `\nDEPARTMENT PERFORMANCE DATA:\n${Object.entries(departmentStats).map(([id, s]) => `- ${s.name || id}: Score ${s.score || 'N/A'}/100, SLA Compliance ${s.slaCompliance || 'N/A'}%, Resolved ${s.totalResolved || 'N/A'}/${s.totalAssigned || 'N/A'}, Avg Resolution ${s.avgResolutionDays || 'N/A'} days`).join('\n')}`
+    : '';
+
+  const hotspotBlock = hotspotAreas.length > 0
+    ? `\nKNOWN CIVIC HOTSPOTS:\n${hotspotAreas.slice(0, 5).map(h => `- ${h.name} (${h.ward || ''}): ${h.repeatCount || 0} repeat complaints, Risk: ${h.riskLevel || 'unknown'}, Issue: ${h.systemicIssue || 'N/A'}`).join('\n')}`
+    : '';
+
+  const trendsBlock = recentTrends.length > 0
+    ? `\nRECENT TRENDS & INSIGHTS:\n${recentTrends.map(t => `- ${t}`).join('\n')}`
+    : '';
+
+  const existingBlock = existingChallenges.length > 0
+    ? `\nEXISTING CHALLENGES IN DB (${existingChallenges.length} total, avg resolution ${avgResolutionDays} days):\nTop categories: ${topCategories.join(', ') || 'N/A'}`
+    : '';
+
+  const promptText = `You are the CivicSolve AI Deep Analysis Engine. You have FULL ACCESS to the platform's database context below. Use this real data to produce an ACCURATE, GROUNDED analysis — not generic guesses.
+
+=== COMPLAINT TO ANALYZE ===
+Title: ${title}
+Description: ${description}
+User-Selected Category: ${category || 'Not provided'}
+Location: ${location || 'Not provided'}
+
+=== DATABASE CONTEXT ===
+Total challenges in system: ${totalChallenges}
+Average resolution time: ${avgResolutionDays} days
+${similarBlock}
+${deptStatsBlock}
+${hotspotBlock}
+${trendsBlock}
+${existingBlock}
+
+=== ANALYSIS INSTRUCTIONS ===
+Using the database context above, perform a DEEP analysis:
+1. CATEGORY & SUBCATEGORY: Classify precisely. Use similar complaints to inform your choice.
+2. SEVERITY: Assess based on the actual description details AND patterns from similar issues in the DB.
+3. PRIORITY SCORE (1-100): Calculate using: severity weight + affected population + whether this is a known hotspot + similarity to unresolved complaints + SLA urgency.
+4. AFFECTED POPULATION: Estimate based on the location, description details, and similar complaint impacts.
+5. ROOT CAUSES: Identify specific root causes informed by similar complaints and hotspot data.
+6. TECHNOLOGIES: Suggest practical technologies based on what has been used for similar issues.
+7. SKILLS REQUIRED: Match to real engineering/domain skills needed.
+8. DEPARTMENT ROUTING: Pick the best department. Use department performance data to consider who handles this type best.
+9. SLA DAYS: Set based on severity and department capacity.
+10. RISK FACTORS: Flag if this matches a known hotspot pattern.
+
+Return ONLY valid JSON:
+{
+  "category": "string",
+  "subcategory": "string",
+  "severity": "low | medium | high | critical",
+  "priority_score": number (1-100),
+  "affected_population_estimate": number,
+  "possible_causes": ["cause 1", "cause 2", "cause 3"],
+  "suggested_technologies": ["tech 1", "tech 2", "tech 3"],
+  "skills_required": ["skill 1", "skill 2", "skill 3"],
+  "department_id": "pwd_roads | water_board | electricity_board | sanitation_swm | traffic_police | pollution_control | health_dept | rural_dev | education_dept | disaster_mgmt",
+  "department_name": "string",
+  "sla_days": number,
+  "confidence": number (70-99),
+  "routing_rationale": "Why this department is responsible — reference DB data if relevant",
+  "root_cause_analysis": "2-3 sentence deep analysis of likely root causes based on data patterns",
+  "risk_factors": ["risk 1", "risk 2"],
+  "similar_complaints_count": number,
+  "is_known_hotspot": boolean,
+  "recommended_immediate_action": "What should happen first"
+}`;
+
+  try {
+    if (!geminiClient) {
+      logAiRequest('deep-analyze', 'fallback_no_key', Date.now() - startTime);
+      return getFallbackDeepAnalysis(title, description, category, dbContext);
+    }
+
+    const { text, model } = await callGeminiGenerate(
+      [{ role: 'user', parts: [{ text: promptText }] }],
+      {
+        temperature: 0.15,
+        maxOutputTokens: 700,
+        responseMimeType: 'application/json'
+      }
+    );
+
+    const parsed = JSON.parse(sanitizeJsonString(text));
+    logAiRequest('deep-analyze', 'success', Date.now() - startTime, model);
+
+    return {
+      category: parsed.category || category || 'Infrastructure',
+      subcategory: parsed.subcategory || 'General Maintenance',
+      severity: ['low', 'medium', 'high', 'critical'].includes(parsed.severity?.toLowerCase()) ? parsed.severity.toLowerCase() : 'medium',
+      priority_score: typeof parsed.priority_score === 'number' ? Math.min(100, Math.max(1, parsed.priority_score)) : 65,
+      affected_population_estimate: typeof parsed.affected_population_estimate === 'number' ? parsed.affected_population_estimate : 1500,
+      possible_causes: Array.isArray(parsed.possible_causes) && parsed.possible_causes.length > 0
+        ? parsed.possible_causes : ['Issue requires further field investigation'],
+      suggested_technologies: Array.isArray(parsed.suggested_technologies) && parsed.suggested_technologies.length > 0
+        ? parsed.suggested_technologies : ['IoT monitoring', 'GIS mapping', 'Field assessment'],
+      skills_required: Array.isArray(parsed.skills_required) && parsed.skills_required.length > 0
+        ? parsed.skills_required : ['Civil Engineering', 'Data Analysis'],
+      department_id: parsed.department_id || 'pwd_roads',
+      department_name: parsed.department_name || 'Public Works Department',
+      sla_days: parsed.sla_days || 7,
+      confidence: typeof parsed.confidence === 'number' ? parsed.confidence : 88,
+      routing_rationale: parsed.routing_rationale || 'Automated department classification based on issue type.',
+      root_cause_analysis: parsed.root_cause_analysis || '',
+      risk_factors: Array.isArray(parsed.risk_factors) ? parsed.risk_factors : [],
+      similar_complaints_count: typeof parsed.similar_complaints_count === 'number' ? parsed.similar_complaints_count : similarComplaints.length,
+      is_known_hotspot: !!parsed.is_known_hotspot,
+      recommended_immediate_action: parsed.recommended_immediate_action || 'Field inspection and assessment',
+      _dataGrounded: true,
+      _similarComplaintsUsed: similarComplaints.length,
+      _hotspotsConsidered: hotspotAreas.length,
+      _modelUsed: model
+    };
+  } catch (err) {
+    logAiRequest('deep-analyze', 'error', Date.now() - startTime, GEMINI_MODEL, err.message);
+    return getFallbackDeepAnalysis(title, description, category, dbContext);
+  }
+}
+
+function getFallbackDeepAnalysis(title, description, category, dbContext = {}) {
+  const text = (title + ' ' + description).toLowerCase();
+  const { similarComplaints = [], hotspotAreas = [] } = dbContext;
+
+  // Use similar complaints to improve fallback accuracy
+  let baseCategory = category || 'Infrastructure';
+  let severity = 'medium';
+  let priority_score = 60;
+  let department_id = 'pwd_roads';
+  let department_name = 'Public Works Department (Roads & Bridges)';
+  let sla_days = 7;
+
+  // Check if similar complaints exist and use their patterns
+  if (similarComplaints.length > 0) {
+    const mostCommon = similarComplaints.reduce((acc, c) => {
+      acc[c.category] = (acc[c.category] || 0) + 1;
+      return acc;
+    }, {});
+    const topCat = Object.entries(mostCommon).sort((a, b) => b[1] - a[1])[0];
+    if (topCat && topCat[1] >= 2) {
+      baseCategory = topCat[0];
+    }
+    // Boost priority if similar unresolved issues exist
+    const unresolved = similarComplaints.filter(c => c.status !== 'resolved' && c.status !== 'implemented');
+    if (unresolved.length > 0) {
+      priority_score = Math.min(95, 70 + unresolved.length * 5);
+    }
+  }
+
+  // Category-specific fallback routing
+  if (text.includes('water') || text.includes('pipe') || text.includes('leak') || text.includes('drain') || baseCategory === 'Water Management') {
+    category = 'Water Management'; department_id = 'water_board'; department_name = 'Urban Water Supply & Sewerage Board'; sla_days = 3;
+    severity = text.includes('sewage') || text.includes('contaminat') ? 'high' : 'medium';
+    priority_score = Math.max(priority_score, 75);
+  } else if (text.includes('flood') || text.includes('collapse') || text.includes('disaster') || baseCategory === 'Public Safety & Disaster') {
+    category = 'Public Safety & Disaster'; department_id = 'disaster_mgmt'; department_name = 'Disaster Management & Emergency Relief Cell'; sla_days = 1;
+    severity = 'critical'; priority_score = 95;
+  } else if (text.includes('garbage') || text.includes('waste') || text.includes('sanitation')) {
+    category = 'Healthcare & Sanitation'; department_id = 'sanitation_swm'; department_name = 'Municipal Solid Waste & Public Sanitation Authority'; sla_days = 2;
+    priority_score = Math.max(priority_score, 70);
+  } else if (text.includes('electric') || text.includes('wire') || text.includes('light') || text.includes('transformer')) {
+    category = 'Energy & Power'; department_id = 'electricity_board'; department_name = 'State Electricity Distribution Corporation (JBVNL)'; sla_days = 2;
+    severity = text.includes('wire') || text.includes('spark') ? 'critical' : 'high';
+    priority_score = Math.max(priority_score, 80);
+  }
+
+  const similarCount = similarComplaints.length;
+  const isHotspot = hotspotAreas.some(h => text.includes(h.name?.toLowerCase() || '') || text.includes(h.ward?.toLowerCase() || ''));
+
+  return {
+    category,
+    subcategory: 'General Maintenance',
+    severity,
+    priority_score: Math.min(99, priority_score),
+    affected_population_estimate: 1500,
+    possible_causes: [
+      'Infrastructure asset degradation requiring field assessment',
+      'Recurring issue pattern observed in database records',
+      'Environmental or seasonal factors contributing to problem'
+    ],
+    suggested_technologies: ['IoT monitoring sensors', 'GIS spatial mapping', 'Remote telemetry', 'Field inspection drones'],
+    skills_required: ['Civil Engineering', 'GIS Mapping', 'Data Analysis'],
+    department_id,
+    department_name,
+    sla_days,
+    confidence: 78,
+    routing_rationale: `Automated classification based on complaint text analysis and ${similarCount} similar database records.`,
+    root_cause_analysis: `Analysis based on ${similarCount} similar complaints and ${hotspotAreas.length} known hotspots. ${isHotspot ? 'This location matches a known complaint hotspot pattern.' : 'No hotspot match detected.'}`,
+    risk_factors: isHotspot ? ['Matches known hotspot pattern', 'Multiple similar unresolved complaints'] : ['Requires field verification'],
+    similar_complaints_count: similarCount,
+    is_known_hotspot: isHotspot,
+    recommended_immediate_action: 'Dispatch field inspection crew for on-site assessment',
+    _dataGrounded: true,
+    _similarComplaintsUsed: similarCount,
+    _hotspotsConsidered: hotspotAreas.length
+  };
 }
 
 // ─── UTILITY: Sanitize markdown block wrappers ────────────────────────────────

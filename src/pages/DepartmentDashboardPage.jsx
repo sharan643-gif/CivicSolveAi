@@ -108,7 +108,7 @@ export default function DepartmentDashboardPage({ currentUser, challenges = [], 
       {/* Header */}
       <div className="reveal" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(0,48,135,0.08)', border: '1px solid rgba(0,48,135,0.2)', padding: '4px 12px', borderRadius: '100px', fontSize: '0.75rem', color: 'var(--primary)', marginBottom: '8px', fontWeight: 700 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(27,42,74,0.08)', border: '1px solid rgba(27,42,74,0.2)', padding: '4px 12px', borderRadius: '100px', fontSize: '0.75rem', color: 'var(--primary)', marginBottom: '8px', fontWeight: 700 }}>
             <Building2 size={13} color="var(--primary)" /> Department Operations & Accountability Console
           </div>
           <h1 style={{ fontSize: 'clamp(1.5rem, 4vw, 2.2rem)', fontFamily: 'var(--font-display)', fontWeight: 800, color: 'var(--text-primary)' }}>
@@ -203,7 +203,7 @@ export default function DepartmentDashboardPage({ currentUser, challenges = [], 
       {/* Metric Cards Row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
         {[
-          { label: 'Assigned Issues', value: totalCount, icon: <Building2 size={18} />, color: '#003087' },
+          { label: 'Assigned Issues', value: totalCount, icon: <Building2 size={18} />, color: 'var(--primary)' },
           { label: 'Pending Action', value: pendingCount, icon: <Clock size={18} />, color: '#d97706' },
           { label: 'Work In Progress', value: inProgressCount, icon: <TrendingUp size={18} />, color: '#0284c7' },
           { label: 'Resolved Tickets', value: resolvedCount, icon: <CheckCircle2 size={18} />, color: '#059669' },
@@ -298,7 +298,7 @@ export default function DepartmentDashboardPage({ currentUser, challenges = [], 
                   style={{
                     padding: '16px',
                     borderRadius: '10px',
-                    background: isSelected ? 'rgba(0,48,135,0.03)' : '#ffffff',
+                    background: isSelected ? 'rgba(27,42,74,0.03)' : '#ffffff',
                     border: isSelected ? '2px solid var(--primary)' : '1px solid var(--border-subtle)',
                     cursor: 'pointer',
                     display: 'flex',

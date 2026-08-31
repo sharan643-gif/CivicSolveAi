@@ -228,6 +228,35 @@ export const geminiService = {
     }
   },
 
+  // 11a. Deep Analysis with Full Database Context
+  deepAnalyzeComplaint: async (title, description, category = '', location = '', dbContext = {}) => {
+    try {
+      const data = await postAiRoute('deep-analyze', { title, description, category, location, dbContext });
+      return data.result;
+    } catch (err) {
+      return {
+        category: category || 'Infrastructure',
+        subcategory: 'General Maintenance',
+        severity: 'medium',
+        priority_score: 65,
+        affected_population_estimate: 1500,
+        possible_causes: ['Requires field investigation'],
+        suggested_technologies: ['IoT sensors', 'GIS mapping'],
+        skills_required: ['Civil Engineering'],
+        department_id: 'pwd_roads',
+        department_name: 'Public Works Department',
+        sla_days: 7,
+        confidence: 75,
+        routing_rationale: 'Fallback: automated text classification.',
+        root_cause_analysis: '',
+        risk_factors: [],
+        similar_complaints_count: 0,
+        is_known_hotspot: false,
+        recommended_immediate_action: 'Field inspection required'
+      };
+    }
+  },
+
   // 11b. AI Inspect: Analyze Camera Frame
   inspectFrame: async (frameBase64, conversationHistory = [], userMessage = '', mimeType = 'image/jpeg', voiceContext = null) => {
     try {

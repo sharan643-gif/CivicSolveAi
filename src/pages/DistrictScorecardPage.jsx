@@ -8,12 +8,12 @@ export default function DistrictScorecardPage({ onNavigate }) {
 
       {/* Header Banner */}
       <div style={{
-        background: 'linear-gradient(135deg, #003087 0%, #0f172a 100%)',
+        background: 'linear-gradient(135deg, var(--primary) 0%, #0f172a 100%)',
         color: '#ffffff', padding: '32px 24px', borderRadius: 'var(--radius-md)',
-        borderBottom: '4px solid #FF6200'
+        borderBottom: '4px solid var(--accent)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-          <Award size={24} color="#FF6200" />
+          <Award size={24} color="var(--accent)" />
           <h1 style={{ fontSize: '1.8rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
             District Innovation Scorecard & Impact Ledger
           </h1>

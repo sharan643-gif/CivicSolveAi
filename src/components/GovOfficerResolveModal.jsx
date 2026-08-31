@@ -94,9 +94,9 @@ export default function GovOfficerResolveModal({ challenge, isOpen, onClose, onS
     }}>
       <div style={{
         background: '#ffffff',
-        border: '1px solid rgba(0, 48, 135, 0.2)',
+        border: '1px solid rgba(27,42,74, 0.2)',
         borderRadius: '16px', width: '100%', maxWidth: '620px',
-        boxShadow: '0 25px 70px rgba(0, 48, 135, 0.35)',
+        boxShadow: '0 25px 70px rgba(27,42,74, 0.35)',
         overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '94vh',
       }}>
         
@@ -105,7 +105,7 @@ export default function GovOfficerResolveModal({ challenge, isOpen, onClose, onS
 
         {/* Header */}
         <div style={{
-          background: 'linear-gradient(135deg, #003087 0%, #001d5a 100%)',
+          background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%)',
           padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#ffffff',
           gap: '10px', flexWrap: 'wrap',
         }}>
@@ -119,7 +119,7 @@ export default function GovOfficerResolveModal({ challenge, isOpen, onClose, onS
             </div>
             <div style={{ minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '0.62rem', background: '#FF6200', color: '#fff', padding: '1px 6px', borderRadius: '8px', fontWeight: 800 }}>
+                <span style={{ fontSize: '0.62rem', background: 'var(--accent)', color: '#fff', padding: '1px 6px', borderRadius: '8px', fontWeight: 800 }}>
                   Government Portal
                 </span>
                 <span style={{ fontSize: '0.62rem', color: '#93c5fd', fontWeight: 700 }}>
@@ -227,12 +227,12 @@ export default function GovOfficerResolveModal({ challenge, isOpen, onClose, onS
                 type="button"
                 onClick={handleGenerateAiRemark}
                 style={{
-                  background: 'rgba(0, 48, 135, 0.08)', border: '1px solid rgba(0, 48, 135, 0.2)',
-                  borderRadius: '6px', color: '#003087', fontSize: '0.72rem', fontWeight: 700,
+                  background: 'rgba(27,42,74, 0.08)', border: '1px solid rgba(27,42,74, 0.2)',
+                  borderRadius: '6px', color: 'var(--primary)', fontSize: '0.72rem', fontWeight: 700,
                   padding: '3px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
                 }}
               >
-                <Sparkles size={12} color="#FF6200" /> Auto-Generate Statement
+                <Sparkles size={12} color="var(--accent)" /> Auto-Generate Statement
               </button>
             </div>
             <textarea
@@ -283,10 +283,10 @@ export default function GovOfficerResolveModal({ challenge, isOpen, onClose, onS
               disabled={isSubmitting}
               style={{
                 padding: '10px 22px', borderRadius: '8px', border: 'none',
-                background: 'linear-gradient(135deg, #003087 0%, #001d5a 100%)',
+                background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%)',
                 color: '#ffffff', fontSize: '0.88rem', fontWeight: 800,
                 cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
-                boxShadow: '0 4px 14px rgba(0,48,135,0.3)',
+                boxShadow: '0 4px 14px rgba(27,42,74,0.3)',
               }}
             >
               <Send size={15} />

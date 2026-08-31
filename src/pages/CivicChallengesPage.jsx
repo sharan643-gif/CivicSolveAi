@@ -9,7 +9,7 @@ export default function CivicChallengesPage() {
   const getStatusColor = (status) => {
     if (status === 'open') return '#047857';
     if (status === 'judging') return '#b45309';
-    return '#003087';
+    return 'var(--primary)';
   };
 
   return (
@@ -24,7 +24,7 @@ export default function CivicChallengesPage() {
 
       <div className="filter-row-mobile" style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
         {['all', 'open', 'judging'].map(f => (
-          <button key={f} onClick={() => setFilter(f)} style={{ padding: '7px 16px', borderRadius: '100px', border: filter === f ? '1px solid var(--primary)' : '1px solid var(--border-subtle)', background: filter === f ? 'var(--primary)' : '#ffffff', color: filter === f ? '#ffffff' : 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: filter === f ? 700 : 500, textTransform: 'capitalize', boxShadow: filter === f ? '0 2px 8px rgba(0,48,135,0.2)' : 'var(--shadow-xs)' }}>
+          <button key={f} onClick={() => setFilter(f)} style={{ padding: '7px 16px', borderRadius: '100px', border: filter === f ? '1px solid var(--primary)' : '1px solid var(--border-subtle)', background: filter === f ? 'var(--primary)' : '#ffffff', color: filter === f ? '#ffffff' : 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: filter === f ? 700 : 500, textTransform: 'capitalize', boxShadow: filter === f ? '0 2px 8px rgba(27,42,74,0.2)' : 'var(--shadow-xs)' }}>
             {f === 'all' ? 'All Challenges' : f === 'open' ? 'Open' : 'Judging'}
           </button>
         ))}

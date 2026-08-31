@@ -16,7 +16,7 @@ import SlaCountdownTimer from '../components/SlaCountdownTimer';
 import ComplaintTimeline from '../components/ComplaintTimeline';
 import CitizenVerificationPanel from '../components/CitizenVerificationPanel';
 import DeptPerformanceBadge from '../components/DeptPerformanceBadge';
-import ResolutionEvidencePackage from '../components/ResolutionEvidencePackage';
+import AiDeepAnalysisReport from '../components/AiDeepAnalysisReport';
 import CitizenRealityCheckModal from '../components/CitizenRealityCheckModal';
 
 export default function DetailPage({ challengeId, onNavigate, currentUserRole }) {
@@ -33,7 +33,7 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
   useEffect(() => {
     async function loadData() {
       setLoading(true);
-      const [cList, tList] = await Promise.all([getChallenges(), getTeams()]);
+      const [cList, tList] = await Promise.all([getChallenges(true), getTeams()]);
 
       // Merge localStorage evidence data with database challenges
       try {
@@ -359,7 +359,7 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
               <Heart size={14} fill="white" />
               Support ({challenge.support_count})
             </button>
-            <button onClick={() => setShowCertModal(true)} className="btn btn-secondary" style={{ padding: '8px 12px', fontSize: '0.8rem', background: '#FF6200', color: '#ffffff', border: 'none', fontWeight: 700 }}>
+            <button onClick={() => setShowCertModal(true)} className="btn btn-secondary" style={{ padding: '8px 12px', fontSize: '0.8rem', background: 'var(--accent)', color: '#ffffff', border: 'none', fontWeight: 700 }}>
               <Award size={14} />
               Impact Certificate
             </button>
@@ -500,8 +500,8 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
             style={{
               padding: '16px 20px',
               borderRadius: '12px',
-              background: 'linear-gradient(135deg, rgba(0, 48, 135, 0.04), rgba(2, 132, 199, 0.06))',
-              border: '1px solid rgba(0, 48, 135, 0.2)',
+              background: 'linear-gradient(135deg, rgba(27,42,74, 0.04), rgba(2, 132, 199, 0.06))',
+              border: '1px solid rgba(27,42,74, 0.2)',
               display: 'flex',
               alignItems: 'flex-start',
               gap: '12px'
@@ -527,8 +527,8 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
             routingReason={challenge.ai_analysis?.department_routing?.routing_reason || 'Automated AI classification matched to responsible government department.'}
           />
 
-          {/* PILLAR 10 & 11: Resolution Evidence Package (Before vs After Photo Verification) */}
-          <ResolutionEvidencePackage challenge={challenge} />
+          {/* AI Deep Analysis Report — Root Causes, Similar Complaints, Hotspot Data, Risk Assessment */}
+          <AiDeepAnalysisReport challenge={challenge} />
 
           {/* PILLAR 12: Citizen Reality Check Action Bar */}
           <div
@@ -829,7 +829,7 @@ export default function DetailPage({ challengeId, onNavigate, currentUserRole })
               </div>
 
               {/* Skill checklist matching */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', padding: '12px', background: 'rgba(0, 48, 135, 0.05)', borderRadius: '8px', border: '1px solid rgba(0, 48, 135, 0.15)' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', padding: '12px', background: 'rgba(27,42,74, 0.05)', borderRadius: '8px', border: '1px solid rgba(27,42,74, 0.15)' }}>
                 <span style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 700 }}>Challenge Demands:</span>
                 {challenge.skills_required.map((skill, i) => (
                   <span key={i} style={{ fontSize: '0.78rem', color: 'var(--text-primary)', fontWeight: 500 }}>✓ {skill}</span>

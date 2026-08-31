@@ -110,9 +110,9 @@ export default function DigitalTwinPage() {
                         const a = (j * 2 * Math.PI / riskRadar.length) - Math.PI / 2;
                         return `${150 + (rr.score * 1.1) * Math.cos(a)},${150 + (rr.score * 1.1) * Math.sin(a)}`;
                       }).join(' ')}
-                      fill="rgba(0,48,135,0.12)" stroke="#003087" strokeWidth="2"
+                      fill="rgba(27,42,74,0.12)" stroke="var(--primary)" strokeWidth="2"
                     />
-                    <text x={lx} y={ly} textAnchor="middle" fill="#003087" fontSize="10" fontWeight="700">{r.category}</text>
+                    <text x={lx} y={ly} textAnchor="middle" fill="var(--primary)" fontSize="10" fontWeight="700">{r.category}</text>
                     <text x={lx} y={ly + 12} textAnchor="middle" fill="var(--text-muted)" fontSize="8">{r.score}%</text>
                   </React.Fragment>
                 );
@@ -191,7 +191,7 @@ export default function DigitalTwinPage() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '6px' }}>
                 {[
                   { label: 'Cost', value: `₹${(iv.cost/1000).toFixed(0)}K`, color: '#b45309' },
-                  { label: 'Time', value: `${iv.time} months`, color: '#003087' },
+                  { label: 'Time', value: `${iv.time} months`, color: 'var(--primary)' },
                   { label: 'Impact', value: iv.impact.toLocaleString(), color: '#047857' },
                   { label: 'Risk', value: iv.risk, color: iv.risk === 'Low' ? '#047857' : '#b45309' },
                   { label: 'Affected', value: iv.citizensAffected.toLocaleString(), color: '#7c3aed' },

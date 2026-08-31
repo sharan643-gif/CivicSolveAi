@@ -47,8 +47,8 @@ export default function CommandMenu({ isOpen, onClose, onSwitchRole, onNavigate,
   ];
 
   const actionItems = [
-    { label: 'Department Operations & Accountability Console', action: 'dept-dashboard', icon: Building, route: 'dept-dashboard', color: '#003087' },
-    { label: 'Public Department Scorecard & SLA Metrics', action: 'departments', icon: Building, route: 'departments', color: '#003087' },
+    { label: 'Department Operations & Accountability Console', action: 'dept-dashboard', icon: Building, route: 'dept-dashboard', color: 'var(--primary)' },
+    { label: 'Public Department Scorecard & SLA Metrics', action: 'departments', icon: Building, route: 'departments', color: 'var(--primary)' },
     { label: 'Report a New Challenge', action: 'report', icon: PlusCircle, route: 'report', color: '#ef4444' },
     { label: 'Browse Solutions Marketplace', action: 'solutions', icon: BarChart3, route: 'solutions', color: '#10b981' },
     { label: 'District Command Center & Heatmap', action: 'command', icon: Map, route: 'command-center', color: '#3b82f6' },

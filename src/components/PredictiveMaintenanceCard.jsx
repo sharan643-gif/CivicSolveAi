@@ -11,7 +11,7 @@ export default function PredictiveMaintenanceCard({ onDispatchCrew }) {
       style={{
         padding: '24px',
         borderRadius: '16px',
-        background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.04), rgba(0, 48, 135, 0.05))',
+        background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.04), rgba(27,42,74, 0.05))',
         border: '1px solid rgba(139, 92, 246, 0.25)',
         display: 'flex',
         flexDirection: 'column',

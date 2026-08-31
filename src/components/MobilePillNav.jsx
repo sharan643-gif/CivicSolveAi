@@ -133,7 +133,7 @@ export default function MobilePillNav({ activeTab, onSelectTab, currentUser, onO
             background: '#ffffff',
             border: '1px solid var(--border-medium)',
             borderRadius: '9999px',
-            boxShadow: '0 8px 30px rgba(0, 48, 135, 0.18), 0 2px 8px rgba(0, 0, 0, 0.06)',
+            boxShadow: '0 8px 30px rgba(27,42,74, 0.18), 0 2px 8px rgba(0, 0, 0, 0.06)',
             pointerEvents: 'auto',
             position: 'relative',
           }}
@@ -145,8 +145,8 @@ export default function MobilePillNav({ activeTab, onSelectTab, currentUser, onO
             if (item.isPrimary) {
               const pressScale = isLongPressing ? 1.15 : 1;
               const pressGlow = isLongPressing
-                ? '0 4px 20px rgba(16, 185, 129, 0.6), 0 0 40px rgba(16, 185, 129, 0.3)'
-                : '0 4px 14px rgba(255, 98, 0, 0.45)';
+                ? '0 4px 20px rgba(45,122,79,0.5), 0 0 40px rgba(45,122,79,0.2)'
+                : '0 4px 16px rgba(200,134,10, 0.4)';
               return (
                 <div key={item.id} style={{ position: 'relative', flexShrink: 0 }}>
                   {/* Progress ring */}
@@ -161,13 +161,13 @@ export default function MobilePillNav({ activeTab, onSelectTab, currentUser, onO
                       <circle
                         cx="27" cy="27" r="24"
                         fill="none"
-                        stroke="rgba(16, 185, 129, 0.3)"
+                        stroke="rgba(45,122,79,0.25)"
                         strokeWidth="3"
                       />
                       <circle
                         cx="27" cy="27" r="24"
                         fill="none"
-                        stroke="#10b981"
+                        stroke="var(--success)"
                         strokeWidth="3"
                         strokeDasharray={`${2 * Math.PI * 24}`}
                         strokeDashoffset={`${2 * Math.PI * 24 * (1 - longPressProgress / 100)}`}
@@ -190,8 +190,8 @@ export default function MobilePillNav({ activeTab, onSelectTab, currentUser, onO
                       height: '46px',
                       borderRadius: '50%',
                       background: isLongPressing
-                        ? 'linear-gradient(135deg, #10b981, #059669)'
-                        : 'var(--accent)',
+                        ? 'linear-gradient(135deg, var(--success), #1a5c3a)'
+                        : 'linear-gradient(135deg, var(--accent), #a06d08)',
                       border: '3px solid #ffffff',
                       color: '#ffffff',
                       display: 'flex',
@@ -213,8 +213,8 @@ export default function MobilePillNav({ activeTab, onSelectTab, currentUser, onO
                     <div style={{
                       position: 'absolute', bottom: '-28px', left: '50%', transform: 'translateX(-50%)',
                       whiteSpace: 'nowrap', fontSize: '0.6rem', fontWeight: 700,
-                      color: '#10b981', background: '#fff', padding: '2px 8px',
-                      borderRadius: '6px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      color: 'var(--success)', background: '#fff', padding: '2px 8px',
+                      borderRadius: 'var(--radius-md)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                       animation: 'fadeIn 0.2s ease', pointerEvents: 'none',
                     }}>
                       🎙️ Keep holding...

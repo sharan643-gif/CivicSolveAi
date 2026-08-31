@@ -36,7 +36,7 @@ export default function DepartmentScorecardPage() {
       {/* Platform-wide Metrics */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px' }}>
         {[
-          { label: 'Avg Response Time', value: `${efficiency.avgResponseTime} days`, icon: <Clock size={16} />, color: '#003087' },
+          { label: 'Avg Response Time', value: `${efficiency.avgResponseTime} days`, icon: <Clock size={16} />, color: 'var(--primary)' },
           { label: 'Avg Resolution Time', value: `${efficiency.avgResolutionTime} days`, icon: <CheckCircle size={16} />, color: '#047857' },
           { label: 'First Response Rate', value: `${efficiency.firstResponseRate}%`, icon: <ThumbsUp size={16} />, color: '#7c3aed' },
           { label: 'Escalation Rate', value: `${efficiency.escalationRate}%`, icon: <AlertTriangle size={16} />, color: '#b45309' },
@@ -65,7 +65,7 @@ export default function DepartmentScorecardPage() {
                 padding: '18px',
                 borderLeft: `5px solid ${dept.color}`,
                 cursor: 'pointer',
-                background: isSelected ? 'rgba(0, 48, 135, 0.03)' : '#ffffff',
+                background: isSelected ? 'rgba(27,42,74, 0.03)' : '#ffffff',
                 border: isSelected ? '2px solid var(--primary)' : '1px solid var(--border-subtle)',
                 borderRadius: '12px',
                 display: 'flex',
@@ -127,7 +127,7 @@ export default function DepartmentScorecardPage() {
                   <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#b45309' }}>{score.escalationsCount}</div>
                   <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', fontWeight: 600 }}>Disputes</div>
                 </div>
-                <div style={{ textAlign: 'center', padding: '6px 4px', borderRadius: '6px', background: 'var(--primary-light)', border: '1px solid rgba(0,48,135,0.15)' }}>
+                <div style={{ textAlign: 'center', padding: '6px 4px', borderRadius: '6px', background: 'var(--primary-light)', border: '1px solid rgba(27,42,74,0.15)' }}>
                   <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--primary)' }}>{dept.slaDays}d</div>
                   <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', fontWeight: 600 }}>SLA Target</div>
                 </div>

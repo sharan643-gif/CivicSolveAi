@@ -54,7 +54,7 @@ export default function WorkloadBalancingPanel() {
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
-            boxShadow: '0 4px 12px rgba(0, 48, 135, 0.2)'
+            boxShadow: '0 4px 12px rgba(27,42,74, 0.2)'
           }}
         >
           <RefreshCw size={14} className={rebalanced ? 'spin-slow' : ''} />

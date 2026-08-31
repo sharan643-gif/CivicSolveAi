@@ -7,7 +7,7 @@ export default function MobileLandingPage({ onNavigate, stats }) {
 
       {/* Hero Header */}
       <div className="reveal" style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left' }}>
-        <div style={{ display: 'inline-flex', alignSelf: 'flex-start', alignItems: 'center', gap: '6px', background: 'var(--primary-light)', border: '1px solid rgba(0,48,135,0.2)', padding: '5px 12px', borderRadius: '100px', fontSize: '0.72rem', color: 'var(--primary)', fontWeight: 700 }}>
+        <div style={{ display: 'inline-flex', alignSelf: 'flex-start', alignItems: 'center', gap: '6px', background: 'var(--primary-light)', border: '1px solid rgba(27,42,74,0.2)', padding: '5px 12px', borderRadius: '100px', fontSize: '0.72rem', color: 'var(--primary)', fontWeight: 700 }}>
           <Sparkles size={12} /> SIH 2026 Innovation Platform
         </div>
 

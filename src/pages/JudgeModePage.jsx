@@ -25,9 +25,9 @@ export default function JudgeModePage({ onNavigate }) {
 
       {/* Hero Banner */}
       <div style={{
-        background: 'linear-gradient(135deg, #003087 0%, #1e1b4b 100%)',
+        background: 'linear-gradient(135deg, var(--primary) 0%, #1e1b4b 100%)',
         color: '#ffffff', padding: '32px 24px', borderRadius: 'var(--radius-md)',
-        borderBottom: '4px solid #FF6200', textAlign: 'center'
+        borderBottom: '4px solid var(--accent)', textAlign: 'center'
       }}>
         <span style={{ fontSize: '0.75rem', fontWeight: 800, background: 'rgba(255,255,255,0.2)', padding: '4px 12px', borderRadius: '9999px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
           Smart India Hackathon 2026 · Dedicated Presentation Mode
@@ -44,7 +44,7 @@ export default function JudgeModePage({ onNavigate }) {
             onClick={() => { setCurrentStep(1); setAutoPlay(true); }}
             style={{
               display: 'flex', alignItems: 'center', gap: '8px',
-              background: '#FF6200', color: '#ffffff', border: 'none',
+              background: 'var(--accent)', color: '#ffffff', border: 'none',
               borderRadius: '4px', padding: '12px 24px', fontSize: '0.95rem', fontWeight: 700,
               cursor: 'pointer', fontFamily: 'inherit'
             }}

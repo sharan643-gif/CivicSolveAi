@@ -2,10 +2,11 @@
 
 
 // Mock rule-based categorization when AI API is not active
-// Now accepts an optional `userCategory` hint from the form
-const runMockAnalysis = (title = "", description = "", userCategory = "") => {
+// Now accepts an optional `userCategory` hint from the form AND optional dbContext for data-grounded fallback
+const runMockAnalysis = (title = "", description = "", userCategory = "", dbContext = {}) => {
   const text = (title + " " + description).toLowerCase();
   const cat = (userCategory || '').toLowerCase();
+  const { similarComplaints = [], hotspotAreas = [] } = dbContext;
   
   // Default values
   let category = userCategory || "Infrastructure";
@@ -153,6 +154,21 @@ const runMockAnalysis = (title = "", description = "", userCategory = "") => {
     skills_required = ['Full-Stack Development', 'IoT Integration', 'Data Analysis', 'Community Engagement'];
   }
 
+  // Use similar complaints to boost priority if unresolved issues exist
+  const unresolvedSimilar = similarComplaints.filter(c => c.status !== 'resolved' && c.status !== 'implemented');
+  if (unresolvedSimilar.length > 0) {
+    priority_score = Math.min(95, priority_score + unresolvedSimilar.length * 3);
+  }
+
+  // Check if location matches a known hotspot
+  const isHotspot = hotspotAreas.some(h =>
+    text.includes((h.name || '').toLowerCase()) || text.includes((h.ward || '').toLowerCase())
+  );
+  if (isHotspot) {
+    priority_score = Math.min(98, priority_score + 10);
+    if (severity === 'medium') severity = 'high';
+  }
+
   return {
     category,
     subcategory,
@@ -161,22 +177,137 @@ const runMockAnalysis = (title = "", description = "", userCategory = "") => {
     affected_population_estimate,
     possible_causes,
     suggested_technologies,
-    skills_required
+    skills_required,
+    // DB-grounded metadata
+    similar_complaints_count: similarComplaints.length,
+    is_known_hotspot: isHotspot,
+    _dataGrounded: similarComplaints.length > 0 || hotspotAreas.length > 0,
   };
 };
 
 import { geminiService, groqService } from './geminiClientService';
+import { getChallenges } from './supabaseService';
+import { civicIntelligenceEngine } from './civicIntelligenceEngine';
+import { accountabilityService, DEPARTMENTS } from './accountabilityService';
 
 export { geminiService, groqService };
 
+// ─── Gather rich database context for deep AI analysis ──────────────────────
+async function gatherDbContext(title, description, category = '', location = '') {
+  const context = {
+    similarComplaints: [],
+    departmentStats: {},
+    hotspotAreas: [],
+    recentTrends: [],
+    totalChallenges: 0,
+    avgResolutionDays: 4,
+    topCategories: [],
+    existingChallenges: [],
+  };
+
+  try {
+    // 1. Fetch all existing challenges from DB
+    const allChallenges = await getChallenges();
+    context.totalChallenges = allChallenges.length;
+    context.existingChallenges = allChallenges;
+
+    // 2. Find similar complaints using text overlap + category match
+    const searchText = (title + ' ' + description).toLowerCase();
+    const searchWords = new Set(searchText.split(/\W+/).filter(w => w.length > 3));
+
+    context.similarComplaints = allChallenges
+      .map(c => {
+        const cText = ((c.title || '') + ' ' + (c.description || '') + ' ' + (c.category || '')).toLowerCase();
+        const cWords = new Set(cText.split(/\W+/).filter(w => w.length > 3));
+        let overlap = 0;
+        for (const w of searchWords) { if (cWords.has(w)) overlap++; }
+        const similarity = overlap / Math.max(1, searchWords.size + cWords.size - overlap);
+        return { ...c, _similarity: similarity };
+      })
+      .filter(c => c._similarity > 0.08 || (category && c.category === category))
+      .sort((a, b) => b._similarity - a._similarity)
+      .slice(0, 8)
+      .map(({ _similarity, ...c }) => c);
+
+    // 3. Department performance stats
+    for (const dept of DEPARTMENTS) {
+      const metrics = accountabilityService.getDepartmentScore(dept.id);
+      context.departmentStats[dept.id] = {
+        name: dept.shortName,
+        score: metrics.score,
+        slaCompliance: metrics.slaCompliance,
+        resolvedRate: metrics.resolvedRate,
+        totalAssigned: metrics.totalAssigned,
+        totalResolved: metrics.totalResolved,
+        avgResolutionDays: metrics.avgResolutionDays,
+      };
+    }
+
+    // 4. Hotspot data
+    context.hotspotAreas = civicIntelligenceEngine.getCivicHotspots();
+
+    // 5. Compute trends from existing data
+    const catCounts = {};
+    let totalPop = 0;
+    let resolvedCount = 0;
+    for (const c of allChallenges) {
+      catCounts[c.category] = (catCounts[c.category] || 0) + 1;
+      totalPop += c.affected_population || 0;
+      if (c.status === 'resolved' || c.status === 'implemented') resolvedCount++;
+    }
+    context.topCategories = Object.entries(catCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([cat, count]) => `${cat} (${count})`);
+
+    const resolutionRate = allChallenges.length > 0 ? ((resolvedCount / allChallenges.length) * 100).toFixed(1) : '89';
+    context.recentTrends = [
+      `${allChallenges.length} total challenges in database`,
+      `${resolutionRate}% overall resolution rate`,
+      `Total population impacted: ${totalPop.toLocaleString()}`,
+      `Top complaint category: ${context.topCategories[0] || 'N/A'}`,
+    ];
+
+    // 6. Check if location matches any hotspot
+    if (location) {
+      const locLower = location.toLowerCase();
+      for (const hs of context.hotspotAreas) {
+        if (locLower.includes((hs.ward || '').toLowerCase()) || locLower.includes((hs.name || '').toLowerCase())) {
+          context.recentTrends.push(`⚠️ Location matches known hotspot: ${hs.name} (${hs.repeatCount} repeat complaints)`);
+        }
+      }
+    }
+
+  } catch (err) {
+    console.warn('[aiService] Failed to gather DB context:', err.message);
+  }
+
+  return context;
+}
+
 export const aiService = {
-  // Analyze challenge via Gemini AI or fallback engine
+  // Analyze challenge via deep AI analysis with full database context
   // userCategory: optional category hint from the form selection
   analyzeChallenge: async (title, description, userCategory = '') => {
+    // 1. Gather rich context from the database
+    const dbContext = await gatherDbContext(title, description, userCategory);
+
+    // 2. Call the deep analysis endpoint with full DB context
+    try {
+      const res = await geminiService.deepAnalyzeComplaint(
+        title, description, userCategory, '', dbContext
+      );
+      if (res && res.category) {
+        return res;
+      }
+    } catch (e) {
+      console.warn('[aiService] Deep analysis failed, trying classify fallback:', e.message);
+    }
+
+    // 3. Fallback: try basic classification (still better than pure keyword)
     try {
       const res = await geminiService.classifyComplaint(title, description);
       if (res && res.category && res.category !== 'Infrastructure') {
-        // Use Gemini's classification only if it's specific (not the generic fallback)
         return {
           category: res.category,
           subcategory: res.subcategory || 'General Maintenance',
@@ -189,10 +320,11 @@ export const aiService = {
         };
       }
     } catch (e) {
-      console.warn('[aiService] Gemini classification failed, running local analysis:', e.message);
+      console.warn('[aiService] Gemini classification also failed, running local analysis:', e.message);
     }
-    // Fall back to enhanced local analysis with user's category hint
-    return runMockAnalysis(title, description, userCategory);
+
+    // 4. Final fallback: enhanced local analysis with DB context awareness
+    return runMockAnalysis(title, description, userCategory, dbContext);
   },
 
   // Simulate duplicate similarity detection

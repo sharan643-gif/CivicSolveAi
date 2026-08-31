@@ -5,17 +5,18 @@ import {
   generateCivicResponse, 
   generateCivicResponseStream,
   classifyComplaint, 
-  summarizeComplaint, 
-  generateComplaintDraft, 
-  analyzePriority, 
-  explainStatus, 
+  summarizeComplaint,
+  generateComplaintDraft,
+  analyzePriority,
+  explainStatus,
   analyzeImage,
   routeDepartment,
   compareResolutionEvidence,
   explainPendingStatus,
   queryCivicAnalytics,
   inspectFrame,
-  generateInspectionReport
+  generateInspectionReport,
+  deepAnalyzeComplaint
 } from './geminiServerService.js';
 
 function parseRequestBody(req) {
@@ -140,6 +141,12 @@ function createGeminiMiddleware() {
       if (url === '/api/ai/analytics-query') {
         const { query = '', contextData = {} } = body;
         const result = await queryCivicAnalytics(query, contextData);
+        return sendJsonResponse(res, { success: true, result });
+      }
+
+      if (url === '/api/ai/deep-analyze') {
+        const { title = '', description = '', category = '', location = '', dbContext = {} } = body;
+        const result = await deepAnalyzeComplaint(title, description, category, location, dbContext);
         return sendJsonResponse(res, { success: true, result });
       }
 

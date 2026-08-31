@@ -274,8 +274,8 @@ export default function EscalationReportModal({ challenge, onClose, onSuccess })
               style={{
                 padding: '10px 14px',
                 borderRadius: '8px',
-                background: 'rgba(0, 48, 135, 0.05)',
-                border: '1px solid rgba(0, 48, 135, 0.15)',
+                background: 'rgba(27,42,74, 0.05)',
+                border: '1px solid rgba(27,42,74, 0.15)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',

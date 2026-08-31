@@ -63,7 +63,7 @@ export default function CollaborationGraph() {
                 background: isSelected ? 'var(--primary)' : '#ffffff',
                 color: isSelected ? '#ffffff' : 'var(--text-primary)',
                 border: `1px solid ${isSelected ? 'var(--primary)' : 'var(--border-subtle)'}`,
-                boxShadow: isSelected ? '0 4px 12px rgba(0,48,135,0.2)' : 'none',
+                boxShadow: isSelected ? '0 4px 12px rgba(27,42,74,0.2)' : 'none',
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
                 fontFamily: 'inherit',

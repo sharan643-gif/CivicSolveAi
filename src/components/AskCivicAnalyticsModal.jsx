@@ -46,7 +46,7 @@ export default function AskCivicAnalyticsModal({ onClose }) {
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: 'rgba(0, 48, 135, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
+            <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: 'rgba(27,42,74, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
               <Brain size={18} />
             </div>
             <div>
@@ -112,7 +112,7 @@ export default function AskCivicAnalyticsModal({ onClose }) {
             className="fade-in"
             style={{
               padding: '16px', borderRadius: '12px', background: '#f8fafc',
-              border: '1px solid rgba(0, 48, 135, 0.15)', display: 'flex', flexDirection: 'column', gap: '10px'
+              border: '1px solid rgba(27,42,74, 0.15)', display: 'flex', flexDirection: 'column', gap: '10px'
             }}
           >
             <div style={{ fontSize: '0.94rem', fontWeight: 800, color: 'var(--primary)' }}>

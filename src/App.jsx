@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Sparkles, Search, Bell, AlertCircle, LogOut, User, ChevronDown, ArrowLeft, Home, Compass, Lightbulb, ShieldCheck, DollarSign, BookOpen, FileText, LayoutDashboard, Plus, Trophy, BarChart3, Brain, Heart, Eye, Zap, Award, Map, Mic, Camera } from 'lucide-react';
 import { supabase } from './services/supabaseClient';
-import { getChallenges, getStats, addChallenge, updateChallenge, addAuditLog, getProfileById, uploadEvidenceFiles } from './services/supabaseService';
+import { getChallenges, getStats, addChallenge, updateChallenge, addAuditLog, getProfileById, uploadEvidenceFiles, invalidatePrefix } from './services/supabaseService';
 import LandingPage from './pages/LandingPage';
 import ExplorePage from './pages/ExplorePage';
 import SubmitPage from './pages/SubmitPage';
@@ -270,7 +270,8 @@ export default function App() {
   };
 
   const refreshDatabaseState = async () => {
-    const [newChallenges, newStats] = await Promise.all([getChallenges(), getStats()]);
+    // Use lightweight column set for list views — 40-60% less data transferred
+    const [newChallenges, newStats] = await Promise.all([getChallenges(true), getStats()]);
 
     // Merge localStorage evidence data (reliable fallback for uploaded images)
     try {
@@ -284,22 +285,12 @@ export default function App() {
       // ignore
     }
 
-    // Filter out old duplicate challenges with hardcoded default data
-    // These were created by the old wizard that had fallback defaults
-    const seenDefaults = new Set();
+    // Deduplicate: keep unique challenges by (title + description + location)
+    const seen = new Set();
     const cleaned = newChallenges.filter(c => {
-      const isOldDefault = (
-        c.title === 'Drinking water issue' &&
-        c.description === 'Village roads become impassable during heavy rainfall.' &&
-        c.location === 'Sikaripara Block, Dumka' &&
-        c.priority_score === 91
-      );
-      if (isOldDefault) {
-        // Keep only the first occurrence, remove duplicates
-        const key = `${c.title}|${c.description}|${c.location}`;
-        if (seenDefaults.has(key)) return false;
-        seenDefaults.add(key);
-      }
+      const key = `${(c.title || '').trim()}|${(c.description || '').trim().slice(0, 100)}|${(c.location || '').trim()}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
       return true;
     });
     setChallenges(cleaned);
@@ -721,10 +712,10 @@ export default function App() {
       {/* Footer — Government Style */}
       {!isMobile && (
         <footer style={{
-          borderTop: '3px solid var(--primary)',
-          background: '#1a1a2e',
+          borderTop: '1px solid var(--border-subtle)',
+          background: 'linear-gradient(180deg, #f4f2ef 0%, #ebe8e3 100%)',
           padding: '32px 0 24px',
-          color: '#adb5bd',
+          color: 'var(--text-secondary)',
           fontSize: '0.82rem',
           position: 'relative',
           zIndex: 1,
@@ -733,29 +724,28 @@ export default function App() {
           <div className="container">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '24px', marginBottom: '20px' }}>
               <div>
-                <div style={{ color: '#ffffff', fontWeight: 700, fontSize: '1rem', marginBottom: '6px' }}>CivicSolve AI</div>
-                <div style={{ color: '#adb5bd', maxWidth: '320px', lineHeight: 1.6 }}>National Societal Innovation Operating System · Powered by AI for better governance.</div>
+                <div style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '1rem', marginBottom: '6px' }}>CivicSolve AI</div>
+                <div style={{ color: 'var(--text-secondary)', maxWidth: '320px', lineHeight: 1.6 }}>National Societal Innovation Operating System · Powered by AI for better governance.</div>
               </div>
               <div style={{ display: 'flex', gap: '40px', flexWrap: 'wrap' }}>
                 <div>
-                  <div style={{ color: '#ffffff', fontWeight: 600, marginBottom: '8px', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Platform</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    {['Accessibility', 'Privacy Policy', 'Terms of Use', 'Contact Us'].map(l => <span key={l} style={{ color: '#adb5bd', cursor: 'pointer' }}>{l}</span>)}
+                  <div style={{ color: 'var(--primary)', fontWeight: 600, marginBottom: '8px', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Platform</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    {['Accessibility', 'Privacy Policy', 'Terms of Use', 'Contact Us'].map(l => <span key={l} style={{ color: 'var(--text-secondary)', cursor: 'pointer', transition: 'color 0.15s ease' }}>{l}</span>)}
                   </div>
                 </div>
                 <div>
-                  <div style={{ color: '#ffffff', fontWeight: 600, marginBottom: '8px', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Technology</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <span style={{ color: '#adb5bd' }}>Supabase PostgreSQL</span>
-                    <span style={{ color: '#adb5bd' }}>Google Gemini AI Engine</span>
-                    <span style={{ color: '#adb5bd' }}>Open Source</span>
+                  <div style={{ color: 'var(--primary)', fontWeight: 600, marginBottom: '8px', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Technology</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Supabase PostgreSQL</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>Google Gemini AI Engine</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>Open Source</span>
                   </div>
                 </div>
               </div>
-            </div>
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+            </div>              <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
               <div>© 2026 CivicSolve AI. All rights reserved. Government of India Initiative.</div>
-              <div style={{ color: '#6c757d' }}>Last updated: August 2026</div>
+              <div style={{ color: 'var(--text-muted)' }}>Last updated: August 2026</div>
             </div>
           </div>
         </footer>
@@ -857,7 +847,7 @@ function AppHeader({
       justifyContent: 'center',
       paddingTop: isMobile ? 'max(8px, var(--safe-top))' : '10px',
       paddingBottom: isMobile ? '8px' : '10px',
-      background: '#f8f9fa',
+      background: 'linear-gradient(180deg, #f4f2ef 0%, #faf9f7 100%)',
       borderBottom: '1px solid var(--border-subtle)',
       pointerEvents: 'none',
     }}>
@@ -868,16 +858,16 @@ function AppHeader({
           alignItems: 'center',
           width: isMobile ? 'calc(100% - 16px)' : '98%',
           maxWidth: isMobile ? '400px' : '1500px',
-          height: isMobile ? '44px' : '50px',
-          padding: isMobile ? '0 6px' : '0 8px',
-          background: '#ffffff',
+          height: isMobile ? '44px' : '48px',
+          padding: isMobile ? '0 6px' : '0 10px 0 6px',
+          background: 'rgba(255,255,255,0.88)',
           border: '1px solid var(--border-subtle)',
           borderRadius: '9999px',
-          boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+          boxShadow: '0 2px 16px rgba(0,0,0,0.06), 0 0 0 1px rgba(27,42,74,0.03)',
+          backdropFilter: 'blur(12px)',
           pointerEvents: 'auto',
-          overflow: 'hidden',
+          overflow: 'visible',
           boxSizing: 'border-box',
-          justifyContent: 'center',
         }}
       >
 
@@ -887,83 +877,47 @@ function AppHeader({
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: isMobile ? '5px' : '8px',
+            gap: isMobile ? '5px' : '7px',
             cursor: 'pointer',
             flexShrink: 0,
             zIndex: 2,
             minWidth: 0,
-            paddingRight: isMobile ? '2px' : '6px',
+            paddingRight: isMobile ? '2px' : '8px',
           }}
         >
           <div style={{
             background: 'var(--primary)',
-            width: isMobile ? '30px' : '38px',
-            height: isMobile ? '30px' : '38px',
+            width: isMobile ? '30px' : '34px',
+            height: isMobile ? '30px' : '34px',
             borderRadius: '10px',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             flexShrink: 0,
           }}>
-            <Sparkles size={isMobile ? 15 : 18} color="white" />
+            <Sparkles size={isMobile ? 15 : 16} color="white" />
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-            <span style={{
-              fontSize: isMobile ? '0.82rem' : '0.95rem',
-              fontWeight: 800,
-              fontFamily: 'var(--font-display)',
-              letterSpacing: '-0.01em',
-              color: 'var(--primary)',
-              whiteSpace: 'nowrap',
-              lineHeight: 1.15,
-            }}>
-              JanSetu <span style={{ color: 'var(--accent)' }}>AI</span>
-            </span>
-            {/* Subtitle hidden for compact header */}
-          </div>
+          <span style={{
+            fontSize: isMobile ? '0.82rem' : '0.88rem',
+            fontWeight: 800,
+            fontFamily: 'var(--font-display)',
+            letterSpacing: '-0.01em',
+            color: 'var(--primary)',
+            whiteSpace: 'nowrap',
+          }}>
+            JanSetu <span style={{ color: 'var(--accent)' }}>AI</span>
+          </span>
         </div>
 
-        {/* Vertical divider */}
+        {/* Divider: Logo ↔ Nav */}
         {!isMobile && (
-          <div style={{ width: '1px', height: '20px', background: 'rgba(0,0,0,0.08)', flexShrink: 0, margin: '0 3px' }} />
+          <div style={{ width: '1px', height: '18px', background: 'rgba(0,0,0,0.08)', flexShrink: 0, marginRight: '4px' }} />
         )}
 
-        {/* Desktop Navigation Items */}
+        {/* Desktop Navigation Links */}
         {!isMobile && (
-          <div style={{ display: 'flex', gap: '1px', position: 'relative', zIndex: 1, flexShrink: 0 }}>
-            {NAV_ITEMS.map((item) => {
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1px', flexShrink: 0 }}>
+            {NAV_ITEMS.filter(i => !i.isPrimary).map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
-
-              if (item.isPrimary) {
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => onSelectTab(item.id)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      padding: '6px 12px',
-                      borderRadius: '9999px',
-                      border: '2px solid var(--accent)',
-                      background: 'var(--accent)',
-                      color: '#fff',
-                      cursor: 'pointer',
-                      fontSize: '0.78rem',
-                      fontWeight: 700,
-                      fontFamily: 'var(--font-body)',
-                      whiteSpace: 'nowrap',
-                      margin: '0 3px',
-                      transition: 'background 0.15s ease',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.background = '#cc4e00'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'var(--accent)'; }}
-                  >
-                    <Plus size={14} strokeWidth={2.5} />
-                    Report
-                  </button>
-                );
-              }
-
               return (
                 <button
                   key={item.id}
@@ -972,40 +926,69 @@ function AppHeader({
                     display: 'flex',
                     alignItems: 'center',
                     gap: '4px',
-                    padding: '6px 10px',
+                    padding: '5px 9px',
                     borderRadius: '9999px',
-                    border: isActive ? '1px solid var(--primary)' : '1px solid transparent',
+                    border: 'none',
                     background: isActive ? 'var(--primary)' : 'transparent',
                     cursor: 'pointer',
                     color: isActive ? '#ffffff' : 'var(--text-secondary)',
-                    fontSize: '0.78rem',
+                    fontSize: '0.75rem',
                     fontWeight: isActive ? 700 : 500,
                     fontFamily: 'var(--font-body)',
                     whiteSpace: 'nowrap',
                     transition: 'all 0.15s ease',
-                    minHeight: '34px',
+                    height: '32px',
                   }}
                   onMouseEnter={e => {
                     if (!isActive) {
                       e.currentTarget.style.background = 'var(--primary-light)';
                       e.currentTarget.style.color = 'var(--primary)';
-                      e.currentTarget.style.borderColor = 'rgba(0,48,135,0.2)';
                     }
                   }}
                   onMouseLeave={e => {
                     if (!isActive) {
                       e.currentTarget.style.background = 'transparent';
                       e.currentTarget.style.color = 'var(--text-secondary)';
-                      e.currentTarget.style.borderColor = 'transparent';
                     }
                   }}
                 >
-                  <Icon size={13} strokeWidth={isActive ? 2.5 : 2} />
+                  <Icon size={12} strokeWidth={isActive ? 2.5 : 2} />
                   <span>{item.label}</span>
                 </button>
               );
             })}
           </div>
+        )}
+
+        {/* Report CTA — visually distinct from nav links */}
+        {!isMobile && (
+          <button
+            onClick={() => onSelectTab('report')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              padding: '5px 12px',
+              borderRadius: '9999px',
+              border: 'none',
+              background: 'linear-gradient(135deg, var(--accent), #cc4e00)',
+              color: '#fff',
+              cursor: 'pointer',
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              fontFamily: 'var(--font-body)',
+              whiteSpace: 'nowrap',
+              height: '32px',
+              flexShrink: 0,
+              boxShadow: '0 2px 8px rgba(255,98,0,0.3)',
+              transition: 'box-shadow 0.15s ease, transform 0.15s ease',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 14px rgba(255,98,0,0.45)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+            onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 2px 8px rgba(255,98,0,0.3)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+          >
+            <Plus size={13} strokeWidth={2.5} />
+            Report
+          </button>
         )}
 
         {/* Spacer — pushes right section to edge on mobile */}
@@ -1041,71 +1024,66 @@ function AppHeader({
           </div>
         )}
 
-        {/* Right Section */}
+        {/* Spacer — pushes right section to the right */}
+        <div style={{ flex: 1 }} />
+
+        {/* Right Section — Utility Icons + Auth */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: isMobile ? '3px' : '4px',
-          marginLeft: isMobile ? '0' : '0',
+          gap: isMobile ? '2px' : '3px',
           zIndex: 2,
           flexShrink: 0,
         }}>
-          {/* Voice AI + Camera AI Triggers — Desktop only */}
-
+          {/* Voice AI — icon only on desktop */}
           {!isMobile && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-              <button
-                onClick={onOpenVoice}
-                title="Open JanSetu Voice AI Engine"
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '4px',
-                  background: 'var(--accent)',
-                  border: 'none',
-                  borderRadius: '9999px',
-                  padding: '6px 10px',
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
-                  color: '#ffffff',
-                  cursor: 'pointer',
-                  flexShrink: 0,
-                  boxShadow: '0 2px 8px rgba(255,98,0,0.35)',
-                  transition: 'background 0.15s ease',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#cc4e00'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'var(--accent)'; }}
-              >
-                <Mic size={14} />
-                <span>Voice AI</span>
-              </button>
+            <button
+              onClick={onOpenVoice}
+              title="Open JanSetu Voice AI"
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: '32px', height: '32px',
+                background: 'var(--accent)',
+                border: 'none',
+                borderRadius: '9999px',
+                color: '#fff',
+                cursor: 'pointer',
+                flexShrink: 0,
+                boxShadow: '0 2px 6px rgba(255,98,0,0.3)',
+                transition: 'box-shadow 0.15s ease, transform 0.15s ease',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 12px rgba(255,98,0,0.45)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+              onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 2px 6px rgba(255,98,0,0.3)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+            >
+              <Mic size={14} />
+            </button>
+          )}
 
-              <button
-                onClick={onOpenInspect}
-                title="Open AI Camera Inspection"
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '4px',
-                  background: 'var(--primary)',
-                  border: 'none',
-                  borderRadius: '9999px',
-                  padding: '6px 10px',
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
-                  color: '#ffffff',
-                  cursor: 'pointer',
-                  flexShrink: 0,
-                  boxShadow: '0 2px 8px rgba(0,48,135,0.35)',
-                  transition: 'background 0.15s ease',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#002266'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'var(--primary)'; }}
-              >
-                <Camera size={14} />
-                <span>AI Inspect</span>
-              </button>
-            </div>
+          {/* AI Inspect — icon only on desktop */}
+          {!isMobile && (
+            <button
+              onClick={onOpenInspect}
+              title="Open AI Camera Inspection"
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: '32px', height: '32px',
+                background: 'var(--primary)',
+                border: 'none',
+                borderRadius: '9999px',
+                color: '#fff',
+                cursor: 'pointer',
+                flexShrink: 0,
+                boxShadow: '0 2px 6px rgba(0,48,135,0.3)',
+                transition: 'box-shadow 0.15s ease, transform 0.15s ease',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,48,135,0.45)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+              onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,48,135,0.3)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+            >
+              <Camera size={14} />
+            </button>
           )}
 
           {/* Search — desktop only */}
-
           {!isMobile && (
             <button
               onClick={() => setIsCommandOpen(true)}
@@ -1114,22 +1092,24 @@ function AppHeader({
                 background: 'var(--bg-primary)',
                 border: '1px solid var(--border-medium)',
                 borderRadius: '9999px',
-                padding: '5px 8px',
+                padding: '4px 8px',
+                height: '32px',
                 fontSize: '0.72rem',
                 color: 'var(--text-secondary)',
                 cursor: 'pointer',
                 transition: 'border-color 0.15s ease',
+                flexShrink: 0,
               }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.color = 'var(--primary)'; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-medium)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
             >
-              <Search size={13} />
+              <Search size={12} />
               <kbd style={{
                 background: '#f0f0f0',
                 border: '1px solid var(--border-medium)',
                 padding: '1px 4px',
                 borderRadius: '3px',
-                fontSize: '0.58rem',
+                fontSize: '0.56rem',
                 fontFamily: 'var(--font-body)',
                 color: 'var(--text-muted)',
               }}>Ctrl+K</kbd>
@@ -1196,6 +1176,11 @@ function AppHeader({
             )}
           </div>
           )} {/* end !isMobile notifications */}
+
+          {/* Divider: Utilities ↔ Auth */}
+          {!isMobile && (
+            <div style={{ width: '1px', height: '18px', background: 'rgba(0,0,0,0.08)', flexShrink: 0, margin: '0 2px' }} />
+          )}
 
           {/* User Auth state */}
           {!currentUser ? (

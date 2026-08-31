@@ -104,7 +104,7 @@ export default function SuperAdminLogin({ onLogin, onBack }) {
 
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <div style={{ width: '58px', height: '58px', background: 'linear-gradient(135deg, rgba(239,68,68,0.15), rgba(0,48,135,0.15))', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', fontSize: '26px' }}>
+          <div style={{ width: '58px', height: '58px', background: 'linear-gradient(135deg, rgba(239,68,68,0.15), rgba(27,42,74,0.15))', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', fontSize: '26px' }}>
             👑
           </div>
           <h1 style={{ fontSize: '1.45rem', fontFamily: 'var(--font-display)', fontWeight: 800, color: 'var(--text-primary)' }}>
@@ -226,14 +226,14 @@ export default function SuperAdminLogin({ onLogin, onBack }) {
                 style={{ 
                   padding: '13px', 
                   borderRadius: '8px', 
-                  background: 'linear-gradient(135deg, #003087, #001d5a)', 
+                  background: 'linear-gradient(135deg, var(--primary), var(--primary-hover))', 
                   border: 'none', 
                   color: '#ffffff', 
                   fontWeight: 700, 
                   fontSize: '0.92rem', 
                   cursor: loading ? 'not-allowed' : 'pointer', 
                   opacity: loading ? 0.7 : 1,
-                  boxShadow: '0 4px 12px rgba(0, 48, 135, 0.25)' 
+                  boxShadow: '0 4px 12px rgba(27,42,74, 0.25)' 
                 }}
                 disabled={loading}
               >

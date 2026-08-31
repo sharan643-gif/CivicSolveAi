@@ -6,7 +6,7 @@ export default function TransparencyDashboardPage() {
   const stats = transparencyService.getStats();
 
   const metrics = [
-    { label: 'Problems Reported', value: stats.totalReported, icon: '📋', color: '#003087', sub: 'All time' },
+    { label: 'Problems Reported', value: stats.totalReported, icon: '📋', color: 'var(--primary)', sub: 'All time' },
     { label: 'Problems Resolved', value: stats.totalResolved, icon: '✅', color: '#10b981', sub: `${Math.round((stats.totalResolved / stats.totalReported) * 100)}% resolution rate` },
     { label: 'Avg Resolution Time', value: `${stats.avgResolutionDays} days`, icon: '⏱️', color: '#b45309', sub: 'Target: 30 days' },
     { label: 'Active Projects', value: stats.activeProjects, icon: '🚀', color: '#8b5cf6', sub: 'Currently in progress' },
@@ -19,7 +19,7 @@ export default function TransparencyDashboardPage() {
   return (
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px', paddingBottom: '60px' }}>
       <div className="reveal" style={{ textAlign: 'center', maxWidth: '700px', margin: '0 auto' }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--primary-light)', border: '1px solid rgba(0,48,135,0.2)', padding: '4px 12px', borderRadius: '100px', fontSize: '0.75rem', color: 'var(--primary)', marginBottom: '12px', fontWeight: 700 }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--primary-light)', border: '1px solid rgba(27,42,74,0.2)', padding: '4px 12px', borderRadius: '100px', fontSize: '0.75rem', color: 'var(--primary)', marginBottom: '12px', fontWeight: 700 }}>
           <Eye size={13} /> Public Transparency
         </div>
         <h1 style={{ fontSize: 'clamp(1.6rem, 4.5vw, 2.3rem)', fontFamily: 'var(--font-display)', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '8px' }}>Civic Transparency Dashboard</h1>

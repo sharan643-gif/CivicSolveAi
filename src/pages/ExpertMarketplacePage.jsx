@@ -65,7 +65,7 @@ export default function ExpertMarketplacePage() {
 
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
                 {expert.expertise.map(ex => (
-                  <span key={ex} style={{ fontSize: '0.7rem', padding: '3px 8px', borderRadius: '6px', background: 'rgba(0,48,135,0.06)', border: '1px solid rgba(0,48,135,0.15)', color: 'var(--primary)', fontWeight: 600 }}>{ex}</span>
+                  <span key={ex} style={{ fontSize: '0.7rem', padding: '3px 8px', borderRadius: '6px', background: 'rgba(27,42,74,0.06)', border: '1px solid rgba(27,42,74,0.15)', color: 'var(--primary)', fontWeight: 600 }}>{ex}</span>
                 ))}
               </div>
             </div>

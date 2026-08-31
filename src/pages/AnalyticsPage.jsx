@@ -7,7 +7,7 @@ export default function AnalyticsPage({ challenges = [] }) {
   const deptPerformance = departmentService.getPerformance();
 
   const stats = [
-    { label: 'Total Problems', value: analyticsData.problemsByCategory.reduce((s, c) => s + c.count, 0), icon: Activity, color: '#003087' },
+    { label: 'Total Problems', value: analyticsData.problemsByCategory.reduce((s, c) => s + c.count, 0), icon: Activity, color: 'var(--primary)' },
     { label: 'Resolution Rate', value: '48%', icon: CheckCircle, color: '#047857' },
     { label: 'Avg Resolution', value: '21.5 days', icon: Clock, color: '#b45309' },
     { label: 'Active Projects', value: '18', icon: TrendingUp, color: '#7c3aed' },
@@ -17,7 +17,7 @@ export default function AnalyticsPage({ challenges = [] }) {
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '20px', paddingBottom: '60px' }}>
       {/* Header */}
       <div className="reveal">
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--primary-light)', border: '1px solid rgba(0,48,135,0.2)', padding: '4px 12px', borderRadius: '100px', fontSize: '0.75rem', color: 'var(--primary)', marginBottom: '8px', fontWeight: 700 }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--primary-light)', border: '1px solid rgba(27,42,74,0.2)', padding: '4px 12px', borderRadius: '100px', fontSize: '0.75rem', color: 'var(--primary)', marginBottom: '8px', fontWeight: 700 }}>
           <BarChart3 size={13} color="var(--primary)" /> Civic Analytics & Performance
         </div>
         <h1 style={{ fontSize: 'clamp(1.5rem, 4vw, 2.2rem)', fontFamily: 'var(--font-display)', fontWeight: 800, color: 'var(--text-primary)' }}>Civic Analytics Dashboard</h1>

@@ -214,14 +214,13 @@ export default function AuthSectorPage({ sectorId, onBack, onLogin }) {
         width: '100%', 
         borderRadius: '16px', 
         overflow: 'hidden', 
-        border: '1px solid var(--border-subtle)', 
-        boxShadow: '0 12px 40px rgba(0, 48, 135, 0.12)', 
+        border: '1px solid var(--border-subtle)',          boxShadow: '0 12px 40px rgba(27,42,74, 0.15)', 
         background: '#ffffff',
       }}>
 
         {/* Mobile-only compact header */}
         <div className="auth-mobile-header" style={{
-          background: 'linear-gradient(135deg, #003087 0%, #001d5a 100%)',
+          background: 'linear-gradient(135deg, #0f1729 0%, #1b2a4a 60%, #243b6a 100%)',
           padding: '14px 16px',
           display: 'flex',
           alignItems: 'center',
@@ -278,9 +277,9 @@ export default function AuthSectorPage({ sectorId, onBack, onLogin }) {
             type="button"
             onClick={handleQuickDemoFill}
             style={{
-              background: 'rgba(255, 98, 0, 0.25)',
-              border: '1px solid #FF6200',
-              color: '#ffffff',
+              background: 'rgba(200, 134, 10, 0.15)',
+              border: '1px solid rgba(200,134,10,0.35)',
+              color: '#d4a843',
               padding: '5px 10px',
               borderRadius: '100px',
               fontSize: '0.7rem',
@@ -292,14 +291,14 @@ export default function AuthSectorPage({ sectorId, onBack, onLogin }) {
               flexShrink: 0
             }}
           >
-            <Sparkles size={10} color="#FF6200" />
+            <Sparkles size={10} color="var(--accent)" />
             Demo
           </button>
         </div>
 
-        {/* Left / Top Banner: Branding Panel — Deep Government Navy (desktop only) */}
+        {/* Left / Top Banner: Branding Panel — Premium Deep Navy + Gold Accent */}
         <div className="auth-sector-left" style={{
-          background: 'linear-gradient(135deg, #003087 0%, #001d5a 100%)',
+          background: 'linear-gradient(135deg, #0f1729 0%, #1b2a4a 35%, #243b6a 70%, #1a2545 100%)',
           padding: '36px 32px',
           display: 'flex',
           flexDirection: 'column',
@@ -307,7 +306,11 @@ export default function AuthSectorPage({ sectorId, onBack, onLogin }) {
           gap: '20px',
           color: '#ffffff',
           position: 'relative',
+          overflow: 'hidden',
         }}>
+          {/* Decorative orbs */}
+          <div style={{ position: 'absolute', top: '-40px', right: '-30px', width: '160px', height: '160px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(200,134,10,0.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', bottom: '-30px', left: '20%', width: '200px', height: '200px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%)', pointerEvents: 'none' }} />
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '8px' }}>
               <button 
@@ -333,13 +336,13 @@ export default function AuthSectorPage({ sectorId, onBack, onLogin }) {
                 type="button"
                 onClick={handleQuickDemoFill}
                 style={{
-                  background: 'rgba(255, 98, 0, 0.25)',
-                  border: '1px solid #FF6200',
-                  color: '#ffffff',
-                  padding: '5px 12px',
-                  borderRadius: '100px',
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
+              background: 'rgba(200, 134, 10, 0.15)',
+              border: '1px solid rgba(200,134,10,0.35)',
+              color: '#d4a843',
+              padding: '5px 12px',
+              borderRadius: '100px',
+              fontSize: '0.75rem',
+              fontWeight: 700,
                   cursor: 'pointer',
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -347,7 +350,7 @@ export default function AuthSectorPage({ sectorId, onBack, onLogin }) {
                 }}
                 title="Autofill demo credentials"
               >
-                <Sparkles size={12} color="#FF6200" />
+                <Sparkles size={12} color="var(--accent)" />
                 <span>Instant Demo Fill</span>
               </button>
             </div>
@@ -369,7 +372,7 @@ export default function AuthSectorPage({ sectorId, onBack, onLogin }) {
               </div>
               <div>
                 {meta.badge && (
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'rgba(255,98,0,0.3)', border: '1px solid #FF6200', borderRadius: '100px', padding: '2px 8px', fontSize: '0.68rem', color: '#ffffff', marginBottom: '4px', fontWeight: 700 }}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'rgba(200,134,10,0.15)', border: '1px solid rgba(200,134,10,0.35)', borderRadius: '100px', padding: '2px 8px', fontSize: '0.68rem', color: '#d4a843', marginBottom: '4px', fontWeight: 700 }}>
                     <Lock size={10} /> {meta.badge}
                   </div>
                 )}
@@ -402,15 +405,15 @@ export default function AuthSectorPage({ sectorId, onBack, onLogin }) {
                     fontSize: '0.78rem', 
                     padding: '4px 10px',
                     borderRadius: '100px',
-                    background: role === r ? 'rgba(255, 98, 0, 0.35)' : 'rgba(255, 255, 255, 0.1)',
-                    border: role === r ? '1px solid #FF6200' : '1px solid rgba(255, 255, 255, 0.15)',
+                    background: role === r ? 'rgba(200, 134, 10, 0.2)' : 'rgba(255, 255, 255, 0.06)',
+                    border: role === r ? '1px solid rgba(200,134,10,0.4)' : '1px solid rgba(255, 255, 255, 0.1)',
                     color: '#ffffff', 
                     fontWeight: role === r ? 700 : 500,
                     cursor: 'pointer',
                     transition: 'all 0.15s ease'
                   }}
                 >
-                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: role === r ? '#FF6200' : 'rgba(255,255,255,0.6)' }} />
+                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: role === r ? '#d4a843' : 'rgba(255,255,255,0.4)' }} />
                   {r}
                 </button>
               ))}
@@ -418,8 +421,8 @@ export default function AuthSectorPage({ sectorId, onBack, onLogin }) {
           </div>
 
           {/* Security note */}
-          <div style={{ background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '8px', padding: '10px 12px', fontSize: '0.74rem', color: 'rgba(255, 255, 255, 0.9)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <ShieldCheck size={16} color="#10b981" style={{ flexShrink: 0 }} />
+          <div style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: 'var(--radius-md)', padding: '10px 12px', fontSize: '0.74rem', color: 'rgba(255, 255, 255, 0.8)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <ShieldCheck size={16} color="var(--success)" style={{ flexShrink: 0 }} />
             <span>Government Protected Gateway · TLS 1.3 Verified</span>
           </div>
         </div>
@@ -545,7 +548,7 @@ export default function AuthSectorPage({ sectorId, onBack, onLogin }) {
                   background: 'var(--primary)', 
                   color: '#ffffff',
                   fontWeight: 700,
-                  boxShadow: '0 4px 14px rgba(0, 48, 135, 0.25)',
+                  boxShadow: '0 4px 14px rgba(27,42,74, 0.25)',
                   cursor: loading ? 'not-allowed' : 'pointer'
                 }} 
                 disabled={loading}

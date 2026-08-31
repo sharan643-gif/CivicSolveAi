@@ -148,7 +148,7 @@ export default function GeospatialAnalyticsPage() {
                 {[
                   { label: 'Investment', value: `₹${(roi.investment / 1000).toFixed(0)}K`, color: '#b45309', icon: <DollarSign size={14} /> },
                   { label: 'Citizens Benefited', value: roi.citizensBenefited.toLocaleString(), color: '#047857', icon: <Users size={14} /> },
-                  { label: 'Cost per Citizen', value: `₹${roi.costPerCitizen}`, color: '#003087', icon: <Target size={14} /> },
+                  { label: 'Cost per Citizen', value: `₹${roi.costPerCitizen}`, color: 'var(--primary)', icon: <Target size={14} /> },
                   { label: 'Time Saved', value: `${roi.estimatedTimeSaved} hrs`, color: '#7c3aed', icon: <Clock size={14} /> },
                   { label: 'Resources Saved', value: `₹${(roi.resourcesSaved / 1000).toFixed(0)}K`, color: '#0284c7', icon: <CheckCircle size={14} /> },
                 ].map((m, i) => (

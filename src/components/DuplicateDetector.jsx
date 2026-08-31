@@ -6,7 +6,7 @@ export default function DuplicateDetector({ queryTitle, onSelectExisting, onMerg
   const [challenges, setChallenges] = useState([]);
 
   useEffect(() => {
-    getChallenges().then(setChallenges);
+    getChallenges(true).then(setChallenges);
   }, []);
 
   // Find matching challenge based on query text

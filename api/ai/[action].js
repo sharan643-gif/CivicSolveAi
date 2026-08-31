@@ -13,7 +13,8 @@ import {
   explainPendingStatus,
   queryCivicAnalytics,
   inspectFrame,
-  generateInspectionReport
+  generateInspectionReport,
+  deepAnalyzeComplaint
 } from '../../server/geminiServerService.js';
 
 export default async function handler(req, res) {
@@ -95,6 +96,12 @@ export default async function handler(req, res) {
       }
       case 'analytics-query': {
         const result = await queryCivicAnalytics(body.query || '', body.contextData || {});
+        return res.status(200).json({ success: true, result });
+      }
+      case 'deep-analyze': {
+        const result = await deepAnalyzeComplaint(
+          body.title || '', body.description || '', body.category || '', body.location || '', body.dbContext || {}
+        );
         return res.status(200).json({ success: true, result });
       }
       case 'inspect-frame': {

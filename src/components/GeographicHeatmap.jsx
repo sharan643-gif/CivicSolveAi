@@ -84,7 +84,7 @@ export default function GeographicHeatmap({ onBack }) {
   const [showLayerPicker, setShowLayerPicker] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
 
-  useEffect(() => { getChallenges().then(setChallenges); }, []);
+  useEffect(() => { getChallenges(true).then(setChallenges); }, []);
   useEffect(() => {
     const h = (e) => { if (e.key === 'Escape' && isFullscreen) setIsFullscreen(false); };
     window.addEventListener('keydown', h);

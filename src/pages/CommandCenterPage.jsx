@@ -66,8 +66,8 @@ export default function CommandCenterPage() {
             <button
               onClick={() => setShowAnalyticsModal(true)}
               style={{
-                background: 'rgba(0, 48, 135, 0.08)',
-                border: '1px solid rgba(0, 48, 135, 0.25)',
+                background: 'rgba(27,42,74, 0.08)',
+                border: '1px solid rgba(27,42,74, 0.25)',
                 color: 'var(--primary)',
                 fontWeight: 700,
                 padding: '10px 16px',

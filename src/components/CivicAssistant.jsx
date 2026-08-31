@@ -85,19 +85,19 @@ export default function CivicAssistant({ challenges = [] }) {
             height: '42px',
             padding: '0 16px',
             borderRadius: '9999px',
-            background: 'linear-gradient(135deg, #003087 0%, #001d5a 100%)',
-            border: '2px solid #FF6200',
+            background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%)',
+            border: '2px solid var(--accent)',
             color: '#ffffff',
             fontWeight: 700,
             fontSize: '0.82rem',
             display: 'flex', alignItems: 'center', gap: '8px',
-            boxShadow: '0 4px 16px rgba(0, 48, 135, 0.3)',
+            boxShadow: '0 4px 16px rgba(27,42,74, 0.3)',
             cursor: 'pointer',
             transition: 'transform 0.15s ease',
             fontFamily: 'inherit',
           }}
         >
-          <Bot size={18} color="#FF6200" />
+          <Bot size={18} color="var(--accent)" />
           <span>JanSetu Assistant</span>
         </button>
       )}
@@ -112,7 +112,7 @@ export default function CivicAssistant({ challenges = [] }) {
             background: '#ffffff',
             border: '1px solid var(--border-medium)',
             borderRadius: isMobile ? '16px' : '12px',
-            boxShadow: '0 12px 36px rgba(0, 48, 135, 0.25)',
+            boxShadow: '0 12px 36px rgba(27,42,74, 0.25)',
             display: 'flex', flexDirection: 'column',
             overflow: 'hidden',
             animation: 'scaleIn 0.2s ease forwards',
@@ -122,15 +122,15 @@ export default function CivicAssistant({ challenges = [] }) {
         >
           {/* Header */}
           <div style={{
-            background: '#003087',
-            borderBottom: '3px solid #FF6200',
+            background: 'var(--primary)',
+            borderBottom: '3px solid var(--accent)',
             padding: '14px 16px',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             color: '#ffffff'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{
-                background: '#FF6200',
+                background: 'var(--accent)',
                 width: '34px', height: '34px', borderRadius: '50%',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
@@ -199,7 +199,7 @@ export default function CivicAssistant({ challenges = [] }) {
                 >
                   <div
                     style={{
-                      background: isAssistant ? '#ffffff' : '#003087',
+                      background: isAssistant ? '#ffffff' : 'var(--primary)',
                       border: isAssistant ? '1px solid #cbd5e1' : 'none',
                       borderRadius: isAssistant ? '10px 10px 10px 2px' : '10px 10px 2px 10px',
                       padding: '10px 14px',
@@ -254,8 +254,8 @@ export default function CivicAssistant({ challenges = [] }) {
                       fontFamily: 'inherit'
                     }}
                     onMouseEnter={e => {
-                      e.currentTarget.style.borderColor = '#003087';
-                      e.currentTarget.style.color = '#003087';
+                      e.currentTarget.style.borderColor = 'var(--primary)';
+                      e.currentTarget.style.color = 'var(--primary)';
                       e.currentTarget.style.background = '#e8eef8';
                     }}
                     onMouseLeave={e => {
@@ -299,8 +299,8 @@ export default function CivicAssistant({ challenges = [] }) {
                 fontFamily: 'inherit',
               }}
               onFocus={e => {
-                e.target.style.borderColor = '#003087';
-                e.target.style.boxShadow = '0 0 0 2px rgba(0, 48, 135, 0.15)';
+                e.target.style.borderColor = 'var(--primary)';
+                e.target.style.boxShadow = '0 0 0 2px rgba(27,42,74, 0.15)';
               }}
               onBlur={e => {
                 e.target.style.borderColor = '#cbd5e1';
@@ -313,7 +313,7 @@ export default function CivicAssistant({ challenges = [] }) {
               style={{
                 padding: '10px 16px',
                 borderRadius: '6px',
-                background: '#003087',
+                background: 'var(--primary)',
                 color: '#ffffff',
                 border: 'none',
                 cursor: 'pointer',

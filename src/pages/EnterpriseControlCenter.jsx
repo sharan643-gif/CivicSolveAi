@@ -77,7 +77,7 @@ export default function EnterpriseControlCenter() {
       {view === 'overview' && (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px' }}>
-            <StatCard icon={<Users size={18} />} label="Total Users" value="2,847" color="#003087" trend="up" />
+            <StatCard icon={<Users size={18} />} label="Total Users" value="2,847" color="var(--primary)" trend="up" />
             <StatCard icon={<Building2 size={18} />} label="Organizations" value="34" color="#7c3aed" trend="up" />
             <StatCard icon={<Target size={18} />} label="Active Projects" value="18" color="#047857" />
             <StatCard icon={<AlertTriangle size={18} />} label="Critical Cases" value="7" color="#dc2626" trend="down" />
@@ -110,7 +110,7 @@ export default function EnterpriseControlCenter() {
             <h3 style={{ fontSize: '0.95rem', color: 'var(--text-primary)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700 }}><AlertTriangle size={14} color="#b45309" /> Early Warnings</h3>
             {warnings.map(w => (
               <div key={w.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '8px', background: w.severity === 'critical' ? '#fef2f2' : '#f8fafc', marginBottom: '6px', border: `1px solid ${w.severity === 'critical' ? '#fecaca' : 'var(--border-subtle)'}` }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: w.severity === 'critical' ? '#dc2626' : w.severity === 'high' ? '#d97706' : '#003087', flexShrink: 0 }} />
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: w.severity === 'critical' ? '#dc2626' : w.severity === 'high' ? '#d97706' : 'var(--primary)', flexShrink: 0 }} />
                 <div style={{ flex: 1, fontSize: '0.82rem', color: 'var(--text-primary)', fontWeight: 500 }}>{w.alert}</div>
                 <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', flexShrink: 0 }}>{w.date}</span>
               </div>
@@ -127,7 +127,7 @@ export default function EnterpriseControlCenter() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '8px' }}>
               {[
                 { label: 'Status', value: backup.status, color: '#047857' },
-                { label: 'Last Backup', value: new Date(backup.lastBackup).toLocaleDateString(), color: '#003087' },
+                { label: 'Last Backup', value: new Date(backup.lastBackup).toLocaleDateString(), color: 'var(--primary)' },
                 { label: 'Size', value: backup.size, color: '#7c3aed' },
                 { label: 'Retention', value: backup.retention, color: '#b45309' },
               ].map((b, i) => (
@@ -206,7 +206,7 @@ export default function EnterpriseControlCenter() {
       {view === 'ai' && (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px' }}>
-            <StatCard icon={<Zap size={18} />} label="Total Requests" value={`${(aiUsage.totalRequests/1000).toFixed(1)}K`} color="#003087" />
+            <StatCard icon={<Zap size={18} />} label="Total Requests" value={`${(aiUsage.totalRequests/1000).toFixed(1)}K`} color="var(--primary)" />
             <StatCard icon={<Brain size={18} />} label="Avg Latency" value={`${aiUsage.avgLatency}ms`} color="#7c3aed" />
             <StatCard icon={<AlertTriangle size={18} />} label="Error Rate" value={`${aiUsage.errorRate}%`} color="#047857" />
             <StatCard icon={<TrendingUp size={18} />} label="Tokens Used" value={`${(aiUsage.totalTokens/1000000).toFixed(1)}M`} color="#b45309" />

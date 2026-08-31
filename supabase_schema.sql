@@ -160,6 +160,15 @@ CREATE TABLE IF NOT EXISTS public.challenges (
   deadline TIMESTAMPTZ,
   reporter_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
   ai_analysis JSONB DEFAULT '{}'::jsonb,
+  evidence JSONB DEFAULT '[]'::jsonb,
+  evidence_files JSONB DEFAULT '[]'::jsonb,
+  department_id TEXT,
+  department_name TEXT,
+  department_head TEXT,
+  sla_days INTEGER,
+  sla_deadline TIMESTAMPTZ,
+  who_affected TEXT,
+  duration TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -252,10 +261,13 @@ DROP POLICY IF EXISTS "Allow public read of challenges" ON public.challenges;
 CREATE POLICY "Allow public read of challenges" ON public.challenges FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Allow authenticated users to create challenges" ON public.challenges;
-CREATE POLICY "Allow authenticated users to create challenges" ON public.challenges FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Allow anyone to create challenges" ON public.challenges FOR INSERT WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Allow creators or admin to update challenges" ON public.challenges;
-CREATE POLICY "Allow creators or admin to update challenges" ON public.challenges FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Allow anyone to update challenges" ON public.challenges FOR UPDATE USING (true);
+
+DROP POLICY IF EXISTS "Allow anyone to delete challenges" ON public.challenges;
+CREATE POLICY "Allow anyone to delete challenges" ON public.challenges FOR DELETE USING (true);
 
 -- 4. Teams policies
 DROP POLICY IF EXISTS "Allow public read of teams" ON public.teams;

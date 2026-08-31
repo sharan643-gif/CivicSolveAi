@@ -65,7 +65,7 @@ export default function NgoMatchingPage() {
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border-subtle)', paddingTop: '10px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                 <span>{ngo.previousProjects} projects · {ngo.beneficiaries?.toLocaleString()} beneficiaries</span>
-                <span className="badge" style={{ background: `${ngo.capacity === 'Large' ? 'rgba(16,185,129,0.15)' : ngo.capacity === 'Medium' ? 'rgba(0,48,135,0.1)' : 'rgba(245,158,11,0.15)'}`, color: ngo.capacity === 'Large' ? '#047857' : ngo.capacity === 'Medium' ? '#003087' : '#b45309', border: 'none', fontSize: '0.68rem', fontWeight: 700 }}>{ngo.capacity}</span>
+                <span className="badge" style={{ background: `${ngo.capacity === 'Large' ? 'rgba(16,185,129,0.15)' : ngo.capacity === 'Medium' ? 'rgba(27,42,74,0.1)' : 'rgba(245,158,11,0.15)'}`, color: ngo.capacity === 'Large' ? '#047857' : ngo.capacity === 'Medium' ? 'var(--primary)' : '#b45309', border: 'none', fontSize: '0.68rem', fontWeight: 700 }}>{ngo.capacity}</span>
               </div>
 
               <button className="btn btn-primary" style={{ width: '100%', marginTop: '12px', padding: '10px', fontSize: '0.84rem' }} onClick={() => alert(`Partnership request sent to ${ngo.name}!`)}>

@@ -10,7 +10,7 @@ export default function IntelligenceDashboardPage() {
     { id: 'emerging', label: 'Emerging Problems', icon: TrendingUp, color: '#dc2626' },
     { id: 'hotspots', label: 'Hotspots', icon: MapPin, color: '#b45309' },
     { id: 'risks', label: 'Risk Predictions', icon: AlertTriangle, color: '#8b5cf6' },
-    { id: 'actions', label: 'Recommended Actions', icon: Target, color: '#003087' },
+    { id: 'actions', label: 'Recommended Actions', icon: Target, color: 'var(--primary)' },
     { id: 'impact', label: 'Impact Opportunities', icon: Lightbulb, color: '#10b981' },
     { id: 'brief', label: 'Weekly Brief', icon: FileText, color: '#06b6d4' },
   ];
@@ -20,7 +20,7 @@ export default function IntelligenceDashboardPage() {
   return (
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '20px', paddingBottom: '60px' }}>
       <div className="reveal">
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--primary-light)', border: '1px solid rgba(0,48,135,0.2)', padding: '4px 12px', borderRadius: '100px', fontSize: '0.75rem', color: 'var(--primary)', marginBottom: '8px', fontWeight: 700 }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--primary-light)', border: '1px solid rgba(27,42,74,0.2)', padding: '4px 12px', borderRadius: '100px', fontSize: '0.75rem', color: 'var(--primary)', marginBottom: '8px', fontWeight: 700 }}>
           <Brain size={13} color="var(--primary)" /> AI Civic Intelligence
         </div>
         <h1 style={{ fontSize: 'clamp(1.5rem, 4vw, 2.2rem)', fontFamily: 'var(--font-display)', fontWeight: 800, color: 'var(--text-primary)' }}>Civic Intelligence Dashboard</h1>
@@ -175,7 +175,7 @@ export default function IntelligenceDashboardPage() {
             <div>
               <h4 style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--primary)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recommended Priorities</h4>
               {brief.recommendedPriorities.map((p, i) => (
-                <div key={i} style={{ padding: '8px 12px', borderRadius: '6px', background: 'var(--primary-light)', border: '1px solid rgba(0,48,135,0.15)', marginBottom: '6px', fontSize: '0.82rem', color: 'var(--text-primary)' }}>• {p}</div>
+                <div key={i} style={{ padding: '8px 12px', borderRadius: '6px', background: 'var(--primary-light)', border: '1px solid rgba(27,42,74,0.15)', marginBottom: '6px', fontSize: '0.82rem', color: 'var(--text-primary)' }}>• {p}</div>
               ))}
             </div>
           </div>

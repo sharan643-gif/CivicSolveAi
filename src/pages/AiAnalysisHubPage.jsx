@@ -42,7 +42,7 @@ function RootCauseTree({ tree }) {
                 display: 'flex', alignItems: 'center', gap: '8px',
                 padding: '10px 12px', borderRadius: '8px', cursor: hasChildren ? 'pointer' : 'default',
                 background: node.depth === 0 ? 'var(--primary-light)' : '#f8fafc',
-                border: `1px solid ${node.depth === 0 ? 'rgba(0,48,135,0.2)' : 'var(--border-subtle)'}`,
+                border: `1px solid ${node.depth === 0 ? 'rgba(27,42,74,0.2)' : 'var(--border-subtle)'}`,
                 marginBottom: '4px',
                 transition: 'all 0.15s ease',
               }}
@@ -103,7 +103,7 @@ function ProblemSummary({ summary }) {
 function FeasibilityCalculator({ scores }) {
   if (!scores) return <EmptyState message="No feasibility assessment available." />;
   const dimensions = [
-    { key: 'technical', label: 'Technical Feasibility', color: '#003087', note: scores.technicalNote },
+    { key: 'technical', label: 'Technical Feasibility', color: 'var(--primary)', note: scores.technicalNote },
     { key: 'financial', label: 'Financial Viability', color: '#b45309', note: scores.financialNote },
     { key: 'regulatory', label: 'Regulatory Compliance', color: '#7c3aed', note: scores.regulatoryNote },
     { key: 'social', label: 'Social Acceptance', color: '#047857', note: scores.socialNote },
@@ -111,7 +111,7 @@ function FeasibilityCalculator({ scores }) {
   ];
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      <div style={{ textAlign: 'center', padding: '20px', background: 'var(--primary-light)', borderRadius: '12px', border: '1px solid rgba(0,48,135,0.15)' }}>
+      <div style={{ textAlign: 'center', padding: '20px', background: 'var(--primary-light)', borderRadius: '12px', border: '1px solid rgba(27,42,74,0.15)' }}>
         <div style={{ fontSize: '2.5rem', fontWeight: 900, color: scores.overall >= 75 ? '#047857' : scores.overall >= 50 ? '#b45309' : '#dc2626', fontFamily: 'var(--font-display)' }}>
           {scores.overall}<span style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>/100</span>
         </div>
@@ -144,7 +144,7 @@ function CostEstimator({ estimate }) {
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px' }}>
         {[
-          { label: 'Infrastructure', value: estimate.infrastructure, color: '#003087' },
+          { label: 'Infrastructure', value: estimate.infrastructure, color: 'var(--primary)' },
           { label: 'Labor', value: estimate.labor, color: '#047857' },
           { label: 'Technology', value: estimate.technology, color: '#7c3aed' },
           { label: 'Maintenance', value: estimate.maintenance, color: '#b45309' },
@@ -175,13 +175,13 @@ function CostEstimator({ estimate }) {
 
 function ImplementationRoadmap({ roadmap }) {
   if (!roadmap) return <EmptyState message="No roadmap available." />;
-  const statusColors = { completed: '#047857', in_progress: '#003087', upcoming: 'var(--text-muted)' };
+  const statusColors = { completed: '#047857', in_progress: 'var(--primary)', upcoming: 'var(--text-muted)' };
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
       {roadmap.map((phase, i) => (
         <div key={i} style={{ display: 'flex', gap: '16px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '32px', flexShrink: 0 }}>
-            <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: statusColors[phase.status], border: phase.status === 'in_progress' ? '3px solid rgba(0,48,135,0.3)' : 'none' }} />
+            <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: statusColors[phase.status], border: phase.status === 'in_progress' ? '3px solid rgba(27,42,74,0.3)' : 'none' }} />
             {i < roadmap.length - 1 && <div style={{ width: '2px', flex: 1, background: phase.status === 'completed' ? '#bbf7d0' : 'var(--border-subtle)', minHeight: '20px' }} />}
           </div>
           <div style={{ flex: 1, paddingBottom: '20px' }}>
@@ -273,7 +273,7 @@ function DebateAnalysis({ analysis }) {
       <div>
         <h4 style={{ fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: '8px', fontWeight: 700 }}>💡 Top Suggestions</h4>
         {analysis.topSuggestions.map((s, i) => (
-          <div key={i} style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', padding: '8px 12px', background: 'var(--primary-light)', border: '1px solid rgba(0,48,135,0.15)', borderRadius: '6px', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div key={i} style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', padding: '8px 12px', background: 'var(--primary-light)', border: '1px solid rgba(27,42,74,0.15)', borderRadius: '6px', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Lightbulb size={13} color="var(--primary)" /> {s}
           </div>
         ))}
@@ -290,11 +290,11 @@ function SentimentAnalysis({ data }) {
     { label: 'Neutral', value: data.neutral, color: '#64748b' },
     { label: 'Negative', value: data.negative, color: '#dc2626' },
     { label: 'Concerned', value: data.concerned, color: '#b45309' },
-    { label: 'Supportive', value: data.supportive, color: '#003087' },
+    { label: 'Supportive', value: data.supportive, color: 'var(--primary)' },
   ];
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      <div style={{ textAlign: 'center', padding: '16px', background: 'var(--primary-light)', borderRadius: '12px', border: '1px solid rgba(0,48,135,0.15)' }}>
+      <div style={{ textAlign: 'center', padding: '16px', background: 'var(--primary-light)', borderRadius: '12px', border: '1px solid rgba(27,42,74,0.15)' }}>
         <div style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--primary)' }}>{data.totalResponses}</div>
         <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>Total Community Responses Analyzed</div>
       </div>
@@ -343,7 +343,7 @@ function PolicySimulator() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '8px', marginTop: '10px', padding: '12px', background: '#ffffff', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
               {Object.entries(simulated.effects).map(([key, val]) => (
                 <div key={key} style={{ textAlign: 'center', padding: '8px', background: '#f8fafc', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
-                  <div style={{ fontSize: '1.1rem', fontWeight: 800, color: val > 20 ? '#047857' : val > 10 ? '#b45309' : '#003087' }}>{val}%</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 800, color: val > 20 ? '#047857' : val > 10 ? '#b45309' : 'var(--primary)' }}>{val}%</div>
                   <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'capitalize', fontWeight: 600 }}>{key.replace(/([A-Z])/g, ' $1')}</div>
                 </div>
               ))}

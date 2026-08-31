@@ -90,7 +90,7 @@ export default function ComplaintTimeline({ challenge }) {
                   background: step.completed
                     ? 'linear-gradient(135deg, var(--primary), #0284c7)'
                     : isCurrent
-                    ? 'rgba(0, 48, 135, 0.15)'
+                    ? 'rgba(27,42,74, 0.15)'
                     : '#f1f5f9',
                   border: isCurrent ? '2px solid var(--primary)' : '2px solid transparent',
                   display: 'flex',
@@ -98,7 +98,7 @@ export default function ComplaintTimeline({ challenge }) {
                   justifyContent: 'center',
                   flexShrink: 0,
                   zIndex: 1,
-                  boxShadow: isCurrent ? '0 0 0 4px rgba(0, 48, 135, 0.15)' : 'none',
+                  boxShadow: isCurrent ? '0 0 0 4px rgba(27,42,74, 0.15)' : 'none',
                   transition: 'all 0.3s ease'
                 }}
               >
@@ -129,10 +129,10 @@ export default function ComplaintTimeline({ challenge }) {
                     color: step.completed ? 'var(--text-secondary)' : 'var(--text-muted)',
                     marginTop: '4px',
                     lineHeight: 1.4,
-                    background: isCurrent ? 'rgba(0, 48, 135, 0.04)' : 'transparent',
+                    background: isCurrent ? 'rgba(27,42,74, 0.04)' : 'transparent',
                     padding: isCurrent ? '8px 12px' : '0',
                     borderRadius: '6px',
-                    border: isCurrent ? '1px solid rgba(0, 48, 135, 0.1)' : 'none'
+                    border: isCurrent ? '1px solid rgba(27,42,74, 0.1)' : 'none'
                   }}
                 >
                   {step.note}

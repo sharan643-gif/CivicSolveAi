@@ -4,7 +4,7 @@ import { projectService } from '../services/advanced40Service';
 
 const KANBAN_COLUMNS = [
   { id: 'todo', label: 'To Do', color: '#475569', bg: '#f1f5f9' },
-  { id: 'in_progress', label: 'In Progress', color: '#003087', bg: 'var(--primary-light)' },
+  { id: 'in_progress', label: 'In Progress', color: 'var(--primary)', bg: 'var(--primary-light)' },
   { id: 'review', label: 'Review', color: '#b45309', bg: '#fffbeb' },
   { id: 'completed', label: 'Completed', color: '#047857', bg: '#f0fdf4' },
 ];
@@ -64,7 +64,7 @@ function GanttTimeline({ project }) {
   const maxDate = new Date(Math.max(...allDates.map(d => d.getTime())));
   const totalDays = Math.max((maxDate - minDate) / (1000 * 60 * 60 * 24), 30);
 
-  const statusColors = { completed: '#10b981', in_progress: '#003087', review: '#f59e0b', todo: '#6b7280' };
+  const statusColors = { completed: '#10b981', in_progress: 'var(--primary)', review: '#f59e0b', todo: '#6b7280' };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '480px' }}>
@@ -115,7 +115,7 @@ function ProjectHealth({ project }) {
         <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>{project.healthStatus}</div>
       </div>
       <div style={{ padding: '14px 10px', borderRadius: '8px', background: '#ffffff', border: '1px solid var(--border-subtle)', textAlign: 'center', boxShadow: 'var(--shadow-xs)' }}>
-        <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#003087' }}>{progress}%</div>
+        <div style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--primary)' }}>{progress}%</div>
         <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>Tasks Complete</div>
       </div>
       <div style={{ padding: '14px 10px', borderRadius: '8px', background: '#ffffff', border: '1px solid var(--border-subtle)', textAlign: 'center', boxShadow: 'var(--shadow-xs)' }}>
@@ -131,7 +131,7 @@ function ProjectHealth({ project }) {
 }
 
 function MilestoneTimeline({ milestones }) {
-  const statusColors = { completed: '#047857', in_progress: '#003087', upcoming: '#64748b' };
+  const statusColors = { completed: '#047857', in_progress: 'var(--primary)', upcoming: '#64748b' };
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
       {milestones.map((ms, i) => (
@@ -180,7 +180,7 @@ export default function ProjectManagementPage({ onNavigate }) {
       {/* Project Selector */}
       <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }}>
         {projects.map(p => (
-          <button key={p.id} onClick={() => setSelectedProject(p)} style={{ padding: '9px 16px', borderRadius: '10px', border: `1px solid ${selectedProject.id === p.id ? 'var(--primary)' : 'var(--border-subtle)'}`, background: selectedProject.id === p.id ? 'var(--primary)' : '#ffffff', color: selectedProject.id === p.id ? '#ffffff' : 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.82rem', fontWeight: selectedProject.id === p.id ? 700 : 500, whiteSpace: 'nowrap', flexShrink: 0, boxShadow: selectedProject.id === p.id ? '0 2px 8px rgba(0,48,135,0.2)' : 'var(--shadow-xs)' }}>
+          <button key={p.id} onClick={() => setSelectedProject(p)} style={{ padding: '9px 16px', borderRadius: '10px', border: `1px solid ${selectedProject.id === p.id ? 'var(--primary)' : 'var(--border-subtle)'}`, background: selectedProject.id === p.id ? 'var(--primary)' : '#ffffff', color: selectedProject.id === p.id ? '#ffffff' : 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.82rem', fontWeight: selectedProject.id === p.id ? 700 : 500, whiteSpace: 'nowrap', flexShrink: 0, boxShadow: selectedProject.id === p.id ? '0 2px 8px rgba(27,42,74,0.2)' : 'var(--shadow-xs)' }}>
             {p.name}
           </button>
         ))}

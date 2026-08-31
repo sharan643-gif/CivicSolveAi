@@ -30,7 +30,7 @@ export default function UserProfilePage({ currentUser }) {
         <h1 style={{ fontSize: '1.45rem', color: 'var(--text-primary)', fontWeight: 800 }}>{currentUser?.name || 'Civic User'}</h1>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
           <span style={{ padding: '3px 12px', borderRadius: '100px', background: `${badge.color}15`, color: badge.color, fontSize: '0.75rem', fontWeight: 700, border: `1px solid ${badge.color}30` }}>{badge.icon} {badge.name}</span>
-          <span style={{ padding: '3px 12px', borderRadius: '100px', background: 'var(--primary-light)', color: 'var(--primary)', fontSize: '0.75rem', fontWeight: 700, border: '1px solid rgba(0,48,135,0.2)' }}>{currentUser?.role || 'Citizen'}</span>
+          <span style={{ padding: '3px 12px', borderRadius: '100px', background: 'var(--primary-light)', color: 'var(--primary)', fontSize: '0.75rem', fontWeight: 700, border: '1px solid rgba(27,42,74,0.2)' }}>{currentUser?.role || 'Citizen'}</span>
         </div>
         <div style={{ marginTop: '16px' }}>
           <div style={{ fontSize: '2rem', fontWeight: 900, color: badge.color, fontFamily: 'var(--font-display)' }}>{impactScore}</div>
@@ -70,7 +70,7 @@ export default function UserProfilePage({ currentUser }) {
                 cursor: 'pointer', 
                 fontSize: '0.8rem', 
                 fontWeight: isActive ? 700 : 500,
-                boxShadow: isActive ? '0 2px 8px rgba(0,48,135,0.2)' : 'var(--shadow-xs)' 
+                boxShadow: isActive ? '0 2px 8px rgba(27,42,74,0.2)' : 'var(--shadow-xs)' 
               }}
             >
               <Icon size={14} /> {tab.label}
@@ -83,12 +83,12 @@ export default function UserProfilePage({ currentUser }) {
       {activeTab === 'overview' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
           {[
-            { label: 'Problems Reported', value: civicStats.problemsReported, icon: <BookOpen size={16} />, color: '#003087' },
+            { label: 'Problems Reported', value: civicStats.problemsReported, icon: <BookOpen size={16} />, color: 'var(--primary)' },
             { label: 'Solutions Proposed', value: civicStats.solutionsProposed, icon: <Target size={16} />, color: '#10b981' },
             { label: 'Projects Joined', value: civicStats.projectsJoined, icon: <Users size={16} />, color: '#8b5cf6' },
             { label: 'Volunteer Hours', value: civicStats.volunteerHours, icon: <Clock size={16} />, color: '#f59e0b' },
             { label: 'Discussions', value: civicStats.discussionsStarted, icon: <Users size={16} />, color: '#06b6d4' },
-            { label: 'Impact Created', value: civicStats.communityImpact, icon: <Star size={16} />, color: '#FF6200' },
+            { label: 'Impact Created', value: civicStats.communityImpact, icon: <Star size={16} />, color: 'var(--accent)' },
           ].map((stat, i) => (
             <div key={i} className="glass-card" style={{ padding: '16px', textAlign: 'center', background: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: '10px' }}>
               <div style={{ color: stat.color, marginBottom: '6px', display: 'flex', justifyContent: 'center' }}>{stat.icon}</div>

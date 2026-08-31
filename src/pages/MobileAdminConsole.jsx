@@ -8,7 +8,7 @@ export default function MobileAdminConsole() {
   const [challenges, setChallenges] = useState([]);
 
   useEffect(() => {
-    Promise.all([getProfiles(), getChallenges()]).then(([u, c]) => {
+    Promise.all([getProfiles(), getChallenges(true)]).then(([u, c]) => {
       setUsers(u);
       setChallenges(c);
     });

@@ -196,7 +196,7 @@ const SIDEBAR_CONFIG = {
 
 // ─── Section Content per Sector ────────────────────────────────────────────
 function DashboardOverview({ currentUser, challenges, sectorConfig, isMobile, onOpenResolveModal, onNavigate }) {
-  const color = sectorConfig?.color || '#003087';
+  const color = sectorConfig?.color || 'var(--primary)';
   const sector = currentUser?.sector || 'citizen';
   const role = currentUser?.role || 'Citizen';
   const isGovOrAdmin = sector === 'government' || sector === 'super_admin' || role.toLowerCase().includes('officer') || role.toLowerCase().includes('admin');
@@ -207,40 +207,58 @@ function DashboardOverview({ currentUser, challenges, sectorConfig, isMobile, on
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {/* Welcome Banner — High Contrast Deep Navy Gov Style */}
+      {/* Welcome Banner — Premium Deep Navy + Gold Accent */}
       <div style={{
-        background: 'linear-gradient(135deg, #003087 0%, #001d5a 100%)',
-        borderBottom: '4px solid #FF6200',
-        borderRadius: '8px',
-        padding: isMobile ? '20px' : '28px 32px',
+        background: 'linear-gradient(135deg, #0f1729 0%, #1b2a4a 35%, #243b6a 70%, #1a2545 100%)',
+        borderRadius: 'var(--radius-lg)',
+        padding: isMobile ? '22px' : '30px 36px',
         position: 'relative',
         overflow: 'hidden',
         color: '#ffffff',
-        boxShadow: 'var(--shadow-sm)',
+        boxShadow: '0 4px 24px rgba(27, 42, 74, 0.20)',
       }}>
-        <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '120px', height: '120px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '50%' }} />
-        <div style={{ fontSize: isMobile ? '1.5rem' : '2rem', marginBottom: '6px' }}>{sectorConfig?.icon || '👤'}</div>
-        <h2 style={{ fontSize: isMobile ? '1.3rem' : '1.6rem', fontFamily: 'var(--font-display)', fontWeight: 800, color: '#ffffff', marginBottom: '6px', letterSpacing: '-0.01em' }}>
-          Welcome, {(currentUser?.name || currentUser?.email || 'User').split(' ')[0]}
-        </h2>
-        <p style={{ fontSize: '0.85rem', color: 'rgba(255, 255, 255, 0.88)' }}>
-          Role: <strong style={{ color: '#FF6200', background: 'rgba(255, 98, 0, 0.2)', padding: '2px 8px', borderRadius: '4px', marginLeft: '4px' }}>{role}</strong>
-          {currentUser?.organization ? ` · ${currentUser.organization}` : ''}
-          {currentUser?.verification === 'pending_verification' && (
-            <span style={{ marginLeft: '8px', color: '#fbbf24', background: 'rgba(245,158,11,0.2)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '4px', padding: '2px 8px', fontSize: '0.72rem', fontWeight: 700 }}>⏳ Pending Verification</span>
-          )}
-        </p>
+        {/* Decorative orbs */}
+        <div style={{ position: 'absolute', top: '-40px', right: '-30px', width: '160px', height: '160px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(200,134,10,0.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: '-30px', left: '30%', width: '200px', height: '200px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <div style={{ fontSize: isMobile ? '1.5rem' : '2rem', marginBottom: '8px' }}>{sectorConfig?.icon || '👤'}</div>
+          <h2 style={{ fontSize: isMobile ? '1.3rem' : '1.6rem', fontFamily: 'var(--font-display)', fontWeight: 800, color: '#ffffff', marginBottom: '8px', letterSpacing: '-0.02em' }}>
+            Welcome, <span style={{
+              background: 'linear-gradient(135deg, #d4a843 0%, #f0c864 50%, #d4a843 100%)',
+              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+            }}>{(currentUser?.name || currentUser?.email || 'User').split(' ')[0]}</span>
+          </h2>
+          <p style={{ fontSize: '0.85rem', color: 'rgba(255, 255, 255, 0.72)' }}>
+            Role: <strong style={{ color: '#d4a843', background: 'rgba(200,134,10,0.2)', padding: '2px 10px', borderRadius: 'var(--radius-pill)', marginLeft: '4px', fontSize: '0.82rem' }}>{role}</strong>
+            {currentUser?.organization ? <span style={{ marginLeft: '8px', color: 'rgba(255,255,255,0.6)' }}>· {currentUser.organization}</span> : ''}
+            {currentUser?.verification === 'pending_verification' && (
+              <span style={{ marginLeft: '10px', color: '#fbbf24', background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 'var(--radius-pill)', padding: '2px 10px', fontSize: '0.72rem', fontWeight: 700 }}>⏳ Pending Verification</span>
+            )}
+          </p>
+        </div>
+        {/* Bottom accent line */}
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, transparent, var(--accent), transparent)', opacity: 0.5 }} />
       </div>
 
       {/* Quick Stats - 2-col on mobile, 4-col on desktop */}
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '12px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: isMobile ? '10px' : '14px' }}>
         {quickStats.map((stat, i) => (
-          <div key={i} style={{ background: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '20px', position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-xs)' }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: stat.color || color }} />
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>{stat.label}</div>
+          <div key={i} style={{
+            background: '#ffffff', border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-lg)', padding: isMobile ? '16px' : '20px',
+            position: 'relative', overflow: 'hidden',
+            boxShadow: 'var(--shadow-xs)',
+            transition: 'all 0.25s ease',
+            cursor: 'default',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.boxShadow = 'var(--shadow-md)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+          onMouseLeave={e => { e.currentTarget.style.boxShadow = 'var(--shadow-xs)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+          >
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: i === 0 ? 'var(--accent)' : stat.color || 'var(--primary)' }} />
+            <div style={{ fontSize: '0.70rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>{stat.label}</div>
             <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-display)', lineHeight: 1.1 }}>{stat.value}</div>
-            <div style={{ fontSize: '0.72rem', color: stat.trend > 0 ? 'var(--success)' : 'var(--text-muted)', marginTop: '6px', fontWeight: 600 }}>
-              {stat.trend > 0 ? '↑' : ''} {stat.sub}
+            <div style={{ fontSize: '0.72rem', color: stat.trend > 0 ? 'var(--success)' : 'var(--text-muted)', marginTop: '8px', fontWeight: 600 }}>
+              {stat.trend > 0 ? <span style={{ color: 'var(--success)' }}>↑</span> : ''} {stat.sub}
             </div>
           </div>
         ))}
@@ -249,33 +267,37 @@ function DashboardOverview({ currentUser, challenges, sectorConfig, isMobile, on
       {/* Challenges & Activity Grid - stacked on mobile */}
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 320px', gap: '16px' }}>
         {/* Challenges List */}
-        <div style={{ background: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '20px', boxShadow: 'var(--shadow-xs)' }}>
+        <div style={{ background: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '20px', boxShadow: 'var(--shadow-xs)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>Priority Challenges</h3>
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>{challenges.length} total</span>
+            <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ width: '4px', height: '18px', background: 'var(--accent)', borderRadius: '2px', display: 'inline-block' }} />
+              Priority Challenges
+            </h3>
+            <span style={{ fontSize: '0.70rem', color: 'var(--text-muted)', fontWeight: 700, background: 'var(--primary-light)', padding: '3px 10px', borderRadius: 'var(--radius-pill)', letterSpacing: '0.04em' }}>{challenges.length} total</span>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {priorityChallenges.map(c => (
-              <div key={c.id} style={{ display: 'flex', gap: '12px', padding: '12px', background: 'var(--bg-primary)', border: '1px solid var(--border-subtle)', borderRadius: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
-                <div style={{ width: '36px', height: '36px', background: 'var(--primary-light)', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>
+              <div key={c.id} style={{ display: 'flex', gap: '12px', padding: '12px 14px', background: 'var(--bg-secondary)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', alignItems: 'center', flexWrap: 'wrap', transition: 'all 0.2s ease' }}>
+                <div style={{ width: '36px', height: '36px', background: 'var(--primary-light)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>
                   {c.sector_icon || '📋'}
                 </div>
                 <div style={{ flex: 1, minWidth: '180px' }}>
                   <div style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.title}</div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>{c.location} · <strong style={{ color: '#003087' }}>{c.status_label || c.status}</strong></div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '3px' }}>{c.location} · <strong style={{ color: 'var(--primary)' }}>{c.status_label || c.status}</strong></div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ fontSize: '0.82rem', fontWeight: 800, color: c.priority_score > 80 ? 'var(--danger)' : c.priority_score > 60 ? 'var(--warning)' : 'var(--success)' }}>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 800, color: c.priority_score > 80 ? 'var(--danger)' : c.priority_score > 60 ? 'var(--accent)' : 'var(--success)' }}>
                     {c.priority_score}
                   </div>
                   {isGovOrAdmin && (
                     <button
                       onClick={() => onOpenResolveModal(c)}
                       style={{
-                        background: '#003087', color: '#ffffff', border: 'none',
-                        borderRadius: '6px', padding: '5px 10px', fontSize: '0.72rem',
+                        background: 'var(--primary)', color: '#ffffff', border: 'none',
+                        borderRadius: 'var(--radius-md)', padding: '6px 12px', fontSize: '0.72rem',
                         fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
-                        boxShadow: '0 2px 6px rgba(0,48,135,0.2)'
+                        boxShadow: '0 2px 8px rgba(27,42,74,0.18)',
+                        transition: 'all 0.2s ease',
                       }}
                     >
                       <Wrench size={12} /> Solve
@@ -289,17 +311,20 @@ function DashboardOverview({ currentUser, challenges, sectorConfig, isMobile, on
 
 
         {/* Activity Feed */}
-        <div style={{ background: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '20px', boxShadow: 'var(--shadow-xs)' }}>
-          <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '16px' }}>Recent Activity</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div style={{ background: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '20px', boxShadow: 'var(--shadow-xs)' }}>
+          <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ width: '4px', height: '18px', background: 'var(--primary)', borderRadius: '2px', display: 'inline-block' }} />
+            Recent Activity
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {recentActivity.map((item, i) => (
-              <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+              <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', padding: '8px 10px', borderRadius: 'var(--radius-md)', transition: 'background 0.2s ease' }}>
                 <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', flexShrink: 0 }}>
                   {item.icon}
                 </div>
-                <div>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-primary)', lineHeight: 1.4 }}>{item.text}</div>
-                  <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '2px' }}>{item.time}</div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-primary)', lineHeight: 1.5 }}>{item.text}</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '3px' }}>{item.time}</div>
                 </div>
               </div>
             ))}
@@ -333,7 +358,7 @@ function SuperAdminOverview({ challenges, isMobile }) {
     { label: 'Total Users', value: users.length.toString(), color: 'var(--primary)', sub: 'All sectors' },
     { label: 'Active Challenges', value: challenges.length.toString(), color: 'var(--success)', sub: `${challenges.filter(c => c.priority_score > 70).length} high priority` },
     { label: 'Sectors Active', value: '12', color: '#8b5cf6', sub: 'All operational' },
-    { label: 'Pending Approvals', value: users.filter(u => u.verification === 'pending_verification').length.toString(), color: '#f59e0b', sub: 'Require review' },
+    { label: 'Pending Approvals', value: users.filter(u => u.verification === 'pending_verification').length.toString(), color: 'var(--accent)', sub: 'Require review' },
   ];
 
   const pendingUsers = users.filter(u => u.verification === 'pending_verification');
@@ -343,11 +368,20 @@ function SuperAdminOverview({ challenges, isMobile }) {
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: isMobile ? '10px' : '16px' }}>
         {platformStats.map((s, i) => (
-          <div key={i} style={{ background: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '20px', position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-xs)' }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: s.color }} />
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>{s.label}</div>
+          <div key={i} style={{
+            background: '#ffffff', border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-lg)', padding: '20px',
+            position: 'relative', overflow: 'hidden',
+            boxShadow: 'var(--shadow-xs)',
+            transition: 'all 0.25s ease',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.boxShadow = 'var(--shadow-md)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+          onMouseLeave={e => { e.currentTarget.style.boxShadow = 'var(--shadow-xs)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+          >
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: i === 3 ? 'var(--accent)' : s.color }} />
+            <div style={{ fontSize: '0.70rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>{s.label}</div>
             <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)' }}>{s.value}</div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px' }}>{s.sub}</div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '6px' }}>{s.sub}</div>
           </div>
         ))}
       </div>
@@ -828,11 +862,13 @@ function GovDepartmentChallengesSection({ challenges, onOpenResolveModal, onNavi
               key={f}
               onClick={() => setStatusFilter(f)}
               style={{
-                padding: '6px 14px', borderRadius: '100px', fontSize: '0.78rem', fontWeight: 700,
-                border: statusFilter === f ? '1px solid #003087' : '1px solid #cbd5e1',
-                background: statusFilter === f ? '#003087' : '#ffffff',
-                color: statusFilter === f ? '#ffffff' : '#475569',
-                cursor: 'pointer', textTransform: 'capitalize'
+                padding: '7px 16px', borderRadius: 'var(--radius-pill)', fontSize: '0.78rem', fontWeight: 700,
+                border: statusFilter === f ? '1px solid var(--primary)' : '1px solid var(--border-subtle)',
+                background: statusFilter === f ? 'var(--primary)' : '#ffffff',
+                color: statusFilter === f ? '#ffffff' : 'var(--text-secondary)',
+                cursor: 'pointer', textTransform: 'capitalize',
+                transition: 'all 0.2s ease',
+                boxShadow: statusFilter === f ? '0 2px 8px rgba(27,42,74,0.18)' : 'none',
               }}
             >
               {f.replace('_', ' ')}
@@ -842,9 +878,11 @@ function GovDepartmentChallengesSection({ challenges, onOpenResolveModal, onNavi
       </div>
 
       {/* AI Organization & Department Filter Bar */}
-      <div style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '12px 16px' }}>
-        <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#0f172a', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Sparkles size={14} color="#FF6200" />
+      <div style={{ background: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '14px 18px', boxShadow: 'var(--shadow-xs)' }}>
+        <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ width: '24px', height: '24px', borderRadius: 'var(--radius-sm)', background: 'var(--accent-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Sparkles size={13} color="var(--accent)" />
+          </div>
           <span>Select Organization / Domain (AI Separated Complaints):</span>
         </div>
         <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
@@ -855,11 +893,12 @@ function GovDepartmentChallengesSection({ challenges, onOpenResolveModal, onNavi
                 key={d.id}
                 onClick={() => setSelectedDeptId(d.id)}
                 style={{
-                  padding: '7px 12px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 700,
-                  border: isSel ? '1px solid #003087' : '1px solid #e2e8f0',
-                  background: isSel ? 'rgba(0, 48, 135, 0.08)' : '#f8fafc',
-                  color: isSel ? '#003087' : '#475569',
+                  padding: '8px 14px', borderRadius: 'var(--radius-md)', fontSize: '0.78rem', fontWeight: 700,
+                  border: isSel ? '1px solid var(--primary)' : '1px solid var(--border-subtle)',
+                  background: isSel ? 'var(--primary-light)' : 'var(--bg-primary)',
+                  color: isSel ? 'var(--primary)' : 'var(--text-secondary)',
                   cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '6px',
+                  transition: 'all 0.2s ease',
                 }}
               >
                 <span>{d.icon}</span>
@@ -920,10 +959,10 @@ function GovDepartmentChallengesSection({ challenges, onOpenResolveModal, onNavi
                     </span>
                     {/* AI Department Routing Badge */}
                     <span style={{
-                      fontSize: '0.65rem', background: 'rgba(0,48,135,0.07)', border: '1px solid rgba(0,48,135,0.2)',
-                      color: '#003087', padding: '2px 6px', borderRadius: '4px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px'
+                      fontSize: '0.65rem', background: 'rgba(27,42,74,0.07)', border: '1px solid rgba(27,42,74,0.2)',
+                      color: 'var(--primary)', padding: '2px 6px', borderRadius: '4px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px'
                     }}>
-                      <Brain size={11} color="#FF6200" /> AI Routed: {matchedDept.shortName}
+                      <Brain size={11} color="var(--accent)" /> AI Routed: {matchedDept.shortName}
                     </span>
                   </div>
 
@@ -939,7 +978,7 @@ function GovDepartmentChallengesSection({ challenges, onOpenResolveModal, onNavi
                   </p>
 
                   {c.official_remark && (
-                    <div style={{ background: '#f8fafc', borderLeft: '3px solid #003087', padding: '6px 10px', fontSize: '0.75rem', color: '#0f172a', borderRadius: '0 6px 6px 0', marginBottom: '6px' }}>
+                    <div style={{ background: '#f8fafc', borderLeft: '3px solid var(--primary)', padding: '6px 10px', fontSize: '0.75rem', color: '#0f172a', borderRadius: '0 6px 6px 0', marginBottom: '6px' }}>
                       <strong>Official Dept Note:</strong> {c.official_remark}
                     </div>
                   )}
@@ -956,11 +995,11 @@ function GovDepartmentChallengesSection({ challenges, onOpenResolveModal, onNavi
                     onClick={() => onOpenResolveModal(c)}
                     style={{
                       flex: isMobile ? 1 : 'none',
-                      background: 'linear-gradient(135deg, #003087 0%, #001d5a 100%)',
+                      background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%)',
                       color: '#ffffff', border: 'none', borderRadius: '8px',
                       padding: '9px 14px', fontSize: '0.8rem', fontWeight: 800,
                       cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                      boxShadow: '0 3px 10px rgba(0,48,135,0.25)'
+                      boxShadow: '0 3px 10px rgba(27,42,74,0.25)'
                     }}
                   >
                     <Wrench size={14} />

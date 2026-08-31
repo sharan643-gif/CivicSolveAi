@@ -121,16 +121,15 @@ export default function SubmitPage({ onSubmit, challenges = [], onNavigate, preF
 
   const proceedToAiAnalysis = async () => {
     setStep(2);
-    setLoadingText('Executing semantic categorization & government department routing...');
-    await new Promise(resolve => setTimeout(resolve, 600));
+    setLoadingText('Gathering database context — similar complaints, department stats, hotspots...');
+    await new Promise(resolve => setTimeout(resolve, 400));
+    setLoadingText('Running deep AI analysis with full database intelligence...');
+    await new Promise(resolve => setTimeout(resolve, 400));
     setLoadingText('Calculating legal SLA deadline and local priority score based on severity & population density...');
     
     try {
-      // 2. Call AI analyzer & department router concurrently
-      const [analysis, routing] = await Promise.all([
-        aiService.analyzeChallenge(title, description, category),
-        geminiService.routeDepartment(title, description, category, location)
-      ]);
+      // Deep analyze: AI now gets full DB context (similar complaints, dept stats, hotspots)
+      const analysis = await aiService.analyzeChallenge(title, description, category);
 
       if (analysis) {
         setAiAnalysis(analysis);
@@ -138,18 +137,26 @@ export default function SubmitPage({ onSubmit, challenges = [], onNavigate, preF
         setSubcategory(analysis.subcategory || '');
         setSeverity((analysis.severity || 'medium').toLowerCase());
         setAffectedPop((analysis.affected_population_estimate || 1500).toString());
-      }
-      if (routing) {
-        setDeptRouting(routing);
-      } else {
-        const fallbackDept = accountabilityService.matchDepartment(category, title, description);
-        setDeptRouting({
-          department_id: fallbackDept.id,
-          department_name: fallbackDept.name,
-          sla_days: fallbackDept.slaDays,
-          confidence: 93,
-          routing_reason: 'Automated civic classification matched to responsible municipal authority.'
-        });
+
+        // Use department routing from deep analysis (already includes DB context)
+        if (analysis.department_id) {
+          setDeptRouting({
+            department_id: analysis.department_id,
+            department_name: analysis.department_name || '',
+            sla_days: analysis.sla_days || 7,
+            confidence: analysis.confidence || 93,
+            routing_reason: analysis.routing_rationale || 'AI classification with database context.'
+          });
+        } else {
+          const fallbackDept = accountabilityService.matchDepartment(category, title, description);
+          setDeptRouting({
+            department_id: fallbackDept.id,
+            department_name: fallbackDept.name,
+            sla_days: fallbackDept.slaDays,
+            confidence: 90,
+            routing_reason: 'Automated municipal department match.'
+          });
+        }
       }
     } catch (err) {
       console.warn('[SubmitPage] AI analysis failed, using defaults:', err.message);
@@ -307,14 +314,14 @@ export default function SubmitPage({ onSubmit, challenges = [], onNavigate, preF
                 style={{
                   display: 'flex', alignItems: 'center', gap: '6px',
                   padding: '8px 14px',
-                  background: 'linear-gradient(135deg, #003087, #0284c7)',
+                  background: 'linear-gradient(135deg, var(--primary), #0284c7)',
                   border: 'none',
                   color: '#ffffff',
                   fontSize: '0.82rem',
                   fontWeight: 700,
                   borderRadius: '6px',
                   cursor: 'pointer',
-                  boxShadow: '0 2px 8px rgba(0,48,135,0.3)',
+                  boxShadow: '0 2px 8px rgba(27,42,74,0.3)',
                 }}
               >
                 <Camera size={15} />
@@ -462,7 +469,7 @@ export default function SubmitPage({ onSubmit, challenges = [], onNavigate, preF
                   borderRadius: '8px',
                   padding: '30px',
                   textAlign: 'center',
-                  background: isDragOver ? 'rgba(0,48,135,0.04)' : 'rgba(255,255,255,0.01)',
+                  background: isDragOver ? 'rgba(27,42,74,0.04)' : 'rgba(255,255,255,0.01)',
                   cursor: 'pointer',
                   display: 'flex',
                   flexDirection: 'column',
@@ -692,7 +699,7 @@ export default function SubmitPage({ onSubmit, challenges = [], onNavigate, preF
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', fontWeight: 600, textTransform: 'uppercase' }}>Suggested Technologies</span>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   {aiAnalysis.suggested_technologies.map((tech, i) => (
-                    <div key={i} style={{ fontSize: '0.78rem', color: 'var(--text-primary)', background: 'var(--primary-light)', padding: '6px 10px', borderRadius: '6px', border: '1px solid rgba(0,48,135,0.15)', fontWeight: 600 }}>
+                    <div key={i} style={{ fontSize: '0.78rem', color: 'var(--text-primary)', background: 'var(--primary-light)', padding: '6px 10px', borderRadius: '6px', border: '1px solid rgba(27,42,74,0.15)', fontWeight: 600 }}>
                       🛠 {tech}
                     </div>
                   ))}

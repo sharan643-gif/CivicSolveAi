@@ -38,11 +38,11 @@ export default function ImpactCertificateModal({ isOpen, onClose, challenge }) {
       }}>
         {/* Modal Header */}
         <div style={{
-          padding: '16px 20px', background: '#003087', color: '#ffffff',
+          padding: '16px 20px', background: 'var(--primary)', color: '#ffffff',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Award size={20} color="#FF6200" />
+            <Award size={20} color="var(--accent)" />
             <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>JanSetu Verified Impact Certificate</h3>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#ffffff', cursor: 'pointer' }}>
@@ -54,13 +54,13 @@ export default function ImpactCertificateModal({ isOpen, onClose, challenge }) {
 
           {/* Official Certificate Card */}
           <div style={{
-            border: '4px double #003087', background: '#fafbfc', padding: '24px',
+            border: '4px double var(--primary)', background: '#fafbfc', padding: '24px',
             borderRadius: '6px', textAlign: 'center', position: 'relative'
           }}>
             <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
               OFFICIAL JANSETU VERIFIED IMPACT RECORD
             </div>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#003087', margin: '8px 0 4px' }}>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--primary)', margin: '8px 0 4px' }}>
               {cert.projectName}
             </h2>
             <div style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 600 }}>

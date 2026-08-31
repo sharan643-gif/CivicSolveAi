@@ -387,12 +387,13 @@ export default function AiInspectionModal({ isOpen, onClose, onSubmitInspection 
   }, []);
 
   // ─── Handle camera frame analysis (non-voice mode) ────────────────────────
+  // Faster analysis: 1.5s throttle + auto-capture evidence when civic issue detected
   const handleFrame = useCallback(async (frame) => {
     if (abortRef.current || isPaused || voiceModeRef.current) return;
 
-    // Throttle: don't analyze more than once per 2.5 seconds
+    // Throttle: analyze every 1.5 seconds for faster detection
     const now = Date.now();
-    if (now - lastAnalysisTimeRef.current < 2500) return;
+    if (now - lastAnalysisTimeRef.current < 1500) return;
     lastAnalysisTimeRef.current = now;
 
     frameCountRef.current++;
@@ -400,7 +401,7 @@ export default function AiInspectionModal({ isOpen, onClose, onSubmitInspection 
     try {
       const result = await geminiService.inspectFrame(
         frame.base64,
-        conversationHistoryRef.current.slice(-8),
+        conversationHistoryRef.current.slice(-6),
         '',
         frame.mimeType
       );
@@ -414,6 +415,18 @@ export default function AiInspectionModal({ isOpen, onClose, onSubmitInspection 
         const warning = detectSafetyWarning(result.observation);
         if (warning) { setSafetyWarning(warning); hapticFeedback('error'); }
 
+        // Auto-capture evidence when a real civic issue is detected (not just blurry/unclear)
+        const isRealIssue = result.category && result.category !== 'Unknown' && result.confidence !== 'low';
+        if (isRealIssue && frameCountRef.current % 3 === 1) {
+          setEvidenceImages(prev => [...prev, {
+            id: `ev-auto-${Date.now()}`,
+            base64: frame.base64,
+            mimeType: frame.mimeType,
+            timestamp: new Date().toISOString(),
+            autoCaptured: true,
+          }]);
+        }
+
         // Add observation to list (deduplicate)
         setObservations(prev => {
           const lastObs = prev[prev.length - 1];
@@ -423,8 +436,8 @@ export default function AiInspectionModal({ isOpen, onClose, onSubmitInspection 
           return [...prev.slice(-9), result.observation];
         });
 
-        // Add AI observation to conversation (only every 4th frame to avoid spam)
-        if (frameCountRef.current % 4 === 1) {
+        // Add AI observation to conversation (only every 3rd frame to avoid spam)
+        if (frameCountRef.current % 3 === 1) {
           addMessage('agent', result.observation, {
             category: result.category,
             severity: result.severity,
@@ -441,47 +454,47 @@ export default function AiInspectionModal({ isOpen, onClose, onSubmitInspection 
   // Use a turn counter to vary responses and avoid repetition
   const localFallbackTurnRef = useRef(0);
 
+  // ─── INTELLIGENT LOCAL VOICE RESPONSE ──────────────────────────────────────
+  // Analyzes what the camera can see vs what it needs to ask about.
+  // Only asks about info that CANNOT be determined from the camera frame.
   const generateLocalVoiceResponse = useCallback((userText, lang) => {
     const lower = (userText || '').toLowerCase();
     const info = collectedInfoRef.current;
     localFallbackTurnRef.current++;
     const turn = localFallbackTurnRef.current;
-
-    // Helper: pick a random item from an array
     const pick = (arr) => arr[(turn - 1) % arr.length];
 
-    // ── EXTRACT ALL info from EVERY message ──
     const isAck = !userText.trim() || lower.match(/^(yes|yeah|ok|okay|sure|hello|hi|namaste|haan|acha|ji|start|begin|go ahead|i\'m ready)$/);
 
+    // ── EXTRACT info from EVERY message (bilingual) ──
     if (!isAck && userText.trim().length > 5) {
-      if (lower.length > 10) {
-        info.raw_problem = userText.trim();
+      if (!info.raw_problem && lower.length > 10) info.raw_problem = userText.trim();
+
+      // Category
+      if (!info.category) {
+        if (lower.match(/flood|waterlog|drain|sewage|overflow|paani|nala|baadh|jalbhar/)) info.category = 'Water Management';
+        else if (lower.match(/pothole|road|street|bridge|path|sadak|gali|crack|ghaav|toot/)) info.category = 'Road Infrastructure';
+        else if (lower.match(/garbage|waste|trash|dump|kachra|safai|rubbish|gandagi/)) info.category = 'Waste Management';
+        else if (lower.match(/light|electric|wire|power|bijli|streetlight|transformer|current/)) info.category = 'Energy & Power';
+        else if (lower.match(/tree|fallen|branch|ped|pedh|gira/)) info.category = 'Environment';
+        else if (lower.match(/pipe|leak|burst|tap|water supply|nal|pipeline/)) info.category = 'Water Supply';
+        else if (lower.match(/encroach|illegal|construction|awaidh/)) info.category = 'Urban Planning';
       }
 
-      // Category detection (English + Hindi words)
-      if (lower.match(/flood|waterlog|drain|sewage|overflow|paani|nala|waterlogging|baadh|jalbhar/)) info.category = 'Water Management';
-      else if (lower.match(/pothole|road|street|bridge|path|sadak|gali|crack|ghaav|toot/)) info.category = 'Road Infrastructure';
-      else if (lower.match(/garbage|waste|trash|dump|kachra|safai|rubbish|gandagi/)) info.category = 'Waste Management';
-      else if (lower.match(/light|electric|wire|power|bijli|streetlight|transformer|current/)) info.category = 'Energy & Power';
-      else if (lower.match(/tree|fallen|branch|ped|pedh|gira/)) info.category = 'Environment & Pollution';
-      else if (lower.match(/pipe|leak|burst|tap|water supply|nal|pipeline/)) info.category = 'Water Supply';
-      else if (lower.match(/encroach|illegal|construction|awaidh/)) info.category = 'Urban Planning';
+      // Severity
+      if (!info.severity || info.severity === 'medium') {
+        if (lower.match(/emergency|critical|dangerous|collapse|fire|accident|death|injur|khatarnak|aag|bhaag/)) info.severity = 'critical';
+        else if (lower.match(/urgent|severe|badly|heavily|extensive|widespread|bahut|zyada|gambhir/)) info.severity = 'high';
+        else if (lower.match(/small|minor|little|slight|thoda|halka/)) info.severity = 'low';
+      }
 
-      // Severity detection (English + Hindi)
-      if (lower.match(/emergency|critical|dangerous|collapse|fire|accident|death|injur|khatarnak|aag|bhaag/)) info.severity = 'critical';
-      else if (lower.match(/urgent|severe|badly|heavily|extensive|widespread|bahut|zyada|gambhir/)) info.severity = 'high';
-      else if (lower.match(/small|minor|little|slight|thoda|halka/)) info.severity = 'low';
-      else info.severity = info.severity || 'medium';
-
-      // Duration detection (English + Hindi with number words)
+      // Duration (bilingual)
       if (!info.duration) {
-        const hindiNumMap = { 'ek': 1, 'do': 2, 'teen': 3, 'char': 4, 'paanch': 5, 'chhe': 6, 'saat': 7, 'aath': 8, 'nau': 9, 'das': 10, 'gyarah': 11, 'baraah': 12, 'pandra': 15, 'bees': 20, 'pachees': 25, 'tees': 30 };
-        // English numbers
+        const hindiNumMap = { 'ek': 1, 'do': 2, 'teen': 3, 'char': 4, 'paanch': 5, 'chhe': 6, 'saat': 7, 'aath': 8, 'nau': 9, 'das': 10, 'bees': 20, 'tees': 30 };
         if (lower.match(/\b(\d+)\s*day/)) info.duration = lower.match(/\b(\d+)\s*day/)[1] + ' days';
         else if (lower.match(/\b(\d+)\s*week/)) info.duration = lower.match(/\b(\d+)\s*week/)[1] + ' weeks';
         else if (lower.match(/\b(\d+)\s*month/)) info.duration = lower.match(/\b(\d+)\s*month/)[1] + ' months';
         else if (lower.match(/\b(\d+)\s*year/)) info.duration = lower.match(/\b(\d+)\s*year/)[1] + ' years';
-        // Hindi: "do din", "ek hafte", "char mahine"
         else if (lower.match(/(ek|do|teen|char|paanch|chhe|saat|aath|nau|das|bees|tees)\s*(din|days)/)) {
           const num = hindiNumMap[lower.match(/(ek|do|teen|char|paanch|chhe|saat|aath|nau|das|bees|tees)/)[1]] || 1;
           info.duration = num + ' days';
@@ -490,69 +503,51 @@ export default function AiInspectionModal({ isOpen, onClose, onSubmitInspection 
           const num = hindiNumMap[lower.match(/(ek|do|teen|char|paanch)/)[1]] || 1;
           info.duration = num + ' weeks';
         }
-        else if (lower.match(/(ek|do|teen|char|paanch|chhe|saat|aath|nau|das|baraah)\s*(mahin|month)/)) {
-          const num = hindiNumMap[lower.match(/(ek|do|teen|char|paanch|chhe|saat|aath|nau|das|baraah)/)[1]] || 1;
+        else if (lower.match(/(ek|do|teen|char|paanch|chhe|saat|aath|nau|das)\s*(mahin|month)/)) {
+          const num = hindiNumMap[lower.match(/(ek|do|teen|char|paanch|chhe|saat|aath|nau|das)/)[1]] || 1;
           info.duration = num + ' months';
         }
-        else if (lower.match(/(ek|do|teen|char|paanch)\s*(saal|year)/)) {
-          const num = hindiNumMap[lower.match(/(ek|do|teen|char|paanch)/)[1]] || 1;
-          info.duration = num + ' years';
-        }
-        // Devanagari: "दो दिन", "एक हफ्ते"
         else if (userText.match(/(एक|दो|तीन|चार|पांच|छह|सात|आठ|नौ|दस|बीस)\s*(दिन|हफ्त|महिन|साल)/)) {
           const match = userText.match(/(एक|दो|तीन|चार|पांच|छह|सात|आठ|नौ|दस|बीस)\s*(दिन|हफ्त|महिन|साल)/);
           const devaNumMap = { 'एक': 1, 'दो': 2, 'तीन': 3, 'चार': 4, 'पांच': 5, 'छह': 6, 'सात': 7, 'आठ': 8, 'नौ': 9, 'दस': 10, 'बीस': 20 };
           const unitMap = { 'दिन': 'days', 'हफ्त': 'weeks', 'महिन': 'months', 'साल': 'years' };
           info.duration = (devaNumMap[match[1]] || 1) + ' ' + (unitMap[match[2]] || 'days');
         }
-        else if (lower.match(/long time|bahut din|kaafi|pichle|since|bahut pehle|kaafi time/)) info.duration = 'over 6 months';
-        else if (lower.match(/recently|abhi|kal|today|aaj|abhi abhi/)) info.duration = 'recently';
+        else if (lower.match(/long time|bahut din|kaafi|pichle|since|bahut pehle/)) info.duration = 'over 6 months';
+        else if (lower.match(/recently|abhi|kal|today|aaj/)) info.duration = 'recently';
       }
 
-      // Affected people detection (English + Hindi)
+      // Who is affected
       if (!info.who_affected) {
-        // English: "200 people", "50 families"
         const popMatch = lower.match(/(\d[\d,]*)\s*(people|person|family|village|student|house|household|colony|mohalla|ward)/);
         if (popMatch) info.who_affected = `${popMatch[1]} ${popMatch[2]}s`;
-        // Hindi: "ek do log", "do char ghar", "kuch log"
-        else if (lower.match(/(ek\s*do|do\s*char|kuch|kaafi|sab|poore?)\s*(log|ghar|parivar|family|people)/)) {
-          const countMatch = lower.match(/(ek\s*do|do\s*char|kuch|kaafi)/);
-          const whoMatch = lower.match(/(log|ghar|parivar|family)/);
-          info.who_affected = `${countMatch?.[1] || ''} ${whoMatch?.[1] || 'log'}`.trim();
-        }
-        // Hindi: "do log" / "char log" with Devanagari numbers
-        else if (lower.match(/(\d|एक|दो|तीन|चार|पांच|छह|सात|आठ|नौ|दस|बीस|पचास|सौ)\s*(लोग|घर|परिवार|log|ghar)/)) {
+        else if (lower.match(/(ek\s*do|do\s*char|kuch|kaafi|sab|poore?)\s*(log|ghar|parivar|family)/)) {
           info.who_affected = userText.trim().slice(0, 40);
         }
         else if (lower.match(/everyone|sab|poora|entire|whole/)) info.who_affected = 'Entire neighborhood';
         else if (lower.match(/my family|mera ghar|hamara|our/)) info.who_affected = 'Local families';
       }
 
-      // Location — detect districts + generic Hindi location phrases
-      const districts = ['ranchi', 'dumka', 'dhanbad', 'jamshedpur', 'bokaro', 'deoghar', 'hazaribagh', 'giridih', 'palamu', 'godda', 'pakur', 'jamtara', 'ramgarh', 'lohardaga', 'gumla', 'simdega', 'latehar', 'garhwa', 'koderma', 'chatra', 'khunti'];
+      // Location
       if (!info.location) {
+        const districts = ['ranchi', 'dumka', 'dhanbad', 'jamshedpur', 'bokaro', 'deoghar', 'hazaribagh', 'giridih', 'palamu', 'godda', 'pakur', 'jamtara', 'ramgarh', 'lohardaga', 'gumla', 'simdega', 'latehar', 'garhwa', 'koderma', 'chatra', 'khunti'];
         for (const d of districts) {
           if (lower.includes(d)) { info.location = d.charAt(0).toUpperCase() + d.slice(1); break; }
         }
-        // Hindi location phrases: "mere ghar ke paas", "is area mein", "yahan", "idhar"
-        if (!info.location && lower.match(/(mere\s*ghar|hamare\s*ghar|ghar\s*ke\s*paas|paas|idhar|yahan|is\s*area|us\s*area|iss\s* jagah|wahan)/)) {
+        if (!info.location && lower.match(/(mere\s*ghar|hamare\s*ghar|ghar\s*ke\s*paas|paas|idhar|yahan|is\s*area|wahan)/)) {
           info.location = userText.trim().slice(0, 40);
         }
-        // English: "near my house", "here", "this area"
-        if (!info.location && lower.match(/(near\s*my|here|this\s*area|this\s*place|my\s*house|my\s*street|my\s*road|my\s*colony|my\s*ward)/)) {
+        if (!info.location && lower.match(/(near\s*my|here|this\s*area|this\s*place|my\s*house|my\s*street|my\s*colony|my\s*ward)/)) {
           info.location = userText.trim().slice(0, 40);
         }
-        // General: extract after prepositions
         if (!info.location) {
           const areaMatch = lower.match(/(near|in|at|behind|next to|paas|mein)\s+(.+?)(?:\.|,|$)/);
-          if (areaMatch) {
-            info.location = areaMatch[2].trim().slice(0, 40);
-          }
+          if (areaMatch) info.location = areaMatch[2].trim().slice(0, 40);
         }
       }
     }
 
-    // ── RE-CHECK what we know ──
+    // ── DETERMINE WHAT'S MISSING (camera can see category/severity, but NOT duration/location/who) ──
     const hasProblem = !!info.raw_problem;
     const hasLocation = !!info.location;
     const hasDuration = !!info.duration;
@@ -560,75 +555,72 @@ export default function AiInspectionModal({ isOpen, onClose, onSubmitInspection 
     const hasCategory = !!info.category;
     const allCollected = hasProblem && hasLocation && hasDuration && hasAffected;
 
-    // ── CASUAL HINDI RESPONSES — like a friendly bhaiya/bhabhi talking ──
-    if (isAck) {
-      if (hasProblem) {
-        return lang === 'hi-IN'
-          ? pick([
-              'Accha, yeh kahaan hai aur kitne din se chal raha hai?',
-              'Theek hai, location batao aur kab se hai yeh?',
-              'Okay okay, yeh kis area mein hai aur kitna time ho gaya?',
-            ])
-          : 'Okay! Which area is this in, and how long has it been going on?';
-      }
-      return lang === 'hi-IN'
-        ? pick([
-            'Haan batao, kya problem hai?',
-            'Ji haan, batao kya ho raha hai aapke area mein?',
-            'Sure, mujhe batao — kya dikkat hai?',
-          ])
-        : 'Sure! Please describe the civic problem you are seeing — what is happening?';
-    }
-
+    // ── IF WE HAVE EVERYTHING → AUTO-DRAFT ──
     if (allCollected) {
       info._readyForReport = true;
       return lang === 'hi-IN'
-        ? pick([
-            `Bas! Sab mil gaya — ${info.category || 'samasya'}, ${info.location} mein, ${info.duration} se, ${info.who_affected} affected. Report bana rahi hoon...`,
-            `Perfect! Saari info hai ab — ${info.category || 'issue'} in ${info.location}, ${info.duration} se hai. Report ready kar rahi hoon...`,
-            `Lo ji, ho gaya! ${info.location} mein ${info.category || 'samasya'} — ${info.duration} se hai. Ab report banata hoon...`,
-          ])
-        : `Perfect! I have everything — ${info.category || 'issue'} in ${info.location}, going on for ${info.duration}, affecting ${info.who_affected}. Preparing your report now...`;
+        ? `Perfect! ${info.category || 'samasya'} — ${info.location} mein, ${info.duration} se, ${info.who_affected} ko affect kar raha hai. Report bana rahi hoon...`
+        : `Perfect! I have everything — ${info.category || 'issue'} in ${info.location}, going on for ${info.duration}, affecting ${info.who_affected}. Let me draft your report now...`;
+    }
+
+    // ── ASK ONLY WHAT CAMERA CANNOT SEE — natural, contextual questions ──
+    // Camera CAN see: category, severity, visual description
+    // Camera CANNOT see: duration, location name, who is affected, how many people
+
+    if (isAck) {
+      // Just acknowledge — prompt them to show/describe
+      if (!hasProblem && !hasCategory) {
+        return lang === 'hi-IN'
+          ? 'Haan, dikhao — camera us problem ki taraf rakho aur batao kya ho raha hai.'
+          : 'Go ahead — point the camera at the problem and tell me what you see happening.';
+      }
+      // We already have something from camera — ask what we're missing
+      if (!hasLocation) {
+        return lang === 'hi-IN'
+          ? `Haan, ${info.category || 'yeh samasya'} dikh raha hai. Yeh kis area mein hai? Ward, mohalla, ya koi landmark batao.`
+          : `I can see the ${info.category || 'issue'}. Which area or neighborhood is this in?`;
+      }
+      if (!hasDuration) {
+        return lang === 'hi-IN'
+          ? `${info.location} mein hai — theek hai. Yeh kab se chal raha hai?`
+          : `Got it — in ${info.location}. How long has this been going on?`;
+      }
+      if (!hasAffected) {
+        return lang === 'hi-IN'
+          ? `${info.duration} se hai. Kaun kaun log isse pareshan hain? Kitne ghar, kitne log?`
+          : `Going on for ${info.duration}. Who is mainly affected by this?`;
+      }
+    }
+
+    // ── SMART QUESTION ORDER: location → duration → who (camera already got category/severity) ──
+    if (hasProblem && !hasLocation) {
+      return lang === 'hi-IN'
+        ? `${info.category || 'Yeh samasya'} dikh raha hai. Yeh kis shehar, ward, ya area mein hai? Koi nearby landmark batao.`
+        : `I see the ${info.category || 'issue'}. Which district, ward, or area is this in? Any nearby landmark?`;
     }
 
     if (hasProblem && hasLocation && !hasDuration) {
       return lang === 'hi-IN'
-        ? pick([
-            `Achha ${info.location} mein hai. Kab se chal raha hai? Din, hafta, ya mahina?`,
-            `${info.location} — theek hai. Kitna time ho gaya yeh chalte hue?`,
-            `Samajh gayi, ${info.location}. Yeh problem kab shuru hui?`,
-          ])
-        : `Got it — in ${info.location}. How long has this been going on? A few days, weeks, or months?`;
+        ? `${info.location} mein hai. Yeh kab se chal raha hai — din, hafta, ya mahina?`
+        : `In ${info.location} — got it. How long has this been going on?`;
     }
 
     if (hasProblem && hasLocation && hasDuration && !hasAffected) {
       return lang === 'hi-IN'
-        ? pick([
-            `${info.duration} se hai — achha. Kaun log isse pareshan hain? Kitne ghar, kitne log?`,
-            `Theek hai, ${info.duration} ho gaya. Kitne logon ko affect kar raha hai yeh?`,
-            `${info.location} mein ${info.duration} se hai. Main kaun hain jo sabse zyada pareshan hain?`,
-          ])
-        : `Alright, going on for ${info.duration} in ${info.location}. Who is mainly affected — how many people or which neighborhood?`;
+        ? `${info.duration} se hai. Kitne log ya kaun se log isse pareshan hain?`
+        : `For ${info.duration}. How many people or which community is affected?`;
     }
 
-    if (hasProblem && !hasLocation) {
+    // Fallback — ask for anything we're missing
+    if (!hasProblem) {
       return lang === 'hi-IN'
-        ? pick([
-            `${info.category || 'Yeh samasya'} — achha samajh gayi. Yeh kis shehar ya area mein hai?`,
-            `Haan, yeh samajh aaya. Location batao — kaun sa area, kaun sa ward?`,
-            `Okay okay, ${info.category || 'samasya'} dikh raha hai. Yeh kahaan hai exact?`,
-          ])
-        : `I see — ${info.category || 'this issue'}. Which district, city, or area is this in?`;
+        ? 'Kya ho raha hai wahan? Camera se dikh raha hai, par thoda aur batao kya problem hai.'
+        : 'What exactly is happening? I can see through the camera, but tell me more about the problem.';
     }
 
-    // Fallback — ask for more details
     return lang === 'hi-IN'
-      ? pick([
-          'Aur batao — kya dikh raha hai exactly? Kitna serious hai?',
-          'Thoda aur samjhao — kya ho raha hai wahan? Rasta band hai? Paani bhar raha hai?',
-          'Okay, mujhe aur detail chahiye — kya situation hai wahan abhi?',
-        ])
-      : 'Can you tell me more about what you see? How bad is it — is it blocking traffic, affecting water supply, or causing health concerns?';
+      ? 'Aur kuch jo mujhe pata hona chahiye? Jaise yeh kitne logon ko affect kar raha hai?'
+      : 'Anything else I should know? Like how many people this is affecting?';
   }, []);
 
   // ─── VOICE CONVERSATION ENGINE ─────────────────────────────────────────────
@@ -643,29 +635,60 @@ export default function AiInspectionModal({ isOpen, onClose, onSubmitInspection 
     collectedInfoRef.current = {};
     abortRef.current = false;
 
-    // Greeting
+    // ── STEP 1: Greet + analyze camera frame FIRST ──
     const lang = detectedLang || selectedLanguage;
-    const hindiGreetings = [
-      'Namaste! Main aapki AI sahayak hoon. Camera us problem ki taraf rakho aur batao kya dikh raha hai. Aap bolke bhi bata sakte ho.',
-      'Hello hello! Kya haal hai? Chalo camera se problem dikhao aur mujhe batao kya ho raha hai aapke area mein.',
-      'Hi! Main AI inspection waali hoon. Camera on karo aur batao — kya samasya dikh rahi hai?',
-      'Arey! Chaliye shuru karte hain. Camera idhar rakho aur mujhe batao kya problem hai.',
-    ];
-    const englishGreetings = [
-      "Hello! I'm your AI inspection assistant. Point the camera at the problem and tell me what you see. You can speak naturally — I'll listen and help you document everything.",
-      'Hey there! Ready to inspect? Point your camera at the civic issue and just tell me what you see. I\'m all ears!',
-      'Hi! Let\'s get started. Show me the problem with your camera and describe what\'s going on — I\'ll help you file a proper report.',
-    ];
-    const greetingPool = lang === 'hi-IN' ? hindiGreetings : englishGreetings;
-    const greeting = greetingPool[Math.floor(Math.random() * greetingPool.length)];
-
+    const greeting = lang === 'hi-IN'
+      ? 'Namaste! Camera on hai — main dekh rahi hoon. Batao kya ho raha hai.'
+      : 'Hi! Camera is on — I can see your view. Tell me what you see and I\'ll help document everything.';
     addMessage('agent', greeting);
     await speak(greeting);
 
     if (abortRef.current) { voiceModeRef.current = false; return; }
 
-    // ── MAIN VOICE LOOP ──
-    const MAX_VOICE_TURNS = 10;
+    // ── STEP 2: Analyze camera frame FIRST to extract what we can see ──
+    const initFrame = camera.latestFrameRef.current;
+    const hasInitFrame = initFrame?.base64 && initFrame.base64.length > 100;
+
+    if (hasInitFrame) {
+      setIsThinking(true);
+      try {
+        const initResult = await geminiService.inspectFrame(
+          initFrame.base64, [], '', initFrame.mimeType || 'image/jpeg', null
+        );
+        if (initResult?.success && initResult.category && initResult.category !== 'Unknown') {
+          collectedInfoRef.current.category = initResult.category;
+          collectedInfoRef.current.severity = initResult.severity || 'medium';
+          setCurrentAnalysis(initResult);
+          if (initResult.observation) {
+            previousObservationsRef.current.push(initResult.observation);
+            setObservations(prev => [...prev, initResult.observation]);
+          }
+          const seeMsg = lang === 'hi-IN'
+            ? `Main dekh rahi hoon — ${initResult.observation || initResult.category}. Ab batana: yeh kis area mein hai aur kitne din se chal raha hai?`
+            : `I can see — ${initResult.observation || initResult.category}. Now tell me: which area is this in and how long has it been going on?`;
+          addMessage('agent', seeMsg, { category: initResult.category, severity: initResult.severity });
+          await speak(seeMsg);
+        } else {
+          const askMsg = lang === 'hi-IN'
+            ? 'Camera se kuch dikh nahi raha clearly. Batao kya ho raha hai wahan?'
+            : 'Camera view isn\'t clear yet. What\'s happening there? Describe the problem.';
+          addMessage('agent', askMsg);
+          await speak(askMsg);
+        }
+      } catch (err) {
+        const askMsg = lang === 'hi-IN'
+          ? 'Thoda wait — analyze ho raha hai. Batao kya dikh raha hai?'
+          : 'Give me a moment. What problem do you see?';
+        addMessage('agent', askMsg);
+        await speak(askMsg);
+      }
+      setIsThinking(false);
+    }
+
+    if (abortRef.current) { voiceModeRef.current = false; return; }
+
+    // ── STEP 3: Main conversation — ask ONLY what camera can't determine ──
+    const MAX_VOICE_TURNS = 6;
 
     for (let turn = 0; turn < MAX_VOICE_TURNS; turn++) {
       if (abortRef.current || !voiceModeRef.current) break;
@@ -807,32 +830,19 @@ export default function AiInspectionModal({ isOpen, onClose, onSubmitInspection 
 
         // Check if we already said something very similar (dedup)
         // Only dedup if the response is EXACTLY the same (not just similar prefix)
-        const isDuplicate = spokenResponsesRef.current.has(spokenResponse);
-
-        // If duplicate, generate a varied follow-up instead of a canned response
+        // Dedup — ask CONTEXTUAL questions based on what's actually missing
         let finalResponse = spokenResponse;
-        if (isDuplicate) {
-          if (selectedLanguage === 'hi-IN') {
-            const followUps = [
-              'Aur kuch batao — jaise kitne logon ko affect kar raha hai?',
-              'Haan, samajh gayi. Location ya area batao zara?',
-              'Theek hai, yeh kab se chal raha hai? Kitna time ho gaya?',
-              'Achha, kaun kaun se log isse pareshan hain?',
-              'Done, noted. Ab aur detail do — kitna serious hai yeh?',
-              'Okay, kitne log rehte hain us area mein?',
-              'Achha, aur koi cheez jo dikh rahi hai wahan?',
-            ];
-            // Pick a follow-up that hasn't been said yet
-            finalResponse = followUps.find(f => !spokenResponsesRef.current.has(f)) || followUps[turn % followUps.length];
+        if (spokenResponsesRef.current.has(spokenResponse)) {
+          const info = collectedInfoRef.current;
+          const localLang2 = detectedLang || selectedLanguage;
+          if (!info.location) {
+            finalResponse = localLang2 === 'hi-IN' ? 'Yeh kis area mein hai? Ward ya landmark batao.' : 'Which area or neighborhood is this in?';
+          } else if (!info.duration) {
+            finalResponse = localLang2 === 'hi-IN' ? `${info.location} mein hai. Kab se chal raha hai?` : `In ${info.location}. How long has this been going on?`;
+          } else if (!info.who_affected) {
+            finalResponse = localLang2 === 'hi-IN' ? 'Kitne log isse pareshan hain?' : 'How many people are affected?';
           } else {
-            const enFollowUps = [
-              'Got it! How long has this been going on?',
-              'Okay, which area or neighborhood is this in?',
-              'Thanks! Who is mainly affected by this?',
-              'Noted. How many people are impacted?',
-              'I see. Can you tell me how severe this looks?',
-            ];
-            finalResponse = enFollowUps.find(f => !spokenResponsesRef.current.has(f)) || enFollowUps[turn % enFollowUps.length];
+            finalResponse = localLang2 === 'hi-IN' ? 'Aur kuch jo mujhe pata hona chahiye?' : 'Anything else I should know?';
           }
         }
 
@@ -1362,17 +1372,15 @@ export default function AiInspectionModal({ isOpen, onClose, onSubmitInspection 
     }}>
       <div style={{
         background: '#ffffff', borderRadius: '16px', width: '100%', maxWidth: '920px',
-        boxShadow: '0 25px 70px rgba(0, 15, 45, 0.6), 0 0 30px rgba(56, 189, 248, 0.15)',
+        boxShadow: '0 25px 70px rgba(0, 15, 45, 0.6), 0 0 30px rgba(27,42,74, 0.15)',
         overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '95vh',
         position: 'relative',
       }}>
         {/* Flag accent */}
-        <div style={{ height: '3px', width: '100%', background: 'linear-gradient(90deg, #FF9933 0%, #FFFFFF 50%, #128807 100%)' }} />
-
-        {/* Header */}
+        <div style={{ height: '3px', width: '100%', background: 'linear-gradient(90deg, #FF9933 0%, #FFFFFF 50%, #128807 100%)' }} />        {/* Header */}
         <div style={{
-          background: 'linear-gradient(135deg, #051630 0%, #020b18 100%)',
-          borderBottom: '1px solid rgba(56, 189, 248, 0.2)',
+          background: 'linear-gradient(135deg, #0f1729 0%, #1b2a4a 60%, #243b6a 100%)',
+          borderBottom: '1px solid rgba(200,134,10,0.15)',
           padding: isMobile ? '8px 10px' : '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#ffffff',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -1380,14 +1388,14 @@ export default function AiInspectionModal({ isOpen, onClose, onSubmitInspection 
               width: isMobile ? '28px' : '34px', height: isMobile ? '28px' : '34px', borderRadius: isMobile ? '8px' : '10px',
               background: orbState === 'live' ? 'linear-gradient(135deg, #10b981, #059669)'
                 : orbState === 'speaking' ? 'linear-gradient(135deg, #10b981, #059669)'
-                : orbState === 'listening' ? 'linear-gradient(135deg, #FF6200, #dc2626)'
+                : orbState === 'listening' ? 'linear-gradient(135deg, var(--accent), #dc2626)'
                 : orbState === 'thinking' ? 'linear-gradient(135deg, #8b5cf6, #6d28d9)'
                 : orbState === 'paused' ? 'linear-gradient(135deg, #d97706, #b45309)'
-                : 'linear-gradient(135deg, #003087, #0284c7)',
+                : 'linear-gradient(135deg, var(--primary), #0284c7)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               boxShadow: orbState === 'live' ? '0 0 20px rgba(16,185,129,0.6)'
                 : orbState === 'speaking' ? '0 0 20px rgba(16,185,129,0.6)'
-                : orbState === 'listening' ? '0 0 20px rgba(255,98,0,0.6)'
+                : orbState === 'listening' ? '0 0 20px rgba(200,134,10,0.6)'
                 : orbState === 'thinking' ? '0 0 20px rgba(139,92,246,0.6)' : 'none',
               transition: 'all 0.3s ease',
             }}>
@@ -1395,8 +1403,8 @@ export default function AiInspectionModal({ isOpen, onClose, onSubmitInspection 
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <span style={{ fontSize: '0.52rem', letterSpacing: '0.04em', textTransform: 'uppercase', color: '#38bdf8', fontWeight: 800, background: 'rgba(56, 189, 248, 0.12)', padding: '1px 5px', borderRadius: '4px', border: '1px solid rgba(56, 189, 248, 0.25)' }}>AI Inspect</span>
-                <span style={{ fontSize: '0.52rem', background: 'linear-gradient(135deg, #FF6200, #d97706)', color: '#fff', padding: '1px 5px', borderRadius: '6px', fontWeight: 800 }}>Gemini AI</span>
+                <span style={{ fontSize: '0.52rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: '#d4a843', fontWeight: 800, background: 'rgba(200,134,10,0.12)', padding: '2px 6px', borderRadius: 'var(--radius-pill)', border: '1px solid rgba(200,134,10,0.25)' }}>AI Inspect</span>
+                <span style={{ fontSize: '0.52rem', background: 'rgba(200,134,10,0.2)', color: '#d4a843', padding: '2px 6px', borderRadius: 'var(--radius-pill)', fontWeight: 800 }}>Gemini AI</span>
                 {isVoiceMode && (
                   <span style={{ fontSize: '0.52rem', background: 'linear-gradient(135deg, #10b981, #059669)', color: '#fff', padding: '1px 5px', borderRadius: '6px', fontWeight: 800, animation: 'pulse 1.5s infinite' }}>🎙️ LIVE VOICE</span>
                 )}
@@ -1458,11 +1466,11 @@ export default function AiInspectionModal({ isOpen, onClose, onSubmitInspection 
                 <div style={{
                   position: 'absolute', bottom: '145px', left: '50%', transform: 'translateX(-50%)',
                   padding: '4px 12px', borderRadius: '8px',
-                  background: isListening ? 'rgba(255,98,0,0.85)' : isSpeaking ? 'rgba(16,185,129,0.85)' : 'rgba(139,92,246,0.85)',
+                  background: isListening ? 'rgba(200,134,10,0.85)' : isSpeaking ? 'rgba(16,185,129,0.85)' : 'rgba(139,92,246,0.85)',
                   backdropFilter: 'blur(8px)',
                   color: '#fff', fontSize: '0.7rem', fontWeight: 700,
                   display: 'flex', alignItems: 'center', gap: '6px', zIndex: 5,
-                  boxShadow: isListening ? '0 2px 12px rgba(255,98,0,0.4)' : isSpeaking ? '0 2px 12px rgba(16,185,129,0.4)' : '0 2px 12px rgba(139,92,246,0.4)',
+                  boxShadow: isListening ? '0 2px 12px rgba(200,134,10,0.4)' : isSpeaking ? '0 2px 12px rgba(16,185,129,0.4)' : '0 2px 12px rgba(139,92,246,0.4)',
                   transition: 'all 0.3s ease',
                   pointerEvents: 'none',
                   animation: isThinking && !isListening && !isSpeaking ? 'thinkingPulse 2s ease-in-out infinite' : 'none',
@@ -1479,9 +1487,9 @@ export default function AiInspectionModal({ isOpen, onClose, onSubmitInspection 
 
               {/* Camera inactive overlay */}
               {!camera.isActive && (
-                <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #0a1628 0%, #0f2847 100%)', color: '#fff', gap: isMobile ? '8px' : '16px', padding: isMobile ? '10px' : '0' }}>
-                  <div style={{ width: isMobile ? '48px' : '72px', height: isMobile ? '48px' : '72px', borderRadius: '50%', background: 'rgba(56, 189, 248, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid rgba(56, 189, 248, 0.3)' }}>
-                    <Camera size={isMobile ? 22 : 32} color="#38bdf8" />
+                <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #0f1729 0%, #1b2a4a 100%)', color: '#fff', gap: isMobile ? '8px' : '16px', padding: isMobile ? '10px' : '0' }}>
+                  <div style={{ width: isMobile ? '48px' : '72px', height: isMobile ? '48px' : '72px', borderRadius: '50%', background: 'rgba(200,134,10,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid rgba(200,134,10,0.3)' }}>
+                    <Camera size={isMobile ? 22 : 32} color="#d4a843" />
                   </div>
                   <div style={{ textAlign: 'center' }}>
                     <h3 style={{ fontSize: isMobile ? '0.85rem' : '1.1rem', fontWeight: 800, margin: '0 0 2px' }}>AI Inspect</h3>
@@ -1508,8 +1516,8 @@ export default function AiInspectionModal({ isOpen, onClose, onSubmitInspection 
                       <Mic size={16} /> Start Voice Inspection
                     </button>
                     <button onClick={handleStartInspection} style={{
-                      padding: isMobile ? '10px 16px' : '12px 24px', borderRadius: '10px', border: '1px solid rgba(56, 189, 248, 0.4)',
-                      background: 'rgba(56, 189, 248, 0.1)', color: '#38bdf8',
+                      padding: isMobile ? '10px 16px' : '12px 24px', borderRadius: '10px', border: '1px solid rgba(200,134,10,0.4)',
+                      background: 'rgba(200,134,10,0.1)', color: '#d4a843',
                       fontSize: isMobile ? '0.78rem' : '0.85rem', fontWeight: 700, cursor: 'pointer',
                       display: 'flex', alignItems: 'center', gap: '8px',
                     }}>
@@ -1543,7 +1551,7 @@ export default function AiInspectionModal({ isOpen, onClose, onSubmitInspection 
                   background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)',
                   display: 'flex', alignItems: 'center', gap: '6px',
                 }}>
-                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: isVoiceMode && isSpeaking ? '#10b981' : isVoiceMode && isListening ? '#FF6200' : '#ef4444', animation: 'pulse 1s infinite' }} />
+                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: isVoiceMode && isSpeaking ? '#10b981' : isVoiceMode && isListening ? 'var(--accent)' : '#ef4444', animation: 'pulse 1s infinite' }} />
                   <span style={{ fontSize: '0.68rem', color: '#fff', fontWeight: 700 }}>{isVoiceMode ? (isSpeaking ? 'SPEAKING' : isListening ? 'LISTENING' : 'VOICE') : 'REC'}</span>
                   <span style={{ fontSize: '0.6rem', color: '#94a3b8' }}>Frame {frameCountRef.current}</span>
                 </div>
@@ -1553,7 +1561,7 @@ export default function AiInspectionModal({ isOpen, onClose, onSubmitInspection 
               {isVoiceMode && isListening && interimText && (
                 <div style={{
                   position: 'absolute', top: '50px', left: '10px', right: '10px',
-                  padding: '10px 14px', background: 'rgba(255,98,0,0.9)', backdropFilter: 'blur(8px)',
+                  padding: '10px 14px', background: 'rgba(200,134,10,0.9)', backdropFilter: 'blur(8px)',
                   borderRadius: '10px', color: '#fff', fontSize: '0.82rem', fontWeight: 600,
                   fontStyle: 'italic', textAlign: 'center',
                   animation: 'fadeIn 0.2s ease',
@@ -1576,25 +1584,35 @@ export default function AiInspectionModal({ isOpen, onClose, onSubmitInspection 
                 </div>
               )}
 
-              {/* Gemini Observation Bubble */}
+              {/* Gemini Observation Bubble — Real-time detection overlay */}
               {currentAnalysis && (inspectionState === INSPECTION_STATES.LIVE || inspectionState === INSPECTION_STATES.VOICE_ACTIVE) && (
                 <div style={{
                   position: 'absolute', bottom: '10px', left: '10px', right: '10px',
-                  padding: '10px 14px', background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(12px)',
-                  borderRadius: '10px', border: '1px solid rgba(56, 189, 248, 0.3)',
+                  padding: '10px 14px', background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(12px)',
+                  borderRadius: '12px', border: '1px solid rgba(200,134,10,0.3)',
                   animation: 'fadeIn 0.3s ease',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                    <Bot size={14} color="#38bdf8" />
-                    <span style={{ fontSize: '0.7rem', color: '#38bdf8', fontWeight: 700 }}>Gemini Observation</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                    <Bot size={14} color="#d4a843" />
+                    <span style={{ fontSize: '0.7rem', color: '#d4a843', fontWeight: 700 }}>Gemini Observation</span>
+                    {currentAnalysis.category && currentAnalysis.category !== 'Unknown' && (
+                      <span style={{
+                        fontSize: '0.58rem', padding: '1px 6px', borderRadius: '4px', fontWeight: 800, marginLeft: 'auto',
+                        background: currentAnalysis.severity === 'critical' ? 'rgba(220,38,38,0.3)' : currentAnalysis.severity === 'high' ? 'rgba(234,88,12,0.3)' : 'rgba(16,185,129,0.3)',
+                        color: currentAnalysis.severity === 'critical' ? '#fca5a5' : currentAnalysis.severity === 'high' ? '#fdba74' : '#6ee7b7'
+                      }}>
+                        {currentAnalysis.category} • {currentAnalysis.severity}
+                      </span>
+                    )}
                   </div>
-                  <p style={{ margin: 0, fontSize: '0.82rem', color: '#e2e8f0', lineHeight: 1.4 }}>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: '#e2e8f0', lineHeight: 1.4 }}>
                     {currentAnalysis.observation}
                   </p>
                   {currentAnalysis.missingInfo && currentAnalysis.missingInfo.length > 0 && (
                     <div style={{ marginTop: '6px', display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                       {currentAnalysis.missingInfo.map((info, i) => (
-                        <span key={i} style={{ fontSize: '0.6rem', padding: '2px 6px', borderRadius: '4px', background: 'rgba(255,193,7,0.2)', color: '#fbbf24', fontWeight: 700 }}>❓ {info}</span>
+                        <span key={i} style={{ fontSize: '0.58rem', padding: '2px 6px', borderRadius: '4px', background: 'rgba(255,193,7,0.2)', color: '#fbbf24', fontWeight: 700 }}>❓ {info}</span>
                       ))}
                     </div>
                   )}
@@ -1683,18 +1701,18 @@ export default function AiInspectionModal({ isOpen, onClose, onSubmitInspection 
           {/* Right Panel: Observation + Chat */}
           <div style={{
             width: isMobile ? '100%' : '320px', display: 'flex', flexDirection: 'column',
-            borderLeft: isMobile ? 'none' : '1px solid #e2e8f0', borderTop: isMobile ? '1px solid #e2e8f0' : 'none',
-            background: '#f8fafc', flexShrink: 0, flex: isMobile ? 1 : 'none', minHeight: isMobile ? 0 : undefined,
+            borderLeft: isMobile ? 'none' : '1px solid var(--border-subtle)', borderTop: isMobile ? '1px solid var(--border-subtle)' : 'none',
+            background: 'var(--bg-secondary)', flexShrink: 0, flex: isMobile ? 1 : 'none', minHeight: isMobile ? 0 : undefined,
             overflow: 'hidden',
           }}>
             {/* Panel Header */}
-            <div style={{ padding: isMobile ? '8px 10px' : '10px 12px', borderBottom: '1px solid #e2e8f0', background: '#fff' }}>
+            <div style={{ padding: isMobile ? '8px 10px' : '10px 12px', borderBottom: '1px solid var(--border-subtle)', background: '#fff' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Eye size={14} color="#003087" />
-                  <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0f172a' }}>Gemini Observation</span>
+                  <Eye size={14} color="var(--primary)" />
+                  <span style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-primary)' }}>Gemini Observation</span>
                   {isVoiceMode && (
-                    <span style={{ fontSize: '0.58rem', background: 'rgba(16,185,129,0.15)', color: '#059669', padding: '2px 6px', borderRadius: '8px', fontWeight: 800 }}>🎙️ Voice Active</span>
+                    <span style={{ fontSize: '0.58rem', background: 'var(--success-light)', color: 'var(--success)', padding: '2px 8px', borderRadius: 'var(--radius-pill)', fontWeight: 800 }}>🎙️ Voice Active</span>
                   )}
                 </div>
                 <button onClick={() => setShowObservationPanel(!showObservationPanel)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
@@ -1703,40 +1721,80 @@ export default function AiInspectionModal({ isOpen, onClose, onSubmitInspection 
               </div>
             </div>
 
-            {/* Observation Details */}
+            {/* Observation Details — Real-Time Detection Card */}
             {showObservationPanel && (
-              <div style={{ padding: '10px 12px', borderBottom: '1px solid #e2e8f0', background: '#fff' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.72rem' }}>
-                  <div>
-                    <span style={{ color: '#64748b', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.6rem', letterSpacing: '0.05em' }}>Category</span>
-                    <div style={{ color: '#003087', fontWeight: 700, marginTop: '1px' }}>{currentAnalysis?.category || '—'}</div>
+              <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--border-subtle)', background: '#fff' }}>
+                {/* Detection Status Card */}
+                <div style={{
+                  padding: '8px 10px', borderRadius: '8px', marginBottom: '8px',
+                  background: currentAnalysis?.category && currentAnalysis.category !== 'Unknown'
+                    ? 'linear-gradient(135deg, rgba(16,185,129,0.08), rgba(5,150,105,0.04))'
+                    : 'rgba(100,116,139,0.05)',
+                  border: `1px solid ${currentAnalysis?.category && currentAnalysis.category !== 'Unknown' ? 'rgba(16,185,129,0.2)' : 'rgba(100,116,139,0.15)'}`,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                    <div style={{
+                      width: '8px', height: '8px', borderRadius: '50%',
+                      background: currentAnalysis?.category && currentAnalysis.category !== 'Unknown' ? '#10b981' : '#94a3b8',
+                      animation: (inspectionState === INSPECTION_STATES.LIVE || inspectionState === INSPECTION_STATES.VOICE_ACTIVE) && !isPaused ? 'pulse 1.5s infinite' : 'none'
+                    }} />
+                    <span style={{ fontSize: '0.68rem', fontWeight: 800, color: currentAnalysis?.category && currentAnalysis.category !== 'Unknown' ? '#059669' : '#64748b' }}>
+                      {currentAnalysis?.category && currentAnalysis.category !== 'Unknown' ? 'Issue Detected' : 'Scanning...'}
+                    </span>
+                    {evidenceImages.length > 0 && (
+                      <span style={{ fontSize: '0.58rem', background: 'rgba(27,42,74,0.08)', color: 'var(--primary)', padding: '1px 5px', borderRadius: '4px', fontWeight: 700, marginLeft: 'auto' }}>
+                        📸 {evidenceImages.length} photo{evidenceImages.length !== 1 ? 's' : ''}
+                      </span>
+                    )}
                   </div>
-                  <div>
-                    <span style={{ color: '#64748b', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.6rem', letterSpacing: '0.05em' }}>Severity</span>
-                    <div style={{ color: currentAnalysis?.severity === 'critical' ? '#dc2626' : currentAnalysis?.severity === 'high' ? '#ea580c' : '#003087', fontWeight: 700, marginTop: '1px', textTransform: 'uppercase' }}>{currentAnalysis?.severity || '—'}</div>
+                  {/* Detection metrics row */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px' }}>
+                    <div>
+                      <span style={{ color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.55rem', letterSpacing: '0.06em' }}>Category</span>
+                      <div style={{ color: 'var(--primary)', fontWeight: 800, marginTop: '1px', fontSize: '0.72rem' }}>{currentAnalysis?.category || '—'}</div>
+                    </div>
+                    <div>
+                      <span style={{ color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.55rem', letterSpacing: '0.06em' }}>Severity</span>
+                      <div style={{
+                        fontWeight: 800, marginTop: '1px', textTransform: 'uppercase', fontSize: '0.72rem',
+                        color: currentAnalysis?.severity === 'critical' ? '#dc2626' : currentAnalysis?.severity === 'high' ? '#ea580c' : currentAnalysis?.severity === 'medium' ? '#0284c7' : '#059669'
+                      }}>{currentAnalysis?.severity || '—'}</div>
+                    </div>
+                    <div>
+                      <span style={{ color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.55rem', letterSpacing: '0.06em' }}>Dept</span>
+                      <div style={{ color: 'var(--text-primary)', fontWeight: 700, marginTop: '1px', fontSize: '0.68rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentAnalysis?.department || '—'}</div>
+                    </div>
                   </div>
-                  <div>
-                    <span style={{ color: '#64748b', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.6rem', letterSpacing: '0.05em' }}>Confidence</span>
-                    <div style={{ color: '#0f172a', fontWeight: 700, marginTop: '1px' }}>{currentAnalysis?.confidence || '—'}</div>
-                  </div>
-                  <div>
-                    <span style={{ color: '#64748b', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.6rem', letterSpacing: '0.05em' }}>Department</span>
-                    <div style={{ color: '#0f172a', fontWeight: 700, marginTop: '1px' }}>{currentAnalysis?.department || '—'}</div>
-                  </div>
+                  {/* Confidence bar */}
+                  {currentAnalysis?.confidence && (
+                    <div style={{ marginTop: '6px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                        <span style={{ fontSize: '0.55rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Confidence</span>
+                        <span style={{ fontSize: '0.6rem', fontWeight: 800, color: currentAnalysis.confidence === 'high' ? '#059669' : currentAnalysis.confidence === 'medium' ? '#d97706' : '#dc2626' }}>{currentAnalysis.confidence}</span>
+                      </div>
+                      <div style={{ height: '4px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                        <div style={{
+                          height: '100%', borderRadius: '4px', transition: 'width 0.5s ease',
+                          width: currentAnalysis.confidence === 'high' ? '90%' : currentAnalysis.confidence === 'medium' ? '60%' : '30%',
+                          background: currentAnalysis.confidence === 'high' ? 'linear-gradient(90deg, #10b981, #059669)' : currentAnalysis.confidence === 'medium' ? 'linear-gradient(90deg, #f59e0b, #d97706)' : 'linear-gradient(90deg, #ef4444, #dc2626)'
+                        }} />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {currentAnalysis?.suggestedAction && (
-                  <div style={{ marginTop: '8px', padding: '6px 8px', background: 'rgba(0,48,135,0.04)', borderRadius: '6px', border: '1px solid rgba(0,48,135,0.1)' }}>
-                    <span style={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Suggested Action</span>
-                    <p style={{ margin: '2px 0 0', fontSize: '0.72rem', color: '#1e293b', lineHeight: 1.4 }}>{currentAnalysis.suggestedAction}</p>
+                  <div style={{ padding: '6px 8px', background: 'rgba(27,42,74,0.04)', borderRadius: '6px', border: '1px solid rgba(27,42,74,0.1)' }}>
+                    <span style={{ fontSize: '0.58rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Suggested Action</span>
+                    <p style={{ margin: '2px 0 0', fontSize: '0.7rem', color: '#1e293b', lineHeight: 1.4 }}>{currentAnalysis.suggestedAction}</p>
                   </div>
                 )}
 
                 {/* Missing Info Panel */}
                 {missingInfoList.length > 0 && (
-                  <div style={{ marginTop: '8px', padding: '6px 8px', background: 'rgba(255,193,7,0.08)', borderRadius: '6px', border: '1px solid rgba(255,193,7,0.25)' }}>
-                    <span style={{ fontSize: '0.6rem', color: '#92400e', fontWeight: 700, textTransform: 'uppercase' }}>❓ Information Needed</span>
-                    <ul style={{ margin: '4px 0 0', paddingLeft: '14px', fontSize: '0.68rem', color: '#78350f' }}>
+                  <div style={{ marginTop: '6px', padding: '6px 8px', background: 'rgba(255,193,7,0.08)', borderRadius: '6px', border: '1px solid rgba(255,193,7,0.25)' }}>
+                    <span style={{ fontSize: '0.58rem', color: '#92400e', fontWeight: 700, textTransform: 'uppercase' }}>❓ Information Needed</span>
+                    <ul style={{ margin: '4px 0 0', paddingLeft: '14px', fontSize: '0.65rem', color: '#78350f' }}>
                       {missingInfoList.map((info, i) => <li key={i} style={{ marginBottom: '1px' }}>{info}</li>)}
                     </ul>
                   </div>
@@ -1744,49 +1802,46 @@ export default function AiInspectionModal({ isOpen, onClose, onSubmitInspection 
               </div>
             )}
 
-            {/* Location */}
-            <div style={{ padding: '8px 12px', borderBottom: '1px solid #e2e8f0', background: '#fff' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <MapPin size={12} color="#64748b" />
+            {/* Location */}                <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--border-subtle)', background: '#fff' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>                  <MapPin size={12} color="var(--text-muted)" />
                 <input
                   type="text"
                   placeholder="Add location (e.g., Main Road, Ranchi)"
                   value={location}
                   onChange={e => setLocation(e.target.value)}
-                  style={{ flex: 1, border: 'none', background: 'transparent', fontSize: '0.75rem', color: '#0f172a', outline: 'none' }}
+                  style={{ flex: 1, border: 'none', background: 'transparent', fontSize: '0.75rem', color: 'var(--text-primary)', outline: 'none' }}
                 />
-                {isGettingLocation && <RefreshCw size={12} className="spin" color="#64748b" />}
+                {isGettingLocation && <RefreshCw size={12} className="spin" color="var(--text-muted)" />}
               </div>
-            </div>
-
-            {/* Conversation Log */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '8px 10px' : '10px 12px', display: 'flex', flexDirection: 'column', gap: isMobile ? '6px' : '8px', minHeight: 0 }}>
+            </div>            {/* Conversation Log */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '8px 10px' : '10px 12px', display: 'flex', flexDirection: 'column', gap: isMobile ? '6px' : '8px', minHeight: 0, background: 'var(--bg-primary)', backgroundImage: 'radial-gradient(rgba(27,42,74,0.025) 1px, transparent 1px)', backgroundSize: '16px 16px' }}>
               {conversationLog.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '20px', color: '#94a3b8', fontSize: '0.78rem' }}>
+
+                <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)', fontSize: '0.78rem' }}>
                   Start inspection to begin AI analysis
                 </div>
               )}
               {conversationLog.map((msg, idx) => (
                 <div key={idx} style={{ display: 'flex', justifyContent: msg.role === 'agent' ? 'flex-start' : 'flex-end', gap: '6px', animation: 'fadeIn 0.2s ease' }}>
                   {msg.role === 'agent' && (
-                    <div style={{ width: '22px', height: '22px', borderRadius: '6px', background: 'linear-gradient(135deg, #003087, #001d5a)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: '22px', height: '22px', borderRadius: '6px', background: 'linear-gradient(135deg, var(--primary), var(--primary-hover))', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <Bot size={11} color="#fff" />
                     </div>
                   )}
                   <div style={{
                     maxWidth: '80%', padding: '7px 10px',
                     borderRadius: msg.role === 'agent' ? '2px 10px 10px 10px' : '10px 2px 10px 10px',
-                    background: msg.role === 'agent' ? '#fff' : 'linear-gradient(135deg, #003087, #002266)',
-                    color: msg.role === 'agent' ? '#0f172a' : '#fff',
+                    background: msg.role === 'agent' ? '#fff' : 'linear-gradient(135deg, var(--primary), var(--primary-hover))',
+                    color: msg.role === 'agent' ? 'var(--text-primary)' : '#fff',
                     fontSize: '0.75rem', lineHeight: 1.45, fontWeight: 500,
-                    border: msg.role === 'agent' ? '1px solid #e2e8f0' : 'none',
-                    boxShadow: msg.role === 'agent' ? '0 1px 4px rgba(0,0,0,0.04)' : '0 2px 8px rgba(0,48,135,0.2)',
+                    border: msg.role === 'agent' ? '1px solid var(--border-subtle)' : 'none',
+                    boxShadow: msg.role === 'agent' ? '0 1px 4px rgba(0,0,0,0.04)' : '0 2px 8px rgba(27,42,74,0.15)',
                   }}>
                     {msg.text}
                     {msg.category && (
                       <div style={{ marginTop: '4px', display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: '0.6rem', padding: '1px 5px', borderRadius: '4px', background: 'rgba(0,48,135,0.08)', color: '#003087', fontWeight: 700 }}>{msg.category}</span>
-                        {msg.severity && <span style={{ fontSize: '0.6rem', padding: '1px 5px', borderRadius: '4px', background: msg.severity === 'critical' ? 'rgba(220,38,38,0.1)' : msg.severity === 'high' ? 'rgba(234,88,12,0.1)' : 'rgba(0,48,135,0.08)', color: msg.severity === 'critical' ? '#dc2626' : msg.severity === 'high' ? '#ea580c' : '#003087', fontWeight: 700 }}>{msg.severity}</span>}
+                        <span style={{ fontSize: '0.6rem', padding: '1px 5px', borderRadius: '4px', background: 'rgba(27,42,74,0.08)', color: 'var(--primary)', fontWeight: 700 }}>{msg.category}</span>
+                        {msg.severity && <span style={{ fontSize: '0.6rem', padding: '1px 5px', borderRadius: '4px', background: msg.severity === 'critical' ? 'rgba(220,38,38,0.1)' : msg.severity === 'high' ? 'rgba(234,88,12,0.1)' : 'rgba(27,42,74,0.08)', color: msg.severity === 'critical' ? '#dc2626' : msg.severity === 'high' ? '#ea580c' : 'var(--primary)', fontWeight: 700 }}>{msg.severity}</span>}
                       </div>
                     )}
                   </div>
@@ -1794,8 +1849,8 @@ export default function AiInspectionModal({ isOpen, onClose, onSubmitInspection 
               ))}
 
               {isThinking && !isVoiceMode && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 10px', background: '#fff', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '0.75rem', color: '#64748b' }}>
-                  <RefreshCw size={12} className="spin" color="#8b5cf6" />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 10px', background: '#fff', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  <RefreshCw size={12} className="spin" color="#6d5aad" />
                   <span style={{ fontWeight: 600 }}>AI analyzing...</span>
                 </div>
               )}
@@ -1804,14 +1859,14 @@ export default function AiInspectionModal({ isOpen, onClose, onSubmitInspection 
 
             {/* Voice Turn Counter */}
             {isVoiceMode && (
-              <div style={{ padding: '6px 12px', borderTop: '1px solid #e2e8f0', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '0.68rem', color: '#166534', fontWeight: 700 }}>
-                  🎙️ Voice Turn {voiceTurnCount}/10
+              <div style={{ padding: '6px 12px', borderTop: '1px solid var(--border-subtle)', background: 'var(--success-light)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '0.68rem', color: 'var(--success)', fontWeight: 700 }}>
+                  🎙️ Voice Turn {voiceTurnCount}/6
                 </span>
                 <div style={{ height: '3px', flex: 1, margin: '0 8px', background: '#dcfce7', borderRadius: '10px', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${Math.min((voiceTurnCount / 10) * 100, 100)}%`, background: 'linear-gradient(90deg, #10b981, #059669)', borderRadius: '10px', transition: 'width 0.4s ease' }} />
+                  <div style={{ height: '100%', width: `${Math.min((voiceTurnCount / 6) * 100, 100)}%`, background: 'linear-gradient(90deg, var(--success), #1a5c3a)', borderRadius: '10px', transition: 'width 0.4s ease' }} />
                 </div>
-                <span style={{ fontSize: '0.68rem', color: '#166534', fontWeight: 800 }}>
+                <span style={{ fontSize: '0.68rem', color: 'var(--success)', fontWeight: 800 }}>
                   {isSpeaking ? '🔊' : isListening ? '🎙️' : isThinking ? '🧠' : '⏳'}
                 </span>
               </div>
@@ -1819,7 +1874,7 @@ export default function AiInspectionModal({ isOpen, onClose, onSubmitInspection 
 
             {/* Chat Input (text fallback, hidden in voice mode) */}
             {!isVoiceMode && (
-              <div style={{ padding: '8px 10px', borderTop: '1px solid #e2e8f0', background: '#fff' }}>
+              <div style={{ padding: '8px 10px', borderTop: '1px solid var(--border-subtle)', background: '#fff' }}>
                 <div style={{ display: 'flex', gap: '6px' }}>
                   <input
                     type="text"
@@ -1827,12 +1882,12 @@ export default function AiInspectionModal({ isOpen, onClose, onSubmitInspection 
                     value={chatInput}
                     onChange={e => setChatInput(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleSendChat()}
-                    style={{ flex: 1, padding: '7px 10px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.78rem', outline: 'none', fontFamily: 'inherit' }}
+                    style={{ flex: 1, padding: '7px 10px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)', fontSize: '0.78rem', outline: 'none', fontFamily: 'inherit', background: '#fff', color: 'var(--text-primary)' }}
                   />
                   <button onClick={handleSendChat} disabled={!chatInput.trim()} style={{
                     padding: '7px 12px', borderRadius: '8px', border: 'none',
-                    background: chatInput.trim() ? '#003087' : '#e2e8f0',
-                    color: chatInput.trim() ? '#fff' : '#94a3b8',
+                    background: chatInput.trim() ? 'linear-gradient(135deg, var(--accent), #a06d08)' : 'var(--border-subtle)',
+                    color: chatInput.trim() ? '#fff' : 'var(--text-muted)',
                     fontSize: '0.75rem', fontWeight: 700, cursor: chatInput.trim() ? 'pointer' : 'default',
                   }}>Send</button>
                 </div>
@@ -1840,13 +1895,16 @@ export default function AiInspectionModal({ isOpen, onClose, onSubmitInspection 
             )}
 
             {/* Evidence & Actions */}
-            <div style={{ padding: isMobile ? '8px 10px' : '10px 12px', borderTop: '1px solid #e2e8f0', background: '#fff' }}>
+            <div style={{ padding: isMobile ? '8px 10px' : '10px 12px', borderTop: '1px solid var(--border-subtle)', background: '#fff' }}>
               {/* Evidence thumbnails */}
               {evidenceImages.length > 0 && (
                 <div style={{ display: 'flex', gap: '6px', marginBottom: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
                   {evidenceImages.map(img => (
-                    <div key={img.id} style={{ width: '48px', height: '48px', borderRadius: '6px', overflow: 'hidden', border: '2px solid #003087', flexShrink: 0 }}>
+                    <div key={img.id} style={{ width: '48px', height: '48px', borderRadius: '6px', overflow: 'hidden', border: '2px solid var(--primary)', flexShrink: 0, position: 'relative' }}>
                       <img src={`data:${img.mimeType};base64,${img.base64}`} alt="Evidence" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      {img.autoCaptured && (
+                        <div style={{ position: 'absolute', bottom: '1px', left: '1px', right: '1px', background: 'rgba(5,150,105,0.85)', fontSize: '0.4rem', color: '#fff', textAlign: 'center', padding: '1px', fontWeight: 800, borderRadius: '0 0 4px 4px' }}>AUTO</div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1856,8 +1914,8 @@ export default function AiInspectionModal({ isOpen, onClose, onSubmitInspection 
               <div style={{ display: 'flex', gap: '6px' }}>
                 {(inspectionState === INSPECTION_STATES.LIVE || inspectionState === INSPECTION_STATES.VOICE_ACTIVE) && (
                   <button onClick={handleStopInspection} style={{
-                    flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0',
-                    background: '#fff', color: '#475569', fontSize: '0.75rem', fontWeight: 700,
+                    flex: 1, padding: '8px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-medium)',
+                    background: '#fff', color: 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: 700,
                     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
                   }}>
                     <StopCircle size={13} /> Stop
@@ -1867,10 +1925,10 @@ export default function AiInspectionModal({ isOpen, onClose, onSubmitInspection 
                 {(inspectionState === INSPECTION_STATES.READY_TO_REPORT || inspectionState === INSPECTION_STATES.LIVE || inspectionState === INSPECTION_STATES.VOICE_ACTIVE) && observations.length > 0 && (
                   <button onClick={handleGenerateReport} disabled={isGeneratingReport} style={{
                     flex: 1, padding: '8px', borderRadius: '8px', border: 'none',
-                    background: 'linear-gradient(135deg, #FF6200, #ea580c)', color: '#fff',
+                    background: 'linear-gradient(135deg, var(--accent), #ea580c)', color: '#fff',
                     fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
-                    boxShadow: '0 2px 8px rgba(255,98,0,0.3)',
+                    boxShadow: '0 2px 8px rgba(200,134,10,0.3)',
                   }}>
                     {isGeneratingReport ? <RefreshCw size={13} className="spin" /> : <FileText size={13} />}
                     {isGeneratingReport ? 'Generating...' : 'Generate Report'}
@@ -1904,7 +1962,7 @@ export default function AiInspectionModal({ isOpen, onClose, onSubmitInspection 
               boxShadow: '0 20px 50px rgba(0,0,0,0.3)', maxHeight: '80vh', overflowY: 'auto',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
-                <FileText size={20} color="#003087" />
+                <FileText size={20} color="var(--primary)" />
                 <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>Review AI-Generated Report</h3>
               </div>
 
@@ -1918,7 +1976,7 @@ export default function AiInspectionModal({ isOpen, onClose, onSubmitInspection 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                   <div>
                     <label style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Category</label>
-                    <div style={{ color: '#003087', fontWeight: 700, marginTop: '2px' }}>{reportDraft.category}</div>
+                    <div style={{ color: 'var(--primary)', fontWeight: 700, marginTop: '2px' }}>{reportDraft.category}</div>
                   </div>
                   <div>
                     <label style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Department</label>
@@ -1952,7 +2010,7 @@ export default function AiInspectionModal({ isOpen, onClose, onSubmitInspection 
 
               <div style={{ display: 'flex', gap: '8px', marginTop: '16px', justifyContent: 'flex-end' }}>
                 <button onClick={() => { setInspectionState(INSPECTION_STATES.READY_TO_REPORT); setReportDraft(null); }}
-                  style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#fff', color: '#475569', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}>
+                  style={{ padding: '8px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-medium)', background: '#fff', color: 'var(--text-secondary)', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}>
                   Edit
                 </button>
                 <button onClick={handleSubmitReport} style={{

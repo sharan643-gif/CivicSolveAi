@@ -9,12 +9,12 @@ export default function LeaderboardPage({ onNavigate }) {
   const [period, setPeriod] = useState('all');
 
   const categories = [
-    { id: 'departments', label: 'Government Departments', icon: Building2, color: '#003087' },
-    { id: 'citizens', label: 'Top Citizens', icon: Users, color: '#003087' },
+    { id: 'departments', label: 'Government Departments', icon: Building2, color: 'var(--primary)' },
+    { id: 'citizens', label: 'Top Citizens', icon: Users, color: 'var(--primary)' },
     { id: 'universities', label: 'Top Universities', icon: Building, color: '#b45309' },
     { id: 'experts', label: 'Top Experts', icon: Award, color: '#8b5cf6' },
     { id: 'ngos', label: 'Top NGOs', icon: Trophy, color: '#10b981' },
-    { id: 'industry', label: 'Industry Partners', icon: Star, color: '#FF6200' },
+    { id: 'industry', label: 'Industry Partners', icon: Star, color: 'var(--accent)' },
   ];
 
   const deptLeaderboard = accountabilityService.getDepartmentLeaderboard();

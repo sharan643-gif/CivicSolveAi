@@ -110,7 +110,7 @@ export default function SolutionMarketplacePage({ onNavigate }) {
           <div key={sol.id} className="glass-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderTop: '3px solid var(--primary)', background: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: '12px' }}>
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                <span style={{ background: 'var(--primary-light)', border: '1px solid rgba(0,48,135,0.2)', color: 'var(--primary)', padding: '3px 10px', borderRadius: '100px', fontSize: '0.7rem', fontWeight: 700 }}>
+                <span style={{ background: 'var(--primary-light)', border: '1px solid rgba(27,42,74,0.2)', color: 'var(--primary)', padding: '3px 10px', borderRadius: '100px', fontSize: '0.7rem', fontWeight: 700 }}>
                   {sol.stage}
                 </span>
                 <span style={{ fontSize: '0.8rem', color: '#b45309', fontWeight: 700 }}>★ {sol.rating} ({sol.reviews})</span>

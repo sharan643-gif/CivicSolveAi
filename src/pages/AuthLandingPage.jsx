@@ -31,7 +31,7 @@ export default function AuthLandingPage({ onSelect, onBack }) {
       
       {/* Hero header */}
       <div style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <div style={{ display: 'inline-flex', alignSelf: 'center', alignItems: 'center', gap: '8px', padding: '4px 14px', background: 'var(--primary-light)', border: '1px solid rgba(0,48,135,0.2)', borderRadius: '100px', fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 700 }}>
+        <div style={{ display: 'inline-flex', alignSelf: 'center', alignItems: 'center', gap: '8px', padding: '4px 14px', background: 'var(--primary-light)', border: '1px solid rgba(27,42,74,0.2)', borderRadius: '100px', fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 700 }}>
           <Sparkles size={13} color="var(--primary)" />
           <span>Multi-Sector Gateway Hub</span>
         </div>
@@ -75,7 +75,7 @@ export default function AuthLandingPage({ onSelect, onBack }) {
                 fontWeight: selectedCategory === cat.id ? 700 : 500,
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
-                boxShadow: selectedCategory === cat.id ? '0 2px 8px rgba(0, 48, 135, 0.2)' : 'var(--shadow-xs)'
+                boxShadow: selectedCategory === cat.id ? '0 2px 8px rgba(27,42,74, 0.2)' : 'var(--shadow-xs)'
               }}
             >
               {cat.label}
@@ -105,7 +105,7 @@ export default function AuthLandingPage({ onSelect, onBack }) {
             }}
             onMouseEnter={e => {
               e.currentTarget.style.borderColor = 'var(--primary)';
-              e.currentTarget.style.boxShadow = '0 6px 20px rgba(0, 48, 135, 0.12)';
+              e.currentTarget.style.boxShadow = '0 6px 20px rgba(27,42,74, 0.12)';
               e.currentTarget.style.transform = 'translateY(-2px)';
             }}
             onMouseLeave={e => {

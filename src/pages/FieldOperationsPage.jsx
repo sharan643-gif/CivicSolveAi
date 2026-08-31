@@ -176,7 +176,7 @@ export default function FieldOperationsPage() {
       {view === 'inspections' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {inspections.map(ins => (
-            <div key={ins.id} className="glass-card" style={{ padding: '16px', borderLeft: `4px solid ${ins.priority === 'critical' ? '#dc2626' : ins.priority === 'high' ? '#d97706' : '#003087'}`, background: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: '10px' }}>
+            <div key={ins.id} className="glass-card" style={{ padding: '16px', borderLeft: `4px solid ${ins.priority === 'critical' ? '#dc2626' : ins.priority === 'high' ? '#d97706' : 'var(--primary)'}`, background: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: '10px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                 <span style={{ fontSize: '0.92rem', color: 'var(--text-primary)', fontWeight: 700 }}>{ins.location}</span>
                 <span style={{ fontSize: '0.68rem', padding: '2px 8px', borderRadius: '100px', fontWeight: 700, background: ins.status === 'completed' ? '#f0fdf4' : '#fffbeb', color: ins.status === 'completed' ? '#047857' : '#b45309', border: `1px solid ${ins.status === 'completed' ? '#bbf7d0' : '#fde68a'}` }}>{ins.status}</span>
@@ -229,7 +229,7 @@ export default function FieldOperationsPage() {
           {timeline.map((t, i) => (
             <div key={t.id} style={{ display: 'flex', gap: '12px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '20px' }}>
-                <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: t.type === 'inspection' ? '#003087' : t.type === 'evidence' ? '#047857' : '#d97706' }} />
+                <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: t.type === 'inspection' ? 'var(--primary)' : t.type === 'evidence' ? '#047857' : '#d97706' }} />
                 {i < timeline.length - 1 && <div style={{ width: '2px', flex: 1, background: 'var(--border-subtle)' }} />}
               </div>
               <div style={{ flex: 1, paddingBottom: '16px' }}>
@@ -246,7 +246,7 @@ export default function FieldOperationsPage() {
         <div className="glass-card" style={{ padding: '18px', background: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: '12px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '10px', marginBottom: '16px' }}>
             {[
-              { label: 'Inspections', value: productivity.inspectionsCompleted, color: '#003087' },
+              { label: 'Inspections', value: productivity.inspectionsCompleted, color: 'var(--primary)' },
               { label: 'Cases Visited', value: productivity.casesVisited, color: '#047857' },
               { label: 'Avg Response', value: `${productivity.avgResponseTime}d`, color: '#b45309' },
               { label: 'Pending', value: productivity.pendingTasks, color: '#dc2626' },
