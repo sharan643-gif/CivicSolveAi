@@ -32,7 +32,12 @@ export default async function handler(req, res) {
   }
 
   const { action } = req.query;
-  const body = req.body || {};
+  // Vercel may send body as string — parse it if needed
+  let body = req.body;
+  if (typeof body === 'string') {
+    try { body = JSON.parse(body); } catch { body = {}; }
+  }
+  body = body || {};
 
   try {
     switch (action) {

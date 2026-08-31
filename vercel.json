@@ -6,12 +6,20 @@
   "framework": "vite",
   "rewrites": [
     {
-      "source": "/api/ai/:path*",
+      "source": "/api/:path*",
       "destination": "/api/ai/[action].js"
     },
     {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate" }
+      ]
     }
   ]
 }

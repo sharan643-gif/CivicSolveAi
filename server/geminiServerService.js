@@ -2,8 +2,13 @@
 // Runs ONLY on Node.js server. Keeps GEMINI_API_KEY completely hidden from the browser.
 
 import { GoogleGenAI } from '@google/genai';
-import dotenv from 'dotenv';
-dotenv.config();
+// Only load .env locally — Vercel injects env vars automatically via process.env
+try {
+  if (!process.env.VERCEL) {
+    const { default: dotenv } = await import('dotenv');
+    dotenv.config();
+  }
+} catch (e) { /* dotenv unavailable in serverless — env vars injected by platform */ }
 
 // ─── MODEL STRATEGY CONFIGURATION ─────────────────────────────────────────────
 // Default: gemini-3.1-flash-lite (optimized for free-tier, low latency, high throughput)
