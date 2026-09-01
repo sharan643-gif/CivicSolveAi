@@ -4,37 +4,58 @@
 
 const SAFE_FALLBACK_ERROR = 'AI assistance is temporarily unavailable. Please try again.';
 
+// Request deduplication: prevent duplicate concurrent requests to the same endpoint
+const pendingRequests = new Map();
+
 async function postAiRoute(endpoint, payload, retries = 1) {
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
-      const response = await fetch(`/api/ai/${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
+  // Dedup: if same endpoint + same payload is already in-flight, return a shared promise
+  const dedupKey = endpoint === 'inspect-frame'
+    ? `${endpoint}:${payload.mimeType || 'jpg'}:${(payload.userMessage || '').slice(0, 20)}`
+    : null;
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
-      if (data && data.success !== false) {
-        return data;
-      }
-      throw new Error(data?.error || 'Unsuccessful AI response');
-    } catch (err) {
-      if (attempt === retries) {
-        console.warn(`[geminiClientService] ${endpoint} request failed:`, err.message);
-        throw err;
-      }
-      // Wait before retry
-      await new Promise(r => setTimeout(r, 400));
-    }
+  if (dedupKey && pendingRequests.has(dedupKey)) {
+    return pendingRequests.get(dedupKey);
   }
+
+  const requestPromise = (async () => {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const controller = new AbortController();
+        // 10s timeout for fast failure detection (was 15s)
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        const response = await fetch(`/api/ai/${endpoint}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (data && data.success !== false) {
+          return data;
+        }
+        throw new Error(data?.error || 'Unsuccessful AI response');
+      } catch (err) {
+        if (attempt === retries) {
+          console.warn(`[geminiClientService] ${endpoint} request failed:`, err.message);
+          throw err;
+        }
+        await new Promise(r => setTimeout(r, 300));
+      }
+    }
+  })();
+
+  if (dedupKey) {
+    pendingRequests.set(dedupKey, requestPromise);
+    requestPromise.finally(() => pendingRequests.delete(dedupKey));
+  }
+
+  return requestPromise;
 }
 
 export const geminiService = {
@@ -260,7 +281,20 @@ export const geminiService = {
   // 11b. AI Inspect: Analyze Camera Frame
   inspectFrame: async (frameBase64, conversationHistory = [], userMessage = '', mimeType = 'image/jpeg', voiceContext = null) => {
     try {
-      const data = await postAiRoute('inspect-frame', { frameBase64, conversationHistory, userMessage, mimeType, voiceContext });
+      // Trim history to last 6 turns to reduce payload size and speed up processing
+      const trimmedHistory = conversationHistory.slice(-6).map(m => ({
+        role: m.role,
+        text: (m.text || '').slice(0, 200),
+        category: m.category,
+        severity: m.severity,
+      }));
+      const data = await postAiRoute('inspect-frame', {
+        frameBase64,
+        conversationHistory: trimmedHistory,
+        userMessage: (userMessage || '').slice(0, 300),
+        mimeType,
+        voiceContext,
+      });
       return data;
     } catch (err) {
       return {

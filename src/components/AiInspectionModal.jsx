@@ -387,21 +387,24 @@ export default function AiInspectionModal({ isOpen, onClose, onSubmitInspection 
   }, []);
 
   // ─── Handle camera frame analysis (non-voice mode) ────────────────────────
-  // Faster analysis: 1.5s throttle + auto-capture evidence when civic issue detected
+  // Optimized: 1.0s throttle, fixed dedup bug, smarter evidence capture
   const handleFrame = useCallback(async (frame) => {
     if (abortRef.current || isPaused || voiceModeRef.current) return;
 
-    // Throttle: analyze every 1.5 seconds for faster detection
+    // Throttle: analyze every 1.0 seconds for faster detection
     const now = Date.now();
-    if (now - lastAnalysisTimeRef.current < 1500) return;
+    if (now - lastAnalysisTimeRef.current < 1000) return;
     lastAnalysisTimeRef.current = now;
 
     frameCountRef.current++;
 
+    // Skip frames that are too small (camera not ready)
+    if (!frame.base64 || frame.base64.length < 500) return;
+
     try {
       const result = await geminiService.inspectFrame(
         frame.base64,
-        conversationHistoryRef.current.slice(-6),
+        conversationHistoryRef.current.slice(-4),
         '',
         frame.mimeType
       );
@@ -413,31 +416,42 @@ export default function AiInspectionModal({ isOpen, onClose, onSubmitInspection 
 
         // Check for safety warnings
         const warning = detectSafetyWarning(result.observation);
-        if (warning) { setSafetyWarning(warning); hapticFeedback('error'); }
-
-        // Auto-capture evidence when a real civic issue is detected (not just blurry/unclear)
-        const isRealIssue = result.category && result.category !== 'Unknown' && result.confidence !== 'low';
-        if (isRealIssue && frameCountRef.current % 3 === 1) {
-          setEvidenceImages(prev => [...prev, {
-            id: `ev-auto-${Date.now()}`,
-            base64: frame.base64,
-            mimeType: frame.mimeType,
-            timestamp: new Date().toISOString(),
-            autoCaptured: true,
-          }]);
+        if (warning) {
+          setSafetyWarning(warning);
+          hapticFeedback('error');
         }
 
-        // Add observation to list (deduplicate)
+        // Auto-capture evidence when a real civic issue is detected
+        const isRealIssue = result.category && result.category !== 'Unknown' && result.confidence !== 'low';
+        if (isRealIssue) {
+          // Capture evidence on first detection, then every 5th analyzed frame
+          const shouldCapture = frameCountRef.current <= 3 || frameCountRef.current % 5 === 0;
+          if (shouldCapture) {
+            setEvidenceImages(prev => [...prev, {
+              id: `ev-auto-${Date.now()}`,
+              base64: frame.base64,
+              mimeType: frame.mimeType,
+              timestamp: new Date().toISOString(),
+              autoCaptured: true,
+            }]);
+          }
+          // Haptic feedback for first detection
+          if (frameCountRef.current <= 3) {
+            hapticFeedback('report_ready');
+          }
+        }
+
+        // Add observation to list (deduplicate: skip if same category + same observation text)
         setObservations(prev => {
           const lastObs = prev[prev.length - 1];
-          if (lastObs && lastObs.category === result.category && Math.abs(lastObs.confidence === result.confidence)) {
+          if (lastObs && lastObs === result.observation) {
             return prev;
           }
           return [...prev.slice(-9), result.observation];
         });
 
-        // Add AI observation to conversation (only every 3rd frame to avoid spam)
-        if (frameCountRef.current % 3 === 1) {
+        // Add AI observation to conversation (every 2nd frame for faster feedback)
+        if (frameCountRef.current % 2 === 1) {
           addMessage('agent', result.observation, {
             category: result.category,
             severity: result.severity,
@@ -958,7 +972,7 @@ export default function AiInspectionModal({ isOpen, onClose, onSubmitInspection 
     addMessage('agent', 'Camera active. I can see your view. Point me at the civic issue and I\'ll analyze it in real-time.');
 
     setInspectionState(INSPECTION_STATES.LIVE);
-    camera.startFrameCapture(handleFrame, 1);
+    camera.startFrameCapture(handleFrame, 1, true); // analysisMode=true for faster frames
   }, [camera, handleFrame, addMessage, requestLocation]);
 
   // ─── Start voice inspection ────────────────────────────────────────────────

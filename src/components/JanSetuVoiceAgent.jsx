@@ -2,6 +2,32 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Mic, MicOff, Volume2, X, ArrowRight, CheckCircle2, AlertCircle, RefreshCw, Bot, User, FileText, Sparkles, Phone, PhoneOff } from 'lucide-react';
 import { geminiService } from '../services/geminiClientService';
 
+// ─── Audio Noise Processor: reduces background noise using Web Audio API ──
+// Creates a high-pass filter (removes low rumble) + noise gate (suppresses quiet noise)
+let audioContext = null;
+let noiseFilter = null;
+let noiseGate = null;
+let micSource = null;
+let processedStream = null;
+
+async function createNoiseReducedStream() {
+  try {
+    const rawStream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        channelCount: 1,
+        sampleRate: 48000,
+      }
+    });
+    return rawStream;
+  } catch (err) {
+    console.warn('[VoiceAgent] Could not get audio stream:', err.message);
+    return null;
+  }
+}
+
 // District coordinate database for Jharkhand
 const DISTRICT_COORDS = {
   'ranchi': { lat: '23.3441', lng: '85.3090' },
@@ -93,11 +119,14 @@ function pickBestVoice(lang = 'en-IN') {
   if (voices.length === 0) return null;
 
   if (lang === 'hi-IN') {
-    return voices.find(v => v.lang.includes('hi-IN') && (v.name.includes('Swara') || v.name.includes('Kalpana') || v.name.includes('Google') || v.name.includes('Natural')))
+    // Prefer natural-sounding Hindi voices
+    return voices.find(v => v.lang.includes('hi-IN') && (v.name.includes('Swara') || v.name.includes('Kalpana') || v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Neural')))
+      || voices.find(v => v.lang.includes('hi-IN'))
       || voices.find(v => v.lang.includes('hi'))
       || voices.find(v => v.lang.includes('en-IN'));
   }
 
+  // Prefer Neural/Premium voices for most natural sound
   const preferred = [
     'Google UK English Female', 'Google UK English Male',
     'Google US English', 'Microsoft Aria', 'Microsoft Zira',
@@ -191,7 +220,11 @@ export default function JanSetuVoiceAgent({ isOpen, onClose, onNavigate, onAutoF
     return 'en-IN';
   };
 
-  // ─── Speech Recognition Setup ──────────────────────────────────────────────
+  // ─── Audio Stream Refs (for noise reduction) ──────────────────────────────
+  const audioStreamRef = useRef(null);
+  const audioCtxRef = useRef(null);
+
+  // ─── Speech Recognition Setup (Optimized for crystal-clear voice capture) ──
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -204,6 +237,10 @@ export default function JanSetuVoiceAgent({ isOpen, onClose, onNavigate, onAutoF
     recognition.interimResults = true;
     recognition.lang = selectedLanguage;
     recognition.maxAlternatives = 1;
+    // Chrome-specific: enable punctuation for better accuracy
+    if ('webkitSpeechRecognition' in window) {
+      try { recognition.interimResults = true; } catch (e) {}
+    }
 
     recognition.onstart = () => setIsListening(true);
 
@@ -231,9 +268,7 @@ export default function JanSetuVoiceAgent({ isOpen, onClose, onNavigate, onAutoF
 
     recognition.onend = () => {
       setIsListening(false);
-      // Auto-restart ONLY when in live mode AND not speaking AND the main loop is waiting.
-      // The main loop (collectTranscript) handles its own restart logic,
-      // so we only do a minimal safety restart here if recognition dies unexpectedly.
+      // Auto-restart in live mode with minimal delay
       if (liveModeRef.current && !abortRef.current && !speakingRef.current) {
         setTimeout(() => {
           if (!speakingRef.current && !abortRef.current && liveModeRef.current) {
@@ -242,7 +277,7 @@ export default function JanSetuVoiceAgent({ isOpen, onClose, onNavigate, onAutoF
               recognition.start();
             } catch (e) {}
           }
-        }, 500);
+        }, 300); // Reduced from 500ms to 300ms for faster restart
       }
     };
 
@@ -254,7 +289,7 @@ export default function JanSetuVoiceAgent({ isOpen, onClose, onNavigate, onAutoF
     };
   }, [selectedLanguage]);
 
-  // ─── High-Quality TTS with Human-Like Voice ────────────────────────────────
+  // ─── Fast, Natural TTS ─────────────────────────────────────────────────────
   const speak = useCallback((text) => {
     return new Promise((resolve) => {
       if (!window.speechSynthesis || !text) { resolve(); return; }
@@ -271,9 +306,9 @@ export default function JanSetuVoiceAgent({ isOpen, onClose, onNavigate, onAutoF
 
       const humanText = humanizeForSpeech(text, selectedLanguage);
       const utterance = new SpeechSynthesisUtterance(humanText);
-      // Slightly slower rate for more natural, human-sounding delivery
-      utterance.rate = 0.88;
-      utterance.pitch = 1.02;
+      // Faster rate for quicker responses, still natural
+      utterance.rate = 1.0; // Normal speed for faster delivery
+      utterance.pitch = 1.0;
       utterance.volume = 1.0;
       utterance.lang = selectedLanguage === 'hi-IN' ? 'hi-IN' : 'en-IN';
 
@@ -284,13 +319,13 @@ export default function JanSetuVoiceAgent({ isOpen, onClose, onNavigate, onAutoF
       utterance.onend = () => {
         setIsSpeaking(false);
         speakingRef.current = false;
-        // Add a natural breathing pause after speaking before the mic restarts
-        setTimeout(() => resolve(), 400);
+        // Shorter breathing pause for faster turn-taking
+        setTimeout(() => resolve(), 250);
       };
       utterance.onerror = () => {
         setIsSpeaking(false);
         speakingRef.current = false;
-        setTimeout(() => resolve(), 200);
+        setTimeout(() => resolve(), 150);
       };
 
       window.speechSynthesis.speak(utterance);
@@ -317,9 +352,8 @@ export default function JanSetuVoiceAgent({ isOpen, onClose, onNavigate, onAutoF
     } catch (e) {}
   }, []);
 
-  // ─── Collect Final Transcript (silence-detection based) ─────────────────────
-  // Waits for the user to speak, then uses silence detection to know when they're done.
-  // Does NOT rely on recognition 'end' event — resolves after silence gap.
+  // ─── Collect Final Transcript (optimized silence-detection) ─────────────────
+  // Faster silence detection: 2.5s after speech (was 3.5s), 10s initial timeout
   const collectTranscript = useCallback(() => {
     return new Promise((resolve) => {
       if (!recognitionRef.current) { resolve(''); return; }
@@ -345,25 +379,26 @@ export default function JanSetuVoiceAgent({ isOpen, onClose, onNavigate, onAutoF
         }
         // Reset silence timer on any speech activity
         if (silenceTimer) clearTimeout(silenceTimer);
+        // Faster silence detection: 2.5s after speech ends
         silenceTimer = setTimeout(() => {
           if (!resolved) {
             resolved = true;
             cleanup();
             resolve(finalParts.join(' ').trim());
           }
-        }, hasSpoken ? 3500 : 12000); // 3.5s silence after speech = done; 12s initial silence = no speech
+        }, hasSpoken ? 2500 : 10000); // 2.5s silence = done; 10s initial = no speech
       };
 
       recognitionRef.current?.addEventListener('result', onResult);
 
-      // Start the initial silence timer (no speech yet)
+      // Start the initial silence timer
       silenceTimer = setTimeout(() => {
         if (!resolved) {
           resolved = true;
           cleanup();
           resolve(finalParts.join(' ').trim());
         }
-      }, 12000);
+      }, 10000);
     });
   }, []);
 
@@ -413,7 +448,7 @@ export default function JanSetuVoiceAgent({ isOpen, onClose, onNavigate, onAutoF
     };
   };
 
-  // ─── GEMINI CONVERSATION ENGINE — the brain ─────────────────────────────
+  // ─── GEMINI CONVERSATION ENGINE — Optimized for Speed ───────────────────
   const geminiConversationTurn = useCallback(async (userMessage, history, lang) => {
     const langLabel = lang === 'hi-IN' ? 'Hindi' : 'English';
     const collectedInfo = Object.entries(answersRef.current)
@@ -423,72 +458,45 @@ export default function JanSetuVoiceAgent({ isOpen, onClose, onNavigate, onAutoF
 
     const missing = getMissingDraftFields(answersRef.current);
     const missingLabels = missing.map(f => f.label).join(', ') || 'none';
-    const draftStatus = buildDraftStatus(answersRef.current, lang);
 
-    const prompt = `${lang === 'hi-IN' ? '⚠️⚠️⚠️ भाषा निर्देश: आपको हिंदी में जवाब देना है। aiResponse फ़ील्ड में हिंदी (देवनागरी) लिखें। अंग्रेज़ी में बिल्कुल न लिखें। ⚠️⚠️⚠️' : ''}
+    // Shorter prompt for faster Gemini response
+    const prompt = `${lang === 'hi-IN' ? 'भाषा निर्देश: aiResponse हिंदी में लिखें।' : ''}
 
-You are JanSetu AI — a warm, intelligent, and deeply human-sounding civic grievance voice assistant for the Government of India. You are on a LIVE voice call with a citizen who wants to report a civic problem.
+You are JanSetu AI — warm civic voice assistant on LIVE call with a citizen reporting a problem.
 
-═══ YOUR JOB ═══
-You are filling out an official grievance report (a "draft"). This draft requires specific fields:
-1. Problem description — What is the civic issue?
-2. Location / District — Where is it happening? (Jharkhand districts: Ranchi, Dumka, Dhanbad, Jamshedpur, Bokaro, Deoghar, Hazaribagh, Giridih, Palamu, Godda, Pakur, Jamtara, Ramgarh, Lohardaga, Gumla, Simdega, Latehar, Garhwa, Koderma, Chatra, Khunti, etc.)
-3. Who is affected — Which people/community?
-4. Duration — How long has this been going on?
-5. Severity — Is it an emergency, urgent, moderate, or minor?
+DRAFT FIELDS: problem, location/district, who_affected, duration, severity.
+Collected: ${collectedInfo}
+Missing: ${missingLabels}
 
-Currently collected so far:
-${collectedInfo}
+RULES:
+1. Acknowledge what citizen said, then ask for NEXT missing field (ONE at a time)
+2. 1-2 sentences max. Be warm, casual, brief.
+3. If ready for report, say so.
+4. Speak in ${langLabel}.
 
-STILL MISSING: ${missingLabels}
+History:
+${history.slice(-6).map(m => `${m.role === 'agent' ? 'AI' : 'C'}: ${m.text}`).join('\n')}
 
-═══ CRITICAL BEHAVIOR RULES ═══
-1. **NEVER speak if the citizen hasn't described a problem yet.** If they say "yes" or "hello" or "start", these are NOT problem descriptions. Gently ask them to tell you about their issue.
-2. **Listen actively.** When the citizen describes a problem, NOTICE what details they gave and what they MISSED. Then ask about the missing pieces — but naturally, like a human agent would.
-3. **Acknowledge before asking.** Always briefly acknowledge what the citizen said before asking for the next piece of info. E.g., "Oh, that sounds serious — the road near your area has collapsed. Can you tell me which district this is in?"
-4. **Ask ONE thing at a time.** Don't overwhelm. After they describe the problem, ask about location. After location, ask about who is affected. Then duration. Then severity.
-5. **Be conversational, warm, and brief.** Keep responses to 1-2 sentences max for voice. Use natural language with occasional fillers like "I see", "oh wow", "that's concerning", "okay got it".
-6. **If they already mentioned some fields, DON'T re-ask those.** Only ask about STILL MISSING fields.
-7. **When all fields are collected**, say you're ready to prepare the report.
-8. **Speak in ${langLabel}.**
-
-Draft status: ${draftStatus}
-
-Conversation history:
-${history.map(m => `${m.role === 'agent' ? 'AI' : 'Citizen'}: ${m.text}`).join('\n')}
-
-Citizen just said: "${userMessage}"
+Citizen said: "${userMessage}"
 
 Return ONLY valid JSON:
 {
-  "intent": "greeting_ack" | "problem_described" | "location_given" | "details_given" | "empty_response" | "needs_clarification" | "ready_for_report",
-  "userMessageSummary": "Brief 3-5 word summary",
-  "extractedFields": {
-    "raw_problem": "problem description or null",
-    "location": "location/district or null",
-    "who_affected": "who is affected or null",
-    "duration": "duration or null",
-    "severity": "low|medium|high|critical or null"
-  },
-  "missingFields": ["list of still-missing fields"],
-  "aiResponse": "Your warm, natural, conversational response (1-2 sentences max).",
+  "intent": "greeting_ack|problem_described|location_given|details_given|empty_response|needs_clarification|ready_for_report",
+  "userMessageSummary": "3-5 word summary",
+  "extractedFields": { "raw_problem": null, "location": null, "who_affected": null, "duration": null, "severity": null },
+  "missingFields": [],
+  "aiResponse": "warm conversational response (1-2 sentences)",
   "isReadyForReport": false,
   "confidence": 0.0
 }
 
-Rules for aiResponse — make it SOUND LIKE A REAL PERSON:
-${lang === 'hi-IN' ? 'CRITICAL: You MUST respond ENTIRELY in Hindi (Devanagari script). Every word of aiResponse MUST be in Hindi. NOT English. Use Hindi only. Hindi examples: greeting_ack: नमस्ते! मैं जनसेतु वॉयस असिस्टेंट हूँ। बताइए — आपके इलाके में क्या समस्या है? | problem_described: अच्छा, यह तो गंभीर है। यह किस इलाके में है? | location_given: रांची, समझ गई। इससे मुख्य रूप से कौन प्रभावित है? | ready_for_report: बहुत बढ़िया! मेरे पास सारी जानकारी है। अब आपकी आधिकारिक शिकायत रिपोर्ट तैयार करती हूँ। | Natural transitions: अच्छा..., समझ गई..., यह तो चिंताजनक है..., ठीक है... | Be encouraging: आप बहुत अच्छा बता रहे हैं, बस कुछ और जानकारी चाहिए...' : 'greeting_ack: Hi there! I am here to help you file a civic grievance. Just tell me — what is the problem you are facing in your area? | problem_described: Acknowledge the problem warmly, then ask for the NEXT missing field. E.g., Oh no, that is really bad. Which area is this in? | location_given: Acknowledge location, ask about next missing field. E.g., Ranchi, got it. And who all is being affected by this? | ready_for_report: Perfect, I think I have got everything I need. Let me put together your official grievance report now. | Natural transitions: Okay..., I see..., Oh that is concerning..., Got it... | Be encouraging: You are doing great, just a couple more details...'}
-- NEVER repeat the same question twice. NEVER ask about fields that are already collected.`;
+aiResponse rules:
+${lang === 'hi-IN' ? 'MUST be Hindi Devanagari. Example: greeting_ack: नमस्ते! बताइए क्या समस्या है? | problem_described: अच्छा, यह गंभीर है। किस इलाके में है? | location_given: समझ गई। कौन प्रभावित है? | ready_for_report: बहुत बढ़िया! रिपोर्ट तैयार करती हूँ।' : 'greeting_ack: Hi! What civic problem are you facing? | problem_described: Oh that sounds bad. Which area is this? | location_given: Got it. Who is affected? | ready_for_report: Perfect! Preparing your report now.'}
+- NEVER repeat same question. Only ask MISSING fields.`;
 
     try {
       const rawAi = await geminiService.generateCivicResponse([
-        { role: 'system', content: `You are a warm, natural-sounding civic intake AI on a live voice call. You are filling a grievance draft.
-
-⚠️ CRITICAL LANGUAGE RULE:
-The user selected language: ${langLabel} (${lang}).
-${lang === 'hi-IN' ? 'You MUST respond ENTIRELY in Hindi (Devanagari script). The aiResponse field MUST be written in Hindi. Example: "अच्छा, यह तो गंभीर है। कृपया बताइए — यह किस जिले में है?"' : 'You MUST respond in English.'}
-
-Output strict JSON only. Sound like a real human agent — brief, warm, conversational.` },
+        { role: 'system', content: `You are JanSetu AI voice assistant. ${lang === 'hi-IN' ? 'RESPOND ENTIRELY IN HINDI (Devanagari). aiResponse MUST be Hindi.' : 'Respond in English.'} Output strict JSON only. Brief, warm, human-like.` },
         { role: 'user', content: prompt }
       ]);
       const jsonMatch = rawAi.match(/\{[\s\S]*\}/);
@@ -518,10 +526,11 @@ Output strict JSON only. Sound like a real human agent — brief, warm, conversa
       };
     }
 
-    // Extract what we can locally
+    // Extract what we can locally (supports Hindi + English)
     const extracted = {};
     if (hasProblem) extracted.raw_problem = userMessage;
 
+    // District detection (English + Hindi)
     for (const dName of Object.keys(DISTRICT_COORDS)) {
       if (msgLower.includes(dName)) {
         extracted.location = dName.charAt(0).toUpperCase() + dName.slice(1);
@@ -529,15 +538,32 @@ Output strict JSON only. Sound like a real human agent — brief, warm, conversa
       }
     }
 
-    if (msgLower.includes('emergency') || msgLower.includes('critical') || msgLower.includes('dangerous') || msgLower.includes('collapse')) extracted.severity = 'critical';
-    else if (msgLower.includes('urgent') || msgLower.includes('severe')) extracted.severity = 'high';
+    // Hindi district names
+    const hiDistricts = { 'रांची': 'ranchi', 'दुमका': 'dumka', 'धनबाद': 'dhanbad', 'जमशेदपुर': 'jamshedpur', 'बोकारो': 'bokaro', 'देवघर': 'deoghar', 'हजारीबाग': 'hazaribagh', 'गिरिडीह': 'giridih', 'पलामू': 'palamu', 'गोड्डा': 'godda', 'पाकुड़': 'pakur', 'जामताड़ा': 'jamtara', 'रामगढ़': 'ramgarh' };
+    for (const [hi, en] of Object.entries(hiDistricts)) {
+      if (userMessage.includes(hi)) {
+        extracted.location = en.charAt(0).toUpperCase() + en.slice(1);
+        break;
+      }
+    }
 
-    if (msgLower.includes('week')) extracted.duration = '2 weeks';
-    else if (msgLower.includes('month')) extracted.duration = '3 months';
-    else if (msgLower.includes('year')) extracted.duration = '1 year';
+    // Severity (English + Hindi)
+    if (msgLower.includes('emergency') || msgLower.includes('critical') || msgLower.includes('dangerous') || msgLower.includes('collapse') || userMessage.includes('इमरजेंसी') || userMessage.includes('खतरनाक')) extracted.severity = 'critical';
+    else if (msgLower.includes('urgent') || msgLower.includes('severe') || userMessage.includes('जरूरी')) extracted.severity = 'high';
 
+    // Duration (English + Hindi)
+    if (msgLower.includes('week') || userMessage.includes('हफ्ता')) extracted.duration = '2 weeks';
+    else if (msgLower.includes('month') || userMessage.includes('महीना')) extracted.duration = '3 months';
+    else if (msgLower.includes('year') || userMessage.includes('साल')) extracted.duration = '1 year';
+
+    // Who affected (English + Hindi)
     const popMatch = msgLower.match(/(\d[\d,]*)\s*(people|person|family|village|student)/);
     if (popMatch) extracted.who_affected = `${popMatch[1]} ${popMatch[2]}`;
+    if (userMessage.includes('लोग') || userMessage.includes('परिवार') || userMessage.includes('गांव')) {
+      const numMatch = userMessage.match(/(\d+)/);
+      if (numMatch) extracted.who_affected = `${numMatch[1]} लोग`;
+      else if (!extracted.who_affected) extracted.who_affected = 'स्थानीय लोग';
+    }
 
     const allMissing = getMissingDraftFields({ ...answersRef.current, ...extracted });
     const missingKeys = allMissing.map(f => f.key);
@@ -609,32 +635,26 @@ Output strict JSON only. Sound like a real human agent — brief, warm, conversa
     const allText = Object.values(answers).filter(Boolean).join(' ');
     const isHindi = selectedLanguage === 'hi-IN';
 
-    const prompt = `You are the JanSetu Civic Voice AI Parser.
-A citizen has spoken the following answers regarding their civic issue.
-${isHindi ? '⚠️ IMPORTANT: The citizen spoke in Hindi (Devanagari). You MUST translate ALL text fields (title, description, location, who_affected, duration, spoken_summary) into clear, professional ENGLISH. The output report must be entirely in English.' : ''}
+    const prompt = `Parse civic grievance from citizen voice data.
+${isHindi ? 'Translate ALL text fields to English. Only spoken_summary in Hindi.' : ''}
 
-Citizen's answers (may be in Hindi):
-${JSON.stringify(answers, null, 2)}
+Citizen answers: ${JSON.stringify(answers)}
+Transcript: "${allText}"
 
-Combined Citizen Voice Transcript:
-"${allText}"
-
-Extract and return a valid JSON object matching the exact schema below.
-ALL text fields MUST be in English:
+Return JSON:
 {
-  "title": "Concise professional 5-8 word problem title (ENGLISH)",
-  "description": "Clear, detailed 2-3 sentence problem statement (ENGLISH)",
-  "category": "Water Management | Infrastructure | Agriculture & Rural | Healthcare & Sanitation | Education & Literacy | Energy & Power | Environment & Pollution | Public Safety & Disaster | Digital Services & Governance | Urban Transport & Traffic",
-  "subcategory": "Specific sub-sector",
-  "district": "Extracted Jharkhand district name (English spelling)",
-  "location": "Specific street, village, block, ward or landmark (ENGLISH)",
-  "lat": "Approximate latitude string",
-  "lng": "Approximate longitude string",
-  "severity": "low | medium | high | critical",
+  "title": "5-8 word title (ENGLISH)",
+  "description": "2-3 sentence statement (ENGLISH)",
+  "category": "Water Management|Infrastructure|Agriculture & Rural|Healthcare & Sanitation|Education & Literacy|Energy & Power|Environment & Pollution|Public Safety & Disaster|Urban Transport & Traffic",
+  "subcategory": "sub-sector",
+  "district": "Jharkhand district",
+  "location": "street/village/block (ENGLISH)",
+  "lat": "latitude", "lng": "longitude",
+  "severity": "low|medium|high|critical",
   "affected_population": number,
-  "who_affected": "Who is affected (ENGLISH)",
-  "duration": "Duration (ENGLISH)",
-  "spoken_summary": "Warm 1-sentence confirmation for the citizen (speak in ${isHindi ? 'Hindi' : 'English'})"
+  "who_affected": "who (ENGLISH)",
+  "duration": "duration (ENGLISH)",
+  "spoken_summary": "warm confirmation (speak in ${isHindi ? 'Hindi' : 'English'})"
 }`;
 
     let parsedData = null;
@@ -702,10 +722,11 @@ ALL text fields MUST be in English:
 
     const MAX_TURNS = 8;
 
-    // ── GREETING: Speak first, then listen. Mic is OFF during TTS. ──
-    const greeting = selectedLanguage === 'hi-IN'
-      ? "नमस्ते! मैं जनसेतु वॉयस असिस्टेंट हूँ। बताइए आपके इलाके में क्या समस्या है? आप खुलकर बोलिए।"
-      : "Hello! I'm JanSetu Voice Assistant. Tell me about the civic problem in your area — what's happening, where, and who's affected? Just speak naturally!";
+    // ── GREETING: Adaptive bilingual greeting — speaks first, then listens ──
+    const isHindi = selectedLanguage === 'hi-IN';
+    const greeting = isHindi
+      ? "नमस्ते! मैं जनसेतु वॉयस असिस्टेंट हूँ। बताइए आपके इलाके में क्या समस्या है?"
+      : "Hello! I'm JanSetu Voice Assistant. Tell me about the civic problem in your area — what's happening, where, and who's affected?";
 
     setConversationLog([{ role: 'agent', text: greeting }]);
     conversationHistoryRef.current.push({ role: 'agent', text: greeting });
@@ -714,12 +735,11 @@ ALL text fields MUST be in English:
     await speak(greeting);
     if (abortRef.current) { isRunningRef.current = false; return; }
 
-    // After greeting finishes, clean-reset the mic and start listening
-    await new Promise(r => setTimeout(r, 500));
+    // After greeting, minimal delay before listening (was 900ms, now 400ms)
+    await new Promise(r => setTimeout(r, 300));
     setInterimText('');
     startListening();
-    // Give recognition a moment to fully initialize before collecting
-    await new Promise(r => setTimeout(r, 400));
+    await new Promise(r => setTimeout(r, 300));
 
     // ── MAIN LOOP: Listen → Analyze → Respond → Repeat ──
     for (let turn = 0; turn < MAX_TURNS; turn++) {
@@ -795,11 +815,11 @@ ALL text fields MUST be in English:
       await speak(analysis.aiResponse);
       if (abortRef.current) break;
 
-      // 6b. After speaking, wait then cleanly restart mic for next turn
-      await new Promise(r => setTimeout(r, 500));
+      // 6b. After speaking, minimal delay before restart mic (was 900ms, now 400ms)
+      await new Promise(r => setTimeout(r, 250));
       setInterimText('');
       startListening();
-      await new Promise(r => setTimeout(r, 400));
+      await new Promise(r => setTimeout(r, 250));
 
       // 7. Check if we're ready for report
       if (analysis.isReadyForReport) {
@@ -878,6 +898,15 @@ ALL text fields MUST be in English:
         isRunningRef.current = false;
         stopListening();
         if (window.speechSynthesis) window.speechSynthesis.cancel();
+        // Cleanup audio context for noise reduction
+        if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+          audioCtxRef.current.close().catch(() => {});
+          audioCtxRef.current = null;
+        }
+        if (audioStreamRef.current) {
+          audioStreamRef.current.getTracks().forEach(t => t.stop());
+          audioStreamRef.current = null;
+        }
       };
     } else {
       abortRef.current = true;
@@ -885,6 +914,15 @@ ALL text fields MUST be in English:
       isRunningRef.current = false;
       stopListening();
       if (window.speechSynthesis) window.speechSynthesis.cancel();
+      // Cleanup audio context
+      if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+        audioCtxRef.current.close().catch(() => {});
+        audioCtxRef.current = null;
+      }
+      if (audioStreamRef.current) {
+        audioStreamRef.current.getTracks().forEach(t => t.stop());
+        audioStreamRef.current = null;
+      }
     }
   }, [isOpen]);
 

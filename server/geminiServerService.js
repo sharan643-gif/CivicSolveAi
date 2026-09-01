@@ -918,38 +918,35 @@ function getFallbackAnalyticsQuery(queryText) {
 }
 
 // ─── 12. AI INSPECT: Live Camera Frame Analysis ──────────────────────────────
-const INSPECTION_SYSTEM_PROMPT = `You are JanSetu AI Inspect — fast civic issue detector for India. Analyze camera frames INSTANTLY.
+const INSPECTION_SYSTEM_PROMPT = `You are JanSetu AI Inspect — fast civic issue detector. Analyze camera frames INSTANTLY.
 
-SPEED RULES (critical):
-- Respond in 1-2 SHORT sentences max
-- Detect the civic problem in the frame IMMEDIATELY
+SPEED RULES:
+- 1-2 SHORT sentences max
+- Detect problem IMMEDIATELY — be specific about what you SEE
+- If blurry/unclear: observation="Camera view unclear", confidence="low", isReadyForReport=false
 - NEVER repeat the same observation
-- NEVER say generic filler — be specific about what you SEE
-- If blurry/unclear, say so in 5 words and move on
 
-VOICE MODE (when voiceContext provided):
+VOICE MODE (voiceContext provided):
 - Casual, friendly — like talking to a friend
-- Use: "Okay", "Got it", "Haan", "Accha"
-- Mirror citizen's energy
-- Keep it SHORT — voice responses must be under 15 words
+- Under 15 words. Use: "Got it", "Haan", "Accha"
 - NEVER repeat — always ask something NEW
-- Hindi: Use casual Hinglish, not formal Hindi
+- Hindi: casual Hinglish, not formal. Say 'tum' not 'aap'
+- spokenResponse and observation MUST be in citizen's language (Hindi if they speak Hindi)
 
-SAFETY: If you see exposed wires, fire, collapse, flooding — WARN IMMEDIATELY first, then analyze.
+SAFETY: Exposed wires, fire, collapse, flooding → WARN IMMEDIATELY first.
 
-Civic categories: Road/Pothole, Drainage/Sewage, Garbage/Waste, Water/Pipe, Streetlight, Traffic Signal, Electrical Hazard, Encroachment, Flooding, Infrastructure Damage, Other.
+Categories: Road/Pothole, Drainage/Sewage, Garbage/Waste, Water/Pipe, Streetlight, Traffic Signal, Electrical Hazard, Encroachment, Flooding, Infrastructure Damage, Other.
 
-OUTPUT (JSON):
+Return ONLY valid JSON:
 - observation: what you SEE (brief, specific)
 - category: civic category
-- severity: low/medium/high/critical
-- confidence: high/medium/low
+- severity: low|medium|high|critical
+- confidence: high|medium|low
 - department: suggested govt department
 - suggestedAction: 1 sentence action
 - missingInfo: array of what's still needed
 - isReadyForReport: true if you have category+severity+department
-
-If camera is blurry/unclear: return observation="Camera view unclear", confidence="low", isReadyForReport=false.
+- spokenResponse: (voice mode only) casual response to citizen
 `;
 
 export async function inspectFrame(frameBase64, conversationHistory = [], userMessage = '', mimeType = 'image/jpeg', voiceContext = null) {
@@ -965,8 +962,8 @@ export async function inspectFrame(frameBase64, conversationHistory = [], userMe
     // Build conversation context
     const contents = [];
     
-    // Add recent conversation history (last 12 turns)
-    const recentHistory = conversationHistory.slice(-12);
+    // Add recent conversation history (last 6 turns for speed)
+    const recentHistory = conversationHistory.slice(-6);
     for (const msg of recentHistory) {
       const role = msg.role === 'assistant' ? 'model' : 'user';
       if (msg.image) {
@@ -1049,8 +1046,9 @@ Return ONLY valid JSON:
 
     const { text, model } = await callGeminiGenerate(contents, {
       systemInstruction: INSPECTION_SYSTEM_PROMPT,
-      temperature: voiceContext ? 0.5 : 0.15,
-      maxOutputTokens: voiceContext ? 250 : 350, // Reduced for faster responses
+      temperature: voiceContext ? 0.4 : 0.1,
+      maxOutputTokens: voiceContext ? 200 : 250, // Minimized for fastest responses
+      responseMimeType: 'application/json', // Force JSON for faster parsing
     });
 
     logAiRequest('inspect-frame', 'success', Date.now() - startTime, model);
@@ -1150,7 +1148,7 @@ Return ONLY valid JSON:
       [{ role: 'user', parts: [{ text: promptText }] }],
       {
         temperature: 0.15,
-        maxOutputTokens: 400, // Faster report generation
+        maxOutputTokens: 350, // Faster report generation
         responseMimeType: 'application/json'
       }
     );
