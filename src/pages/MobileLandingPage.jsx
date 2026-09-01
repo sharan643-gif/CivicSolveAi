@@ -1,7 +1,7 @@
 import React from 'react';
-import { Sparkles, ArrowRight, ShieldCheck, Users, GraduationCap, Building, LineChart } from 'lucide-react';
+import { Sparkles, ArrowRight, Mic, Camera, ChevronRight, Zap, Globe } from 'lucide-react';
 
-export default function MobileLandingPage({ onNavigate, stats }) {
+export default function MobileLandingPage({ onNavigate, stats, onOpenVoice, onOpenCamera }) {
   return (
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '28px', paddingBottom: '80px' }}>
 
@@ -30,34 +30,99 @@ export default function MobileLandingPage({ onNavigate, stats }) {
         </button>
       </div>
 
-      {/* Ecosystem Journey — Clean White Card */}
-      <div className="glass-card reveal" style={{ padding: '20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-          <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Sparkles size={14} color="var(--primary)" />
+      {/* Voice & Camera AI Modules — Quick Access */}
+      <div className="reveal" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'linear-gradient(135deg, #c8860a, #a06d08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Zap size={14} color="#fff" />
           </div>
           <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>
-            End-to-End Innovation Flow
+            AI-Powered Report
           </h3>
         </div>
 
-        <div className="reveal-stagger" style={{ display: 'flex', flexDirection: 'column', gap: '10px', position: 'relative' }}>
-          {[
-            { stage: '1. Citizen Reports', desc: 'Local issues captured with evidence', color: 'var(--primary)', icon: '👤' },
-            { stage: '2. AI Analysis', desc: 'Priority score & duplicate check', color: 'var(--accent)', icon: '🤖' },
-            { stage: '3. University Cohort', desc: 'Student engineering team assigned', color: '#f59e0b', icon: '🎓' },
-            { stage: '4. Industry CSR', desc: 'Prototype seed grant & mentorship', color: '#ec4899', icon: '🏢' },
-            { stage: '5. Gov Field Pilot', desc: 'Department validated scale-up', color: 'var(--primary)', icon: '🏛️' },
-            { stage: '6. Measured Impact', desc: '1.2M+ citizens impacted', color: 'var(--success)', icon: '📈' }
-          ].map((item, idx) => (
-            <div key={idx} style={{ background: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '12px', boxShadow: 'var(--shadow-xs)' }}>
-              <span style={{ fontSize: '20px' }}>{item.icon}</span>
-              <div>
-                <strong style={{ color: 'var(--text-primary)', fontSize: '0.85rem', display: 'block' }}>{item.stage}</strong>
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.74rem' }}>{item.desc}</span>
-              </div>
+        {/* Voice Assistant Card */}
+        <button
+          onClick={() => onOpenVoice ? onOpenVoice() : onNavigate('voice')}
+          style={{
+            background: 'linear-gradient(135deg, #0f1729 0%, #1b2a4a 60%, #243b6a 100%)',
+            border: '1px solid rgba(200,134,10,0.2)',
+            borderRadius: '14px',
+            padding: '18px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '14px',
+            cursor: 'pointer',
+            width: '100%',
+            textAlign: 'left',
+            boxShadow: '0 4px 20px rgba(15, 23, 42, 0.3)',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          <div style={{
+            width: '50px', height: '50px', borderRadius: '14px',
+            background: 'linear-gradient(135deg, #c8860a, #a06d08)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 4px 15px rgba(200,134,10,0.4)',
+            flexShrink: 0,
+          }}>
+            <Mic size={24} color="#fff" />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
+              <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--font-display)' }}>Voice Assistant</span>
+              <span style={{ fontSize: '0.55rem', background: 'rgba(200,134,10,0.25)', color: '#d4a843', padding: '2px 6px', borderRadius: '100px', fontWeight: 700 }}>LIVE</span>
             </div>
-          ))}
+            <p style={{ margin: 0, fontSize: '0.76rem', color: 'rgba(255,255,255,0.65)', lineHeight: 1.4 }}>
+              Speak naturally — AI captures problem details in English or Hindi
+            </p>
+          </div>
+          <ChevronRight size={18} color="rgba(255,255,255,0.4)" />
+        </button>
+
+        {/* Camera Inspection Card */}
+        <button
+          onClick={() => onOpenCamera ? onOpenCamera() : onNavigate('inspect')}
+          style={{
+            background: '#ffffff',
+            border: '1.5px solid var(--border-subtle)',
+            borderRadius: '14px',
+            padding: '18px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '14px',
+            cursor: 'pointer',
+            width: '100%',
+            textAlign: 'left',
+            boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          <div style={{
+            width: '50px', height: '50px', borderRadius: '14px',
+            background: 'linear-gradient(135deg, #16a34a, #15803d)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 4px 15px rgba(22,163,74,0.3)',
+            flexShrink: 0,
+          }}>
+            <Camera size={24} color="#fff" />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
+              <span style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>AI Camera</span>
+              <span style={{ fontSize: '0.55rem', background: 'rgba(22,163,74,0.1)', color: '#16a34a', padding: '2px 6px', borderRadius: '100px', fontWeight: 700 }}>VISION</span>
+            </div>
+            <p style={{ margin: 0, fontSize: '0.76rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+              Point camera at issue — Gemini AI identifies and categorizes instantly
+            </p>
+          </div>
+          <ChevronRight size={18} color="var(--text-muted)" />
+        </button>
+
+        {/* Quick Info */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+          <Globe size={13} color="var(--primary)" />
+          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>Works in English & Hindi • Powered by Gemini AI</span>
         </div>
       </div>
 

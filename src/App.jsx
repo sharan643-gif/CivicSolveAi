@@ -576,7 +576,7 @@ export default function App() {
         )}
 
         {currentRoute === 'landing' && (
-          isMobile ? <MobileLandingPage onNavigate={handleNavigate} stats={stats} /> : <LandingPage onNavigate={handleNavigate} stats={stats} featuredChallenges={challenges} />
+          isMobile ? <MobileLandingPage onNavigate={handleNavigate} stats={stats} onOpenVoice={() => setIsVoiceOpen(true)} onOpenCamera={() => setIsInspectOpen(true)} /> : <LandingPage onNavigate={handleNavigate} stats={stats} featuredChallenges={challenges} />
         )}
         {currentRoute === 'explore' && (
           <ExplorePage challenges={challenges} onNavigate={handleNavigate} />
